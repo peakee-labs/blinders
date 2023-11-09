@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"blinders/packages/suggestion"
-
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
