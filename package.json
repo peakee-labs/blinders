@@ -11,5 +11,9 @@
   },
   "author": "",
   "license": "ISC",
-  "packageManager": "yarn@4.1.0"
+  "packageManager": "yarn@4.1.0",
+  "devDependencies": {
+    "@zenonian/eslint-config": "^0.1.2",
+    "eslint": "^8.56.0"
+  }
 }

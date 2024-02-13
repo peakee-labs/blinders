@@ -1,5 +1,7 @@
 const { program } = require('commander');
+const { deployCommand } = require('./deploy');
 
-console.log("run blinders cli")
+console.log('run blinders cli');
 
-program.parse()
+program.addCommand(deployCommand);
+program.parse();
