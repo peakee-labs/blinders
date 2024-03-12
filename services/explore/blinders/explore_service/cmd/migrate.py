@@ -5,6 +5,7 @@ import os
 import dotenv
 from firebase_admin import firestore, credentials, initialize_app
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 from redis.client import Redis
 
 from blinders.explore_core.main import Explore, Embedder
@@ -16,9 +17,7 @@ matchColName = "matches"
 if __name__ == "__main__":
     dotenv.load_dotenv()
     try:
-        mongoURL = "mongodb://{}:{}@{}:{}/{}".format(
-            os.getenv("MONGO_USERNAME"),
-            os.getenv("MONGO_PASSWORD"),
+        mongoURL = "mongodb://{}:{}/{}".format(
             os.getenv("MONGO_HOST"),
             os.getenv("MONGO_PORT"),
             os.getenv("MONGO_DATABASE"),
@@ -43,12 +42,10 @@ if __name__ == "__main__":
             firebase_UID = doc.get("firebaseUid")
             name = doc.get("name")
             image_url = doc.get("imageUrl")
-            friends_user_id = doc.get("friends")
 
             if (
                     name is None
                     or image_url is None
-                    or friends_user_id is None
             ):
                 continue
 
@@ -58,7 +55,7 @@ if __name__ == "__main__":
                     "name": name,
                     "imageURL": image_url,
                     "firebaseUID": firebase_UID,
-                    "friends": friends_user_id,
+                    "friends": [],
                     "createdAt": now,
                     "updatedAt": now,
                 }
