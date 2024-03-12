@@ -22,6 +22,7 @@ use (
 	./packages/utils
 	./services/chat
 	./services/explore
+	./services/onboarding
 	./services/rest
 	./services/suggest
 	./tests
