@@ -54,6 +54,7 @@ func (s UsersService) GetSelfFromAuth(ctx *fiber.Ctx) error {
 }
 
 func (s UsersService) GetUserByID(ctx *fiber.Ctx) error {
+	// TODO: need to check if this is a public query and eliminate private data
 	id := ctx.Params("id")
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
