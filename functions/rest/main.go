@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	fiberadapter "github.com/awslabs/aws-lambda-go-api-proxy/fiber"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
@@ -61,6 +62,12 @@ func init() {
 		},
 	)
 	api.App.Use(logger.New())
+	api.App.Use(cors.New(cors.Config{
+		AllowOrigins: "https://app.peakee.co, http://localhost:3000",
+		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
+		AllowHeaders: "*",
+	}))
+
 	err = api.InitRoute(restapi.InitOptions{Prefix: os.Getenv("ENVIRONMENT")})
 	if err != nil {
 		panic(err)
