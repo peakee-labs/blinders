@@ -61,10 +61,21 @@ func (m Manager) InitRoute(options InitOptions) error {
 	authorized := rootRoute.Group("/", auth.FiberAuthMiddleware(m.Auth, m.DB.Users))
 
 	users := authorized.Group("/users")
-	users.Get("/:id", AllowPublicQuery, ValidateUserIDParam, m.Users.GetUserByID)
-	users.Get("/:id/friend-requests", ValidateUserIDParam, m.Users.GetPendingFriendRequests)
-	users.Post("/:id/friend-requests", ValidateUserIDParam, m.Users.CreateAddFriendRequest)
-	users.Put("/:id/friend-requests/:requestId", ValidateUserIDParam, m.Users.RespondFriendRequest)
+	users.Get(
+		"/:id",
+		ValidateUserIDParam(ValidateUserOptions{allowPublicQuery: true}),
+		m.Users.GetUserByID,
+	)
+	users.Get("/:id/friend-requests",
+		ValidateUserIDParam(),
+		m.Users.GetPendingFriendRequests)
+	users.Post("/:id/friend-requests",
+		ValidateUserIDParam(),
+		m.Users.CreateAddFriendRequest)
+	users.Put(
+		"/:id/friend-requests/:requestId",
+		ValidateUserIDParam(),
+		m.Users.RespondFriendRequest)
 
 	conversations := authorized.Group("/conversations")
 	conversations.Get("/:id", m.Conversations.GetConversationByID)

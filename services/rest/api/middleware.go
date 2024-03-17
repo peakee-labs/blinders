@@ -14,26 +14,40 @@ const (
 	PublicQuery MiddlewareKey = "public_query"
 )
 
-func ValidateUserIDParam(ctx *fiber.Ctx) error {
-	userID := ctx.Params("id")
-	userAuth := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
-	isPublicQuery := ctx.Locals(PublicQuery).(bool)
-	if !isPublicQuery && userAuth.ID != userID {
-		return ctx.Status(http.StatusForbidden).JSON(&fiber.Map{
-			"error": "insufficient permissions",
+type ValidateUserOptions struct {
+	// initializes local ctx with key PublicQuery for checking public in next middlewares.
+	// If it is not enabled, the next middlewares will never receive public flag even if it handles public query.
+	// It make easily to toggle public query for any route
+	allowPublicQuery bool
+}
+
+func ValidateUserIDParam(options ...ValidateUserOptions) fiber.Handler {
+	if len(options) == 0 {
+		options = append(options, ValidateUserOptions{
+			allowPublicQuery: false,
 		})
 	}
 
-	return ctx.Next()
-}
+	allowPublicQuery := options[0].allowPublicQuery
 
-// AllowPublicQuery middleware
-// initializes local ctx with key PublicQuery for checking public in next middlewares.
-// If it is not enabled, the next middlewares will never receive public flag even if it handles public query.
-// It make easily to toggle public query for any route
-func AllowPublicQuery(ctx *fiber.Ctx) error {
-	public := ctx.Query("public")
-	ctx.Locals(PublicQuery, public == "true")
+	return func(ctx *fiber.Ctx) error {
+		userID := ctx.Params("id")
+		userAuth := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
 
-	return ctx.Next()
+		if allowPublicQuery {
+			public := ctx.Query("public")
+			ctx.Locals(PublicQuery, public == "true")
+		} else {
+			ctx.Locals(PublicQuery, false)
+		}
+		isPublicQuery := ctx.Locals(PublicQuery).(bool)
+
+		if !isPublicQuery && userAuth.ID != userID {
+			return ctx.Status(http.StatusForbidden).JSON(&fiber.Map{
+				"error": "insufficient permissions",
+			})
+		}
+
+		return ctx.Next()
+	}
 }
