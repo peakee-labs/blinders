@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"blinders/packages/db/models"
@@ -9,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MessagesRepo struct {
@@ -28,13 +30,17 @@ func (r MessagesRepo) ConstructNewMessage(
 	content string,
 ) models.Message {
 	now := primitive.NewDateTimeFromTime(time.Now())
+	replyToPointer := &replyTo
+	if replyTo.IsZero() {
+		replyToPointer = nil
+	}
 	return models.Message{
 		ID:             primitive.NewObjectID(),
 		Status:         "delivered",
 		Emotions:       make([]models.MessageEmotion, 0),
 		SenderID:       senderID,
 		ConversationID: conversationID,
-		ReplyTo:        replyTo,
+		ReplyTo:        replyToPointer,
 		Content:        content,
 		CreatedAt:      now,
 		UpdatedAt:      now,
