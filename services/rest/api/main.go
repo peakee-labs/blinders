@@ -79,6 +79,7 @@ func (m Manager) InitRoute(options InitOptions) error {
 
 	conversations := authorized.Group("/conversations")
 	conversations.Get("/:id", m.Conversations.GetConversationByID)
+	conversations.Get("/", m.Conversations.GetConversationsOfUser)
 	conversations.Post("/", m.Conversations.CreateNewIndividualConversation)
 
 	authorized.Get("/messages/:id", m.Messages.GetMessageByID)
