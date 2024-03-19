@@ -36,6 +36,42 @@ func (r *ConversationsRepo) GetConversationByID(
 	return &conversation, err
 }
 
+// get by all types by default
+func (r *ConversationsRepo) GetConversationByMembers(
+	members []primitive.ObjectID,
+	convTypes ...models.ConversationType,
+) (*[]models.Conversation, error) {
+	ctx, cal := context.WithTimeout(context.Background(), time.Second)
+	defer cal()
+
+	filter := bson.M{"members": bson.M{"$all": []bson.M{}}}
+	for _, m := range members {
+		filter["members"].(bson.M)["$all"] = append(
+			filter["members"].(bson.M)["$all"].([]bson.M),
+			bson.M{"$elemMatch": bson.M{"userId": m}},
+		)
+	}
+	if len(convTypes) != 0 {
+		filter["type"] = bson.M{"$in": convTypes}
+	}
+
+	conversations := make([]models.Conversation, 0)
+	cur, err := r.Col.Find(ctx,
+		filter,
+		&options.FindOptions{Sort: bson.M{"latestMessageAt": -1}})
+	if err != nil {
+		log.Println("can not get conversations:", err)
+		return nil, err
+	}
+	err = cur.All(ctx, &conversations)
+	if err != nil {
+		log.Println("can not parse conversations:", err)
+		return nil, err
+	}
+
+	return &conversations, nil
+}
+
 func (r *ConversationsRepo) InsertNewConversation(
 	c models.Conversation,
 ) (*models.Conversation, error) {

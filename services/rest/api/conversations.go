@@ -53,6 +53,61 @@ func (s ConversationsService) GetConversationByID(ctx *fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(conversation)
 }
 
+func (s ConversationsService) GetConversationsOfUser(ctx *fiber.Ctx) error {
+	userAuth := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
+	if userAuth == nil {
+		return fmt.Errorf("required user auth")
+	}
+
+	userID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+
+	queryType := ctx.Query("type", "all")
+	switch queryType {
+	case "all":
+		conversations, err := s.Repo.GetConversationByMembers(
+			[]primitive.ObjectID{userID})
+		if err != nil {
+			log.Println("can not get conversations:", err)
+			return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+				"error": "can not get conversations",
+			})
+		}
+		return ctx.Status(http.StatusOK).JSON(conversations)
+	case "individual":
+		friendID, err := primitive.ObjectIDFromHex(
+			ctx.Query("friendId", ""))
+		if err != nil {
+			return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+				"error": "friend id is required",
+			})
+		}
+		conversations, err := s.Repo.GetConversationByMembers(
+			[]primitive.ObjectID{userID, friendID},
+			models.IndividualConversation)
+		if err != nil {
+			log.Println("can not get conversations:", err)
+			return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+				"error": "can not get conversations",
+			})
+		}
+		return ctx.Status(http.StatusOK).JSON(conversations)
+	case "group":
+		conversations, err := s.Repo.GetConversationByMembers(
+			[]primitive.ObjectID{userID}, models.GroupConversation)
+		if err != nil {
+			log.Println("can not get conversations:", err)
+			return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+				"error": "can not get conversations",
+			})
+		}
+		return ctx.Status(http.StatusOK).JSON(conversations)
+	default:
+		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"error": "invalid query type, must be 'all', 'group' or 'individual'",
+		})
+	}
+}
+
 type CreateConversationDTO struct {
 	Type models.ConversationType `json:"type"`
 }

@@ -41,3 +41,21 @@ func TestInsertIndividualConversationFailedWithDuplicatedConversation(t *testing
 	assert.NotNil(t, err)
 	assert.Nil(t, conv)
 }
+
+func TestGetConversationWithAFriend(t *testing.T) {
+	user, _ := convDBManager.Users.InsertNewRawUser(
+		models.User{FirebaseUID: primitive.NewObjectID().Hex()},
+	)
+	friend, _ := convDBManager.Users.InsertNewRawUser(
+		models.User{FirebaseUID: primitive.NewObjectID().Hex()},
+	)
+	conv, _ := convDBManager.Conversations.InsertIndividualConversation(user.ID, friend.ID)
+	conversations, err := convDBManager.Conversations.GetConversationByMembers(
+		[]primitive.ObjectID{user.ID, friend.ID}, models.IndividualConversation,
+	)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(*conversations))
+	if len(*conversations) > 0 {
+		assert.Equal(t, conv.ID, (*conversations)[0].ID)
+	}
+}
