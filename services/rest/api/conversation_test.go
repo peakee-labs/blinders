@@ -22,7 +22,7 @@ func init() {
 	url := os.Getenv("MONGO_DATABASE_URL")
 	log.Println("database url: ", url)
 	dbManager := db.NewMongoManager(url, dbName)
-	convService = *restapi.NewConversationsService(dbManager.Conversations, dbManager.Users)
+	convService = *restapi.NewConversationsService(dbManager.Conversations, dbManager.Users, nil)
 }
 
 func TestCheckFriendshipFailedWithNoFriendship(t *testing.T) {

@@ -44,15 +44,15 @@ const (
 )
 
 type Message struct {
-	ID             primitive.ObjectID `bson:"_id"            json:"id"`
-	SenderID       primitive.ObjectID `bson:"senderId"       json:"senderId"`
-	ConversationID primitive.ObjectID `bson:"conversationId" json:"conversationId"`
-	ReplyTo        primitive.ObjectID `bson:"replyTo"        json:"replyTo"`
-	Content        string             `bson:"content"        json:"content"`
-	Status         MessageStatus      `bson:"status"         json:"status"`
-	CreatedAt      primitive.DateTime `bson:"createdAt"      json:"createdAt"`
-	UpdatedAt      primitive.DateTime `bson:"updatedAt"      json:"updatedAt"`
-	Emotions       []MessageEmotion   `bson:"emotions"       json:"emotions"`
+	ID             primitive.ObjectID  `bson:"_id"               json:"id"`
+	SenderID       primitive.ObjectID  `bson:"senderId"          json:"senderId"`
+	ConversationID primitive.ObjectID  `bson:"conversationId"    json:"conversationId"`
+	ReplyTo        *primitive.ObjectID `bson:"replyTo,omitempty" json:"replyTo,omitempty"`
+	Content        string              `bson:"content"           json:"content"`
+	Status         MessageStatus       `bson:"status"            json:"status"`
+	CreatedAt      primitive.DateTime  `bson:"createdAt"         json:"createdAt"`
+	UpdatedAt      primitive.DateTime  `bson:"updatedAt"         json:"updatedAt"`
+	Emotions       []MessageEmotion    `bson:"emotions"          json:"emotions"`
 }
 
 type MessageEmotion struct {
