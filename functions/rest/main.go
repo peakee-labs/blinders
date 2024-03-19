@@ -61,7 +61,9 @@ func init() {
 			transport.Notification: os.Getenv("NOTIFICATION_FUNCTION_NAME"),
 		},
 	)
-	api.App.Use(logger.New())
+	api.App.Use(logger.New(logger.Config{
+		Format: "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n",
+	}))
 	api.App.Use(cors.New(cors.Config{
 		AllowOrigins: "https://app.peakee.co, http://localhost:3000",
 		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
