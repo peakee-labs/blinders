@@ -29,7 +29,7 @@ func NewManager(
 		Auth:          auth,
 		DB:            db,
 		Users:         NewUsersService(db.Users, db.FriendRequests, transporter, consumerMap),
-		Conversations: NewConversationsService(db.Conversations, db.Users),
+		Conversations: NewConversationsService(db.Conversations, db.Users, db.Messages),
 		Messages:      NewMessagesService(db.Messages),
 	}
 }
@@ -77,8 +77,10 @@ func (m Manager) InitRoute(options InitOptions) error {
 		ValidateUserIDParam(),
 		m.Users.RespondFriendRequest)
 
+	// TODO: need to check if this user is in the conversation
 	conversations := authorized.Group("/conversations")
 	conversations.Get("/:id", m.Conversations.GetConversationByID)
+	conversations.Get("/:id/messages", m.Conversations.GetMessagesOfConversation)
 	conversations.Get("/", m.Conversations.GetConversationsOfUser)
 	conversations.Post("/", m.Conversations.CreateNewIndividualConversation)
 

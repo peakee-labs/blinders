@@ -18,17 +18,20 @@ import (
 )
 
 type ConversationsService struct {
-	Repo     *repo.ConversationsRepo
-	UserRepo *repo.UsersRepo
+	Repo        *repo.ConversationsRepo
+	UserRepo    *repo.UsersRepo
+	MessageRepo *repo.MessagesRepo
 }
 
 func NewConversationsService(
 	repo *repo.ConversationsRepo,
 	userRepo *repo.UsersRepo,
+	messageRepo *repo.MessagesRepo,
 ) *ConversationsService {
 	return &ConversationsService{
-		Repo:     repo,
-		UserRepo: userRepo,
+		Repo:        repo,
+		UserRepo:    userRepo,
+		MessageRepo: messageRepo,
 	}
 }
 
@@ -193,4 +196,25 @@ func (s ConversationsService) CheckFriendRelationship(
 	}
 
 	return nil
+}
+
+func (s ConversationsService) GetMessagesOfConversation(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Println("invalid id:", err)
+		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"error": "invalid id",
+		})
+	}
+
+	messages, err := s.MessageRepo.GetMessagesOfConversation(oid)
+	if err != nil {
+		log.Println("can not get messages:", err)
+		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"error": "can not get messages",
+		})
+	}
+
+	return ctx.Status(http.StatusOK).JSON(messages)
 }

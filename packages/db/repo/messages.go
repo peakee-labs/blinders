@@ -69,3 +69,27 @@ func (r *MessagesRepo) InsertNewRawMessage(m models.Message) (models.Message, er
 
 	return r.InsertNewMessage(m)
 }
+
+func (r *MessagesRepo) GetMessagesOfConversation(
+	conversationID primitive.ObjectID,
+) (*[]models.Message, error) {
+	ctx, cal := context.WithTimeout(context.Background(), time.Second)
+	defer cal()
+
+	filter := bson.M{"conversationId": conversationID}
+	messages := make([]models.Message, 0)
+	limit := int64(30)
+	cur, err := r.Col.Find(ctx, filter,
+		&options.FindOptions{Sort: bson.M{"createdAt": -1}, Limit: &limit})
+	if err != nil {
+		log.Println("can not get conversations:", err)
+		return nil, err
+	}
+	err = cur.All(ctx, &messages)
+	if err != nil {
+		log.Println("can not parse conversations:", err)
+		return nil, err
+	}
+
+	return &messages, nil
+}
