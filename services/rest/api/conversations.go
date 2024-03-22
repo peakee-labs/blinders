@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"blinders/packages/auth"
 	"blinders/packages/db/models"
@@ -208,7 +209,13 @@ func (s ConversationsService) GetMessagesOfConversation(ctx *fiber.Ctx) error {
 		})
 	}
 
-	messages, err := s.MessageRepo.GetMessagesOfConversation(oid)
+	limit, err := (strconv.Atoi(ctx.Query("limit", "30")))
+	if err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"error": "invalid limit",
+		})
+	}
+	messages, err := s.MessageRepo.GetMessagesOfConversation(oid, int64(limit))
 	if err != nil {
 		log.Println("can not get messages:", err)
 		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{

@@ -77,14 +77,13 @@ func (r *MessagesRepo) InsertNewRawMessage(m models.Message) (models.Message, er
 }
 
 func (r *MessagesRepo) GetMessagesOfConversation(
-	conversationID primitive.ObjectID,
+	conversationID primitive.ObjectID, limit int64,
 ) (*[]models.Message, error) {
 	ctx, cal := context.WithTimeout(context.Background(), time.Second)
 	defer cal()
 
 	filter := bson.M{"conversationId": conversationID}
 	messages := make([]models.Message, 0)
-	limit := int64(30)
 	cur, err := r.Col.Find(ctx, filter,
 		&options.FindOptions{Sort: bson.M{"createdAt": -1}, Limit: &limit})
 	if err != nil {
