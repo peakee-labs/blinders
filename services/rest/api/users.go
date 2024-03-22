@@ -75,6 +75,20 @@ func (s UsersService) GetUserByID(ctx *fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(user)
 }
 
+func (s UsersService) GetUsers(ctx *fiber.Ctx) error {
+	email := ctx.Query("email", "")
+	if email != "" {
+		user, err := s.Repo.GetUserByEmail(email)
+		if err != nil {
+			return ctx.SendStatus(http.StatusBadRequest)
+		}
+
+		return ctx.Status(http.StatusOK).JSON([]models.User{user})
+	}
+
+	return nil
+}
+
 type CreateUserDTO struct {
 	Email    string `json:"email"`
 	Name     string `json:"name"`
