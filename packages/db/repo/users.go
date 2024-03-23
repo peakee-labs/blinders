@@ -80,6 +80,16 @@ func (r *UsersRepo) GetUserByFirebaseUID(uid string) (models.User, error) {
 	return user, err
 }
 
+func (r *UsersRepo) GetUserByEmail(email string) (models.User, error) {
+	ctx, cal := context.WithTimeout(context.Background(), time.Second)
+	defer cal()
+
+	var user models.User
+	err := r.Col.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+
+	return user, err
+}
+
 func (r *UsersRepo) DeleteUserByID(userID primitive.ObjectID) (models.User, error) {
 	ctx, cal := context.WithTimeout(context.Background(), time.Second)
 	defer cal()

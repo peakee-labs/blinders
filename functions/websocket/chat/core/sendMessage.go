@@ -66,6 +66,12 @@ func HandleSendMessage(
 
 	wg.Add(1)
 	go func() {
+		distributeMessageToAnotherSenderSessions(message, rawUserID, connectionID, dCh)
+		wg.Done()
+	}()
+
+	wg.Add(1)
+	go func() {
 		// do we need to wait for inserting success to distribute message to users?
 		_, err := app.DB.Messages.InsertNewMessage(message)
 		if err != nil {
@@ -169,6 +175,33 @@ func distributeMessageToRecipients(
 	}
 
 	wg.Wait()
+}
+
+func distributeMessageToAnotherSenderSessions(
+	message models.Message,
+	userID string,
+	curConnID string,
+	dCh chan *DistributeEvent,
+) {
+	sessions, err := app.Session.GetSessions(userID)
+	if err != nil {
+		log.Println("failed to query sessions for user", userID)
+		return
+	}
+
+	for _, s := range sessions {
+		connectionID := strings.Split(s, ":")[1]
+		if connectionID == curConnID {
+			continue
+		}
+		dCh <- &DistributeEvent{
+			ConnectionID: connectionID,
+			Payload: ServerSendMessagePayload{
+				ChatEvent: ChatEvent{Type: ServerSendMessage},
+				Message:   message,
+			},
+		}
+	}
 }
 
 // updateMessageStatus

@@ -61,6 +61,7 @@ func (m Manager) InitRoute(options InitOptions) error {
 	authorized := rootRoute.Group("/", auth.FiberAuthMiddleware(m.Auth, m.DB.Users))
 
 	users := authorized.Group("/users")
+	users.Get("/", m.Users.GetUsers)
 	users.Get(
 		"/:id",
 		ValidateUserIDParam(ValidateUserOptions{allowPublicQuery: true}),

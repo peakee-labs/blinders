@@ -10,15 +10,13 @@ const (
 )
 
 type Conversation struct {
-	ID              primitive.ObjectID    `bson:"_id"                       json:"id"`
-	Type            ConversationType      `bson:"type"                      json:"type"`
-	Members         []Member              `bson:"members"                   json:"members"`
-	CreatedBy       primitive.ObjectID    `bson:"createdBy"                 json:"createdBy"`
-	CreatedAt       primitive.DateTime    `bson:"createdAt"                 json:"createdAt"`
-	UpdatedAt       primitive.DateTime    `bson:"updatedAt"                 json:"updatedAt"`
-	LatestMessage   *primitive.ObjectID   `bson:"latestMessage,omitempty"   json:"latestMessage,omitempty"`
-	LatestMessageAt primitive.DateTime    `bson:"latestMessageAt,omitempty" json:"latestMessageAt,omitempty"`
-	Metadata        *ConversationMetadata `bson:"metadata,omitempty"        json:"metadata,omitempty"`
+	ID        primitive.ObjectID    `bson:"_id"                json:"id"`
+	Type      ConversationType      `bson:"type"               json:"type"`
+	Members   []Member              `bson:"members"            json:"members"`
+	CreatedBy primitive.ObjectID    `bson:"createdBy"          json:"createdBy"`
+	CreatedAt primitive.DateTime    `bson:"createdAt"          json:"createdAt"`
+	UpdatedAt primitive.DateTime    `bson:"updatedAt"          json:"updatedAt"`
+	Metadata  *ConversationMetadata `bson:"metadata,omitempty" json:"metadata,omitempty"`
 }
 
 type ConversationMetadata struct {
