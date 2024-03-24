@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"blinders/packages/db"
@@ -48,18 +49,24 @@ func (m *MongoExplorer) Suggest(userID string) ([]models.MatchInfo, error) {
 
 	oid, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
+		log.Printf("explore: cannot parse object id with given hex string(%s), err: %v\n", userID, err)
 		return nil, err
 	}
 
 	user, err := m.Db.Users.GetUserByID(oid)
 	if err != nil {
+		log.Println("explore: cannot get user by id, err", err)
 		return nil, err
 	}
 
 	// JSONGet return value wrapped in an array.
-	jsonStr, _ := m.RedisClient.JSONGet(ctx, CreateMatchKeyWithUserID(userID), "$.embed").Result()
+	jsonStr, err := m.RedisClient.JSONGet(ctx, CreateMatchKeyWithUserID(userID), "$.embed").Result()
+	if err != nil {
+		log.Println("explore: cannot get explore entry in redis, err", err)
+	}
 	var embedArr []EmbeddingVector
 	if err := json.Unmarshal([]byte(jsonStr), &embedArr); err != nil {
+		log.Println("explore: cannot unmarshall embed vector, err", err)
 		return nil, err
 	}
 	embed := embedArr[0]
@@ -73,6 +80,7 @@ func (m *MongoExplorer) Suggest(userID string) ([]models.MatchInfo, error) {
 
 	candidates, err := m.Db.Matches.GetUsersByLanguage(user.ID, 1000)
 	if err != nil {
+		log.Println("explore: cannot explore candidates, err", err)
 		return nil, err
 	}
 
@@ -98,7 +106,7 @@ func (m *MongoExplorer) Suggest(userID string) ([]models.MatchInfo, error) {
 		"RETURN", "1", "id",
 	)
 	if err := cmd.Err(); err != nil {
-		fmt.Println(err)
+		log.Println("explore: cannot perform knn search in vector database, err", err)
 		return nil, err
 	}
 
