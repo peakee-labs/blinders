@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -32,7 +33,7 @@ func (s UsersService) GetSelfFromAuth(ctx *fiber.Ctx) error {
 	}
 
 	user, err := s.Repo.GetUserByFirebaseUID(userAuth.AuthID)
-	if err == mongo.ErrNoDocuments {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		return ctx.Status(http.StatusNotFound).JSON(nil)
 	} else if err != nil {
 		return err

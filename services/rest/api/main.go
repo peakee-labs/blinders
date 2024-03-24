@@ -5,6 +5,7 @@ import (
 	"blinders/packages/db"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 type Manager struct {
@@ -14,6 +15,7 @@ type Manager struct {
 	Users         *UsersService
 	Conversations *ConversationsService
 	Messages      *MessagesService
+	Onboardings   *OnboardingService
 }
 
 func NewManager(app *fiber.App, auth auth.Manager, db *db.MongoManager) *Manager {
@@ -24,6 +26,7 @@ func NewManager(app *fiber.App, auth auth.Manager, db *db.MongoManager) *Manager
 		Users:         NewUsersService(db.Users),
 		Conversations: NewConversationsService(db.Conversations),
 		Messages:      NewMessagesService(db.Messages),
+		Onboardings:   NewOnboardingService(db.Users, db.Matches),
 	}
 }
 
@@ -36,13 +39,14 @@ func (m Manager) InitRoute(options InitOptions) error {
 		options.Prefix = "/"
 	}
 
-	rootRoute := m.App.Group(options.Prefix)
+	rootRoute := m.App.Group(options.Prefix, cors.New())
 	rootRoute.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("hello from Peakee Rest API")
 	})
 
 	authorizedWithoutUser := rootRoute.Group(
 		"/users/self",
+
 		auth.FiberAuthMiddleware(m.Auth, m.DB.Users,
 			auth.MiddlewareOptions{
 				CheckUser: false,
@@ -56,6 +60,8 @@ func (m Manager) InitRoute(options InitOptions) error {
 	users.Get("/:id", m.Users.GetUserByID)
 	authorized.Get("/conversations/:id", m.Messages.GetMessageByID)
 	authorized.Get("/messages/:id", m.Messages.GetMessageByID)
+
+	authorized.Post("/onboarding", m.Onboardings.PostOnboardingForm())
 
 	return nil
 }
