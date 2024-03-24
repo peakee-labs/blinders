@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"blinders/packages/auth"
@@ -35,16 +36,18 @@ func NewService(
 func (s *Service) HandleGetMatches(ctx *fiber.Ctx) error {
 	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
 	if !ok || userAuth == nil {
+		log.Println("cannot get auth user")
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot get user"})
 	}
 
-	matches, err := s.Core.Suggest(userAuth.ID)
+	candidates, err := s.Core.Suggest(userAuth.ID)
 	if err != nil {
+		log.Println("cannot get suggest for user", userAuth.ID, "err", err)
 		return ctx.Status(fiber.StatusInternalServerError).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"matches": matches})
+	return ctx.Status(fiber.StatusOK).JSON(candidates)
 }
 
 // HandleAddUserMatch will add match-related information to match db
