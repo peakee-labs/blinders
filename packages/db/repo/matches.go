@@ -88,7 +88,7 @@ func (r *MatchesRepo) GetUsersByLanguage(userID primitive.ObjectID, limit uint32
 	}
 	defer func() {
 		if err = cur.Close(ctx); err != nil {
-			log.Panicf("hepo: cannot close cursor, err: %v", err)
+			log.Panicf("repo: cannot close cursor, err: %v", err)
 		}
 	}()
 
