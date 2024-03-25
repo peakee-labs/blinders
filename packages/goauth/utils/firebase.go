@@ -16,7 +16,11 @@ const exchangeIDTokenTemplate = "https://identitytoolkit.googleapis.com/v1/accou
 
 // Init firebase auth token for user with uid.
 // Return id token and auth token
-func LoadFirebaseAuthForUser(client *auth.Client, uid string, webAPIKey string) (string, *auth.Token, error) {
+func LoadFirebaseAuthForUser(
+	client *auth.Client,
+	uid string,
+	webAPIKey string,
+) (string, *auth.Token, error) {
 	customToken, _ := client.CustomToken(context.TODO(), uid)
 
 	requestBody := map[string]any{
@@ -62,7 +66,7 @@ func LoadFirebaseAuthForUserWithCache(
 		cacheFile = "auth.json"
 	}
 	idToken, authToken, err := LoadFirebaseCredentials(client, cacheFile)
-	if err != nil {
+	if err != nil || authToken.UID != uid {
 		idToken, authToken, err = LoadFirebaseAuthForUser(client, uid, webAPIKey)
 		err := StoreFirebaseCredentials(idToken, cacheFile)
 		if err != nil {

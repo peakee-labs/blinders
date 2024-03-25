@@ -66,6 +66,12 @@ func HandleSendMessage(
 
 	wg.Add(1)
 	go func() {
+		distributeMessageToAnotherSenderSessions(message, rawUserID, connectionID, dCh)
+		wg.Done()
+	}()
+
+	wg.Add(1)
+	go func() {
 		// do we need to wait for inserting success to distribute message to users?
 		_, err := app.DB.Messages.InsertNewMessage(message)
 		if err != nil {
@@ -95,11 +101,15 @@ func queryConversationOfUser(
 
 	for _, m := range conversation.Members {
 		if m.UserID == userID {
-			return &conversation, nil
+			return conversation, nil
 		}
 	}
 
-	return nil, fmt.Errorf("user %s is not a member of conversation %s", userID.Hex(), conversationID.Hex())
+	return nil, fmt.Errorf(
+		"user %s is not a member of conversation %s",
+		userID.Hex(),
+		conversationID.Hex(),
+	)
 }
 
 func checkValidReplyTo(replyTo primitive.ObjectID, conversationID primitive.ObjectID) error {
@@ -165,6 +175,33 @@ func distributeMessageToRecipients(
 	}
 
 	wg.Wait()
+}
+
+func distributeMessageToAnotherSenderSessions(
+	message models.Message,
+	userID string,
+	curConnID string,
+	dCh chan *DistributeEvent,
+) {
+	sessions, err := app.Session.GetSessions(userID)
+	if err != nil {
+		log.Println("failed to query sessions for user", userID)
+		return
+	}
+
+	for _, s := range sessions {
+		connectionID := strings.Split(s, ":")[1]
+		if connectionID == curConnID {
+			continue
+		}
+		dCh <- &DistributeEvent{
+			ConnectionID: connectionID,
+			Payload: ServerSendMessagePayload{
+				ChatEvent: ChatEvent{Type: ServerSendMessage},
+				Message:   message,
+			},
+		}
+	}
 }
 
 // updateMessageStatus

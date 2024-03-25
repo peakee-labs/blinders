@@ -8,13 +8,16 @@ import (
 
 	"blinders/packages/auth"
 	"blinders/packages/db"
+	"blinders/packages/transport"
 	"blinders/packages/utils"
 	restapi "blinders/services/rest/api"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/config"
 	fiberadapter "github.com/awslabs/aws-lambda-go-api-proxy/fiber"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
@@ -47,9 +50,27 @@ func init() {
 		log.Fatal(err)
 	}
 
-	api := restapi.NewManager(app, authManager, database)
-	api.App.Use(logger.New())
-	err = api.InitRoute(restapi.InitOptions{})
+	cfg, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		log.Fatal("failed to load aws config", err)
+	}
+	api := restapi.NewManager(
+		app, authManager, database,
+		transport.NewLambdaTransport(cfg),
+		transport.ConsumerMap{
+			transport.Notification: os.Getenv("NOTIFICATION_FUNCTION_NAME"),
+		},
+	)
+	api.App.Use(logger.New(logger.Config{
+		Format: "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n",
+	}))
+	api.App.Use(cors.New(cors.Config{
+		AllowOrigins: "https://app.peakee.co, http://localhost:3000",
+		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
+		AllowHeaders: "*",
+	}))
+
+	err = api.InitRoute(restapi.InitOptions{Prefix: os.Getenv("ENVIRONMENT")})
 	if err != nil {
 		panic(err)
 	}

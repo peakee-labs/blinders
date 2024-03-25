@@ -10,21 +10,21 @@
 rm -rf dist
 echo "cleaned dist directory"
 
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/ ./functions/translate
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/translate/bootstrap ./functions/translate
 echo "build translate lambda function completed"
 
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/ ./functions/websocket/connect
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/connect/bootstrap ./functions/websocket/connect
 echo "build connect lambda function completed"
 
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/authorizer/handler ./functions/websocket/authorizer
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/authorizer/bootstrap ./functions/websocket/authorizer
 echo "build authorizer lambda function completed"
 cp ./firebase.admin.json ./dist/authorizer
 echo "copied firebase.admin.json to authorizer"
 
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/ ./functions/websocket/disconnect
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/disconnect/bootstrap ./functions/websocket/disconnect
 echo "build disconnect lambda function completed"
 
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/wschat ./functions/websocket/chat
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/wschat/bootstrap ./functions/websocket/chat
 echo "build websocket chat lambda function completed"
 
 # migrate to arm64 for better price-performance
@@ -32,3 +32,6 @@ GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -tags lambda.no
 echo "build rest api lambda function completed"
 cp ./firebase.admin.json ./dist/rest
 echo "copied firebase.admin.json to rest api"
+
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -tags lambda.norpc -mod=readonly -ldflags='-s -w' -o ./dist/notification/bootstrap ./functions/websocket/notification
+echo "build notification function completed"

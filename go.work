@@ -11,6 +11,7 @@ use (
 	./functions/translate
 	./functions/utils
 	./functions/websocket
+	./packages/apigateway
 	./packages/common
 	./packages/db
 	./packages/explore
@@ -19,6 +20,7 @@ use (
 	./packages/session
 	./packages/suggest
 	./packages/translate
+	./packages/transport
 	./packages/utils
 	./services/chat
 	./services/explore

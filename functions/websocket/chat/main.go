@@ -10,23 +10,19 @@ import (
 	"sync"
 
 	wschat "blinders/functions/websocket/chat/core"
+	"blinders/packages/apigateway"
 	"blinders/packages/db"
 	"blinders/packages/session"
 	"blinders/packages/utils"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 
-	agm "github.com/aws/aws-sdk-go-v2/service/apigatewaymanagementapi"
 	"github.com/redis/go-redis/v9"
 )
 
-var (
-	cfg       aws.Config
-	apiClient *agm.Client
-)
+var APIGatewayClient *apigateway.Client
 
 func init() {
 	// TODO: need to store these secrets to aws secret manager instead of pass in env
@@ -52,21 +48,21 @@ func init() {
 
 	wschat.InitApp(sessionManager, database)
 
-	var err error
-	cfg, err = config.LoadDefaultConfig(context.Background())
+	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		log.Fatal("failed to load aws config", err)
 	}
+	cer := apigateway.CustomEndpointResolve{
+		Domain:     os.Getenv("API_GATEWAY_DOMAIN"),
+		PathPrefix: os.Getenv("API_GATEWAY_PATH_PREFIX"),
+	}
+	APIGatewayClient = apigateway.NewClient(context.Background(), cfg, cer)
 }
 
 func HandleRequest(
 	ctx context.Context,
 	req events.APIGatewayWebsocketProxyRequest,
 ) (any, error) {
-	if apiClient == nil {
-		apiClient = NewAPIGatewayManagementClient(&cfg, req.RequestContext.DomainName, req.RequestContext.Stage)
-	}
-
 	connectionID := req.RequestContext.ConnectionID
 	userID := req.RequestContext.Authorizer.(map[string]interface{})["principalId"].(string)
 
@@ -76,18 +72,28 @@ func HandleRequest(
 	}
 
 	switch genericEvent.Type {
+	case wschat.UserPing:
+		data := []byte("pong")
+		err = APIGatewayClient.Publish(ctx, req.RequestContext.ConnectionID, data)
+		if err != nil {
+			log.Println("can not publish message", err)
+		}
 	case wschat.UserSendMessage:
 		payload, err := utils.ParseJSON[wschat.UserSendMessagePayload]([]byte(req.Body))
 		if err != nil {
 			log.Println("invalid send message event", err)
-			_ = Publish(ctx, connectionID, []byte("invalid send message event"))
+			_ = APIGatewayClient.Publish(ctx, connectionID, []byte("invalid send message event"))
 			break
 		}
 
 		dCh, err := wschat.HandleSendMessage(userID, connectionID, *payload)
 		if err != nil {
 			log.Println("failed to send message", err)
-			_ = Publish(ctx, connectionID, []byte("invalid payload to send message"))
+			_ = APIGatewayClient.Publish(
+				ctx,
+				connectionID,
+				[]byte("invalid payload to send message"),
+			)
 			break
 		}
 
@@ -108,7 +114,7 @@ func HandleRequest(
 					return
 				}
 
-				err = Publish(ctx, d.ConnectionID, data)
+				err = APIGatewayClient.Publish(ctx, d.ConnectionID, data)
 				if err != nil {
 					log.Println("can not publish message", err)
 				}
@@ -119,7 +125,7 @@ func HandleRequest(
 		log.Println("message sent")
 	default:
 		log.Println("not support this event", req.Body)
-		_ = Publish(ctx, connectionID, []byte("not support this event"))
+		_ = APIGatewayClient.Publish(ctx, connectionID, []byte("not support this event"))
 	}
 
 	return events.APIGatewayProxyResponse{StatusCode: http.StatusOK}, nil

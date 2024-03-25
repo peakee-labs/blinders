@@ -15,19 +15,21 @@ import (
 const MongoURLTemplate = "mongodb://%s:%s@%s:%s/%s"
 
 const (
-	UserCollection         = "users"
-	ConversationCollection = "conversations"
-	MessageCollection      = "messages"
-	MatchCollection        = "matches"
+	UserCollection          = "users"
+	ConversationCollection  = "conversations"
+	MessageCollection       = "messages"
+	MatchCollection         = "matches"
+	FriendRequestCollection = "friendrequests"
 )
 
 type MongoManager struct {
-	Client        *mongo.Client
-	Database      string
-	Users         *repo.UsersRepo
-	Conversations *repo.ConversationsRepo
-	Messages      *repo.MessagesRepo
-	Matches       *repo.MatchesRepo
+	Client         *mongo.Client
+	Database       string
+	Users          *repo.UsersRepo
+	Conversations  *repo.ConversationsRepo
+	Messages       *repo.MessagesRepo
+	Matches        *repo.MatchesRepo
+	FriendRequests *repo.FriendRequestsRepo
 }
 
 func NewMongoManager(url string, name string) *MongoManager {
@@ -46,11 +48,16 @@ func NewMongoManager(url string, name string) *MongoManager {
 	}
 
 	return &MongoManager{
-		Client:        client,
-		Database:      name,
-		Users:         repo.NewUsersRepo(client.Database(name).Collection(UserCollection)),
-		Conversations: repo.NewConversationsRepo(client.Database(name).Collection(ConversationCollection)),
-		Messages:      repo.NewMessagesRepo(client.Database(name).Collection(MessageCollection)),
-		Matches:       repo.NewMatchesRepo(client.Database(name).Collection(MatchCollection)),
+		Client:   client,
+		Database: name,
+		Users:    repo.NewUsersRepo(client.Database(name).Collection(UserCollection)),
+		Conversations: repo.NewConversationsRepo(
+			client.Database(name).Collection(ConversationCollection),
+		),
+		Messages: repo.NewMessagesRepo(client.Database(name).Collection(MessageCollection)),
+		Matches:  repo.NewMatchesRepo(client.Database(name).Collection(MatchCollection)),
+		FriendRequests: repo.NewFriendRequestsRepo(
+			client.Database(name).Collection(FriendRequestCollection),
+		),
 	}
 }

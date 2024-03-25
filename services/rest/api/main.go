@@ -3,6 +3,7 @@ package restapi
 import (
 	"blinders/packages/auth"
 	"blinders/packages/db"
+	"blinders/packages/transport"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -18,13 +19,19 @@ type Manager struct {
 	Onboardings   *OnboardingService
 }
 
-func NewManager(app *fiber.App, auth auth.Manager, db *db.MongoManager) *Manager {
+func NewManager(
+	app *fiber.App,
+	auth auth.Manager,
+	db *db.MongoManager,
+	transporter transport.Transport,
+	consumerMap transport.ConsumerMap,
+) *Manager {
 	return &Manager{
 		App:           app,
 		Auth:          auth,
 		DB:            db,
-		Users:         NewUsersService(db.Users),
-		Conversations: NewConversationsService(db.Conversations),
+		Users:         NewUsersService(db.Users, db.FriendRequests, transporter, consumerMap),
+		Conversations: NewConversationsService(db.Conversations, db.Users, db.Messages),
 		Messages:      NewMessagesService(db.Messages),
 		Onboardings:   NewOnboardingService(db.Users, db.Matches),
 	}
@@ -56,9 +63,32 @@ func (m Manager) InitRoute(options InitOptions) error {
 	authorizedWithoutUser.Post("/", m.Users.CreateNewUserBySelf)
 
 	authorized := rootRoute.Group("/", auth.FiberAuthMiddleware(m.Auth, m.DB.Users))
+
 	users := authorized.Group("/users")
-	users.Get("/:id", m.Users.GetUserByID)
-	authorized.Get("/conversations/:id", m.Messages.GetMessageByID)
+	users.Get("/", m.Users.GetUsers)
+	users.Get(
+		"/:id",
+		ValidateUserIDParam(ValidateUserOptions{allowPublicQuery: true}),
+		m.Users.GetUserByID,
+	)
+	users.Get("/:id/friend-requests",
+		ValidateUserIDParam(),
+		m.Users.GetPendingFriendRequests)
+	users.Post("/:id/friend-requests",
+		ValidateUserIDParam(),
+		m.Users.CreateAddFriendRequest)
+	users.Put(
+		"/:id/friend-requests/:requestId",
+		ValidateUserIDParam(),
+		m.Users.RespondFriendRequest)
+
+	// TODO: need to check if this user is in the conversation
+	conversations := authorized.Group("/conversations")
+	conversations.Get("/:id", m.Conversations.GetConversationByID)
+	conversations.Get("/:id/messages", m.Conversations.GetMessagesOfConversation)
+	conversations.Get("/", m.Conversations.GetConversationsOfUser)
+	conversations.Post("/", m.Conversations.CreateNewIndividualConversation)
+
 	authorized.Get("/messages/:id", m.Messages.GetMessageByID)
 
 	authorized.Post("/onboarding", m.Onboardings.PostOnboardingForm())

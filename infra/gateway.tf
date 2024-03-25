@@ -2,6 +2,11 @@
 resource "aws_apigatewayv2_api" "http_api" {
   name          = "blinders-http-api"
   protocol_type = "HTTP"
+
+  # for lambda-proxy integration, cors is enabled by backend
+  # cors_configuration {
+  #   allow_origins = ["https://app.peakee.co", "http://localhost:3000"]
+  # }
 }
 
 resource "aws_apigatewayv2_stage" "http_staging" {

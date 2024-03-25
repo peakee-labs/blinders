@@ -79,3 +79,19 @@ func TestDeleteUserByUserID(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, models.User{}, failedDelete)
 }
+
+func TestAddFriend(t *testing.T) {
+	user1, _ := manager.Users.InsertNewRawUser(models.User{
+		FirebaseUID: primitive.NewObjectID().Hex(),
+		FriendIDs:   make([]primitive.ObjectID, 0),
+	})
+	user2, _ := manager.Users.InsertNewRawUser(models.User{
+		FirebaseUID: primitive.NewObjectID().Hex(),
+		FriendIDs:   make([]primitive.ObjectID, 0),
+	})
+
+	err := manager.Users.AddFriend(user1.ID, user2.ID)
+	assert.Nil(t, err)
+	err = manager.Users.AddFriend(user1.ID, user2.ID)
+	assert.NotNil(t, err)
+}

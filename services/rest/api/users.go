@@ -9,6 +9,7 @@ import (
 	"blinders/packages/auth"
 	"blinders/packages/db/models"
 	"blinders/packages/db/repo"
+	"blinders/packages/transport"
 	"blinders/packages/utils"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,12 +18,23 @@ import (
 )
 
 type UsersService struct {
-	Repo *repo.UsersRepo
+	Repo               *repo.UsersRepo
+	FriendRequestsRepo *repo.FriendRequestsRepo
+	Transporter        transport.Transport
+	ConsumerMap        transport.ConsumerMap
 }
 
-func NewUsersService(repo *repo.UsersRepo) *UsersService {
+func NewUsersService(
+	repo *repo.UsersRepo,
+	frRepo *repo.FriendRequestsRepo,
+	transporter transport.Transport,
+	consumerMap transport.ConsumerMap,
+) *UsersService {
 	return &UsersService{
-		Repo: repo,
+		Repo:               repo,
+		FriendRequestsRepo: frRepo,
+		Transporter:        transporter,
+		ConsumerMap:        consumerMap,
 	}
 }
 
@@ -43,6 +55,7 @@ func (s UsersService) GetSelfFromAuth(ctx *fiber.Ctx) error {
 }
 
 func (s UsersService) GetUserByID(ctx *fiber.Ctx) error {
+	// TODO: need to check if this is a public query and eliminate private data
 	id := ctx.Params("id")
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -61,6 +74,20 @@ func (s UsersService) GetUserByID(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(http.StatusOK).JSON(user)
+}
+
+func (s UsersService) GetUsers(ctx *fiber.Ctx) error {
+	email := ctx.Query("email", "")
+	if email != "" {
+		user, err := s.Repo.GetUserByEmail(email)
+		if err != nil {
+			return ctx.SendStatus(http.StatusBadRequest)
+		}
+
+		return ctx.Status(http.StatusOK).JSON([]models.User{user})
+	}
+
+	return nil
 }
 
 type CreateUserDTO struct {
@@ -89,12 +116,11 @@ func (s UsersService) CreateNewUserBySelf(ctx *fiber.Ctx) error {
 	}
 
 	user, err := s.Repo.InsertNewRawUser(models.User{
-		Name:          userDTO.Name,
-		Email:         userDTO.Email,
-		ImageURL:      userDTO.ImageURL,
-		FirebaseUID:   userAuth.AuthID,
-		Conversations: make([]models.EmbeddedConversation, 0),
-		FriendIDs:     make([]primitive.ObjectID, 0),
+		Name:        userDTO.Name,
+		Email:       userDTO.Email,
+		ImageURL:    userDTO.ImageURL,
+		FirebaseUID: userAuth.AuthID,
+		FriendIDs:   make([]primitive.ObjectID, 0),
 	})
 	if err != nil {
 		log.Println("can not create user:", err)

@@ -130,9 +130,10 @@ resource "aws_lambda_permission" "ws_authorizer" {
 
 # rest api
 resource "aws_apigatewayv2_integration" "rest" {
-  api_id           = aws_apigatewayv2_api.http_api.id
-  integration_uri  = aws_lambda_function.rest.invoke_arn
-  integration_type = "AWS_PROXY"
+  api_id                 = aws_apigatewayv2_api.http_api.id
+  integration_uri        = aws_lambda_function.rest.invoke_arn
+  integration_type       = "AWS_PROXY"
+  payload_format_version = "2.0"
 }
 
 resource "aws_lambda_permission" "rest" {
@@ -146,6 +147,13 @@ resource "aws_lambda_permission" "rest" {
 resource "aws_apigatewayv2_route" "rest" {
   api_id    = aws_apigatewayv2_api.http_api.id
   route_key = "ANY /{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.rest.id}"
+}
+
+
+resource "aws_apigatewayv2_route" "root" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "$default"
   target    = "integrations/${aws_apigatewayv2_integration.rest.id}"
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"blinders/packages/auth"
 	"blinders/packages/db"
+	"blinders/packages/transport"
 	"blinders/packages/utils"
 	restapi "blinders/services/rest/api"
 
@@ -28,15 +29,20 @@ func init() {
 
 	dbName := os.Getenv("MONGO_DATABASE")
 	url := os.Getenv("MONGO_DATABASE_URL")
-	dbManager := db.NewMongoManager(url, dbName)
-	if dbManager == nil {
+	database := db.NewMongoManager(url, dbName)
+	if database == nil {
 		log.Fatal("cannot create database manager")
 	}
 
 	adminJSON, _ := utils.GetFile("firebase.admin.development.json")
-	auth, _ := auth.NewFirebaseManager(adminJSON)
+	authManager, _ := auth.NewFirebaseManager(adminJSON)
 
-	apiManager = *restapi.NewManager(app, auth, dbManager)
+	apiManager = *restapi.NewManager(
+		app, authManager, database,
+		transport.NewLocalTransport(),
+		transport.ConsumerMap{
+			transport.Notification: "notification_service_id",
+		})
 	apiManager.App.Use(logger.New())
 	_ = apiManager.InitRoute(restapi.InitOptions{})
 }

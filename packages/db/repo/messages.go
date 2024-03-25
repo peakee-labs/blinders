@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"blinders/packages/db/models"
@@ -9,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MessagesRepo struct {
@@ -28,13 +30,17 @@ func (r MessagesRepo) ConstructNewMessage(
 	content string,
 ) models.Message {
 	now := primitive.NewDateTimeFromTime(time.Now())
+	replyToPointer := &replyTo
+	if replyTo.IsZero() {
+		replyToPointer = nil
+	}
 	return models.Message{
 		ID:             primitive.NewObjectID(),
 		Status:         "delivered",
 		Emotions:       make([]models.MessageEmotion, 0),
 		SenderID:       senderID,
 		ConversationID: conversationID,
-		ReplyTo:        replyTo,
+		ReplyTo:        replyToPointer,
 		Content:        content,
 		CreatedAt:      now,
 		UpdatedAt:      now,
@@ -68,4 +74,27 @@ func (r *MessagesRepo) InsertNewRawMessage(m models.Message) (models.Message, er
 	m.UpdatedAt = now
 
 	return r.InsertNewMessage(m)
+}
+
+func (r *MessagesRepo) GetMessagesOfConversation(
+	conversationID primitive.ObjectID, limit int64,
+) (*[]models.Message, error) {
+	ctx, cal := context.WithTimeout(context.Background(), time.Second)
+	defer cal()
+
+	filter := bson.M{"conversationId": conversationID}
+	messages := make([]models.Message, 0)
+	cur, err := r.Col.Find(ctx, filter,
+		&options.FindOptions{Sort: bson.M{"createdAt": -1}, Limit: &limit})
+	if err != nil {
+		log.Println("can not get conversations:", err)
+		return nil, err
+	}
+	err = cur.All(ctx, &messages)
+	if err != nil {
+		log.Println("can not parse conversations:", err)
+		return nil, err
+	}
+
+	return &messages, nil
 }

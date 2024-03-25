@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -33,6 +34,15 @@ func NewUsersRepo(col *mongo.Collection) *UsersRepo {
 	return &UsersRepo{
 		Col: col,
 	}
+}
+
+func (r *UsersRepo) InsertNewUser(u models.User) (models.User, error) {
+	ctx, cal := context.WithTimeout(context.Background(), time.Second)
+	defer cal()
+
+	_, err := r.Col.InsertOne(ctx, u)
+
+	return u, err
 }
 
 // this function creates new ID and time and insert the document to database
@@ -70,6 +80,16 @@ func (r *UsersRepo) GetUserByFirebaseUID(uid string) (models.User, error) {
 	return user, err
 }
 
+func (r *UsersRepo) GetUserByEmail(email string) (models.User, error) {
+	ctx, cal := context.WithTimeout(context.Background(), time.Second)
+	defer cal()
+
+	var user models.User
+	err := r.Col.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+
+	return user, err
+}
+
 func (r *UsersRepo) DeleteUserByID(userID primitive.ObjectID) (models.User, error) {
 	ctx, cal := context.WithTimeout(context.Background(), time.Second)
 	defer cal()
@@ -77,4 +97,30 @@ func (r *UsersRepo) DeleteUserByID(userID primitive.ObjectID) (models.User, erro
 	usr := models.User{}
 	err := r.Col.FindOneAndDelete(ctx, bson.M{"_id": userID}).Decode(&usr)
 	return usr, err
+}
+
+func (r *UsersRepo) AddFriend(user1ID primitive.ObjectID, user2ID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	result, err := r.Col.BulkWrite(
+		ctx,
+		[]mongo.WriteModel{
+			mongo.NewUpdateOneModel().
+				SetFilter(bson.M{"_id": user1ID}).
+				SetUpdate(bson.M{"$addToSet": bson.M{"friends": user2ID}}),
+			mongo.NewUpdateOneModel().
+				SetFilter(bson.M{"_id": user2ID}).
+				SetUpdate(bson.M{"$addToSet": bson.M{"friends": user1ID}}),
+		},
+	)
+	if err != nil {
+		log.Println("can not add friend:", err)
+		return fmt.Errorf("something went wrong")
+	} else if result.ModifiedCount != 2 {
+		log.Println("wrong updated count when add friend")
+		return fmt.Errorf("update friend failed, wrong updated count")
+	}
+
+	return nil
 }

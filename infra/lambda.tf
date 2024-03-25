@@ -23,18 +23,18 @@ data "archive_file" "translate" {
   depends_on = [null_resource.go_build]
 
   type        = "zip"
-  source_file = "../dist/translate"
+  source_dir  = "../dist/translate"
   output_path = "../dist/translate.zip"
 }
 
 resource "aws_lambda_function" "translate" {
   function_name    = "blinders-translate"
   filename         = "../dist/translate.zip"
-  handler          = "translate"
+  handler          = "bootstrap" # default for provided.al2
   role             = aws_iam_role.lambda_role.arn
+  runtime          = "provided.al2" # this runtime work with our built lambda (not provided.al2023)
+  architectures    = ["arm64"]
   depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
-  memory_size      = 128
-  runtime          = "go1.x"
   source_code_hash = data.archive_file.translate.output_base64sha256
 
   environment {
@@ -48,17 +48,18 @@ data "archive_file" "connect" {
   depends_on = [null_resource.go_build]
 
   type        = "zip"
-  source_file = "../dist/connect"
+  source_dir  = "../dist/connect"
   output_path = "../dist/connect.zip"
 }
 
 resource "aws_lambda_function" "ws_connect" {
   function_name    = "blinders-ws-connect"
   filename         = "../dist/connect.zip"
-  handler          = "connect"
+  handler          = "bootstrap" # default for provided.al2
   role             = aws_iam_role.lambda_role.arn
+  runtime          = "provided.al2" # this runtime work with our built lambda (not provided.al2023)
+  architectures    = ["arm64"]
   depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
-  runtime          = "go1.x"
   source_code_hash = data.archive_file.connect.output_base64sha256
 
   environment {
@@ -79,10 +80,11 @@ data "archive_file" "ws_authorizer" {
 resource "aws_lambda_function" "ws_authorizer" {
   function_name    = "blinders-ws-authorizer"
   filename         = "../dist/ws_authorizer.zip"
-  handler          = "handler"
+  handler          = "bootstrap" # default for provided.al2
   role             = aws_iam_role.lambda_role.arn
+  runtime          = "provided.al2" # this runtime work with our built lambda (not provided.al2023)
+  architectures    = ["arm64"]
   depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
-  runtime          = "go1.x"
   source_code_hash = data.archive_file.ws_authorizer.output_base64sha256
 
   environment {
@@ -95,17 +97,18 @@ data "archive_file" "disconnect" {
   depends_on = [null_resource.go_build]
 
   type        = "zip"
-  source_file = "../dist/disconnect"
+  source_dir  = "../dist/disconnect"
   output_path = "../dist/disconnect.zip"
 }
 
 resource "aws_lambda_function" "ws_disconnect" {
   function_name    = "blinders-ws-disconnect"
   filename         = "../dist/disconnect.zip"
-  handler          = "disconnect"
+  handler          = "bootstrap" # default for provided.al2
   role             = aws_iam_role.lambda_role.arn
+  runtime          = "provided.al2" # this runtime work with our built lambda (not provided.al2023)
+  architectures    = ["arm64"]
   depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
-  runtime          = "go1.x"
   source_code_hash = data.archive_file.disconnect.output_base64sha256
 
 
@@ -119,17 +122,18 @@ data "archive_file" "ws_chat" {
   depends_on = [null_resource.go_build]
 
   type        = "zip"
-  source_file = "../dist/wschat"
+  source_dir  = "../dist/wschat"
   output_path = "../dist/wschat.zip"
 }
 
 resource "aws_lambda_function" "ws_chat" {
   function_name    = "blinders-ws-chat"
   filename         = "../dist/wschat.zip"
-  handler          = "wschat"
+  handler          = "bootstrap" # default for provided.al2
   role             = aws_iam_role.lambda_role.arn
+  runtime          = "provided.al2" # this runtime work with our built lambda (not provided.al2023)
+  architectures    = ["arm64"]
   depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
-  runtime          = "go1.x"
   source_code_hash = data.archive_file.ws_chat.output_base64sha256
 
 
@@ -150,12 +154,39 @@ data "archive_file" "rest" {
 resource "aws_lambda_function" "rest" {
   function_name    = "blinders-rest-api"
   filename         = "../dist/rest.zip"
-  handler          = "bootstrap"
+  handler          = "bootstrap" # default for provided.al2
   role             = aws_iam_role.lambda_role.arn
   depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
   runtime          = "provided.al2" # this runtime work with our built lambda (not provided.al2023)
   architectures    = ["arm64"]
   source_code_hash = data.archive_file.rest.output_base64sha256
+
+  environment {
+    variables = merge(local.envs, { NOTIFICATION_FUNCTION_NAME : aws_lambda_function.notification.function_name })
+  }
+}
+
+
+# notification
+data "archive_file" "notification" {
+  depends_on = [null_resource.go_build]
+
+  type        = "zip"
+  source_dir  = "../dist/notification"
+  output_path = "../dist/notification.zip"
+}
+
+resource "aws_lambda_function" "notification" {
+  function_name = "blinders-notification"
+  filename      = "../dist/notification.zip"
+  handler       = "bootstrap" # default for provided.al2
+  role          = aws_iam_role.lambda_role.arn
+  # temporily disable to prevent cycles
+  # depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+  runtime          = "provided.al2" # this runtime work with our built lambda (not provided.al2023)
+  architectures    = ["arm64"]
+  source_code_hash = data.archive_file.notification.output_base64sha256
+
 
   environment {
     variables = local.envs

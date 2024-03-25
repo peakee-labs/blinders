@@ -5,6 +5,7 @@ import "blinders/packages/db/models"
 type ChatEventType string
 
 const (
+	UserPing                  ChatEventType = "USER:PING"
 	UserSendMessage           ChatEventType = "USER:SEND_MESSAGE"
 	UserUpdateMessageStatus   ChatEventType = "USER:UPDATE_MESSAGE_STATUS"
 	ServerSendMessage         ChatEventType = "SERVER:SEND_MESSAGE"
