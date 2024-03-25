@@ -20,16 +20,12 @@ class ExplorePostBody(BaseModel):
 
 
 class ServiceWorker(object):
-    # redis_client: redis.Redis
     core: Explore
     router: APIRouter
 
-    # def __init__(self, redis_client: redis.Redis, explore_core: Explore) -> None:
     def __init__(self, explore_core: Explore) -> None:
-        # self.redis_client = redis_client
         self.core = explore_core
         self.router = APIRouter()
-        # self.init_redis_group()
 
     def init_route(self) -> None:
         self.router.add_api_route("/ping", health_check_handler, methods=["GET"])
@@ -38,7 +34,6 @@ class ServiceWorker(object):
     def embed_explore_handler(self, body: ExplorePostBody):
         print(body)
         match_info = MatchInfo(
-            userId="",
             name=body.name,
             gender=body.gender,
             major=body.major,
