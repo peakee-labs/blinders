@@ -48,8 +48,14 @@ func (r *MatchesRepo) GetMatchInfoByUserID(userID primitive.ObjectID) (models.Ma
 	defer cal()
 
 	var doc models.MatchInfo
-	err := r.Col.FindOne(ctx, bson.M{"userId": userID}).Decode(&doc)
-	return doc, err
+	res := r.Col.FindOne(ctx, bson.M{"userId": userID})
+	if err := res.Err(); err != nil {
+		return models.MatchInfo{}, err
+	}
+	if err := res.Decode(&doc); err != nil {
+		return models.MatchInfo{}, err
+	}
+	return doc, nil
 }
 
 // GetUsersByLanguage returns `limit` ID of users that speak one language of `learnings` and are currently learning `native` or are currently learning same language as user.
