@@ -6,7 +6,6 @@ import (
 	"blinders/packages/transport"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 type Manager struct {
@@ -46,14 +45,13 @@ func (m Manager) InitRoute(options InitOptions) error {
 		options.Prefix = "/"
 	}
 
-	rootRoute := m.App.Group(options.Prefix, cors.New())
+	rootRoute := m.App.Group(options.Prefix)
 	rootRoute.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("hello from Peakee Rest API")
 	})
 
 	authorizedWithoutUser := rootRoute.Group(
 		"/users/self",
-
 		auth.FiberAuthMiddleware(m.Auth, m.DB.Users,
 			auth.MiddlewareOptions{
 				CheckUser: false,

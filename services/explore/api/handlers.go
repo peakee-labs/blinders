@@ -34,13 +34,13 @@ func (s *Service) HandleGetMatches(ctx *fiber.Ctx) error {
 	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
 	if !ok || userAuth == nil {
 		log.Println("cannot get auth user")
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot get user"})
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get user"})
 	}
 
 	candidates, err := s.Core.Suggest(userAuth.ID)
 	if err != nil {
 		log.Println("cannot get suggest for user", userAuth.ID, "err", err)
-		return ctx.Status(fiber.StatusInternalServerError).
+		return ctx.Status(fiber.StatusBadRequest).
 			JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -61,7 +61,7 @@ func (s *Service) HandleAddUserMatch(ctx *fiber.Ctx) error {
 	jsonBody, err := json.Marshal(userMatch)
 	if err != nil {
 		log.Println("cannot unmarshal body", err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": fmt.Errorf("service: cannot add user information, %v", err).Error(),
 		})
 	}
@@ -70,13 +70,13 @@ func (s *Service) HandleAddUserMatch(ctx *fiber.Ctx) error {
 	code, body, errs := fiber.Post(embedderURL).ContentType("application/json").Body(jsonBody).Bytes()
 	if errs != nil || len(errs) > 0 {
 		log.Println("cannot request embed vector", err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": fmt.Errorf("service: cannot get embed vector, %v", errs).Error(),
 		})
 	}
 	if code != fiber.StatusOK {
 		log.Println("cannot request embed vector, server response", code)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "service: cannot get embed vector",
 		})
 	}
@@ -87,20 +87,20 @@ func (s *Service) HandleAddUserMatch(ctx *fiber.Ctx) error {
 	var rsp response
 	if err := json.Unmarshal(body, &rsp); err != nil {
 		log.Println("cannot get embed from server response", err)
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": fmt.Errorf("service: cannot unmarshall embed vector, err: %v", err),
 		})
 	}
 
 	info, err := s.Core.AddUserMatchInformation(*userMatch)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": fmt.Errorf("service: cannot add user information, %v", err).Error(),
 		})
 	}
 
 	if err := s.Core.AddEmbedding(info.UserID, rsp.Embed); err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": fmt.Errorf("service: cannot add user embed, %v", err).Error(),
 		})
 	}

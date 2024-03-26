@@ -44,11 +44,11 @@ func (s *OnboardingService) PostOnboardingForm() fiber.Handler {
 		}
 		uid, err := primitive.ObjectIDFromHex(userAuth.ID)
 		if err != nil {
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot get objectID from userID " + err.Error()})
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get objectID from userID " + err.Error()})
 		}
 		matchInfo, err := utils.JSONConvert[models.MatchInfo](formValue)
 		if err != nil {
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot unmarshal match info from form value" + err.Error()})
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot unmarshal match info from form value" + err.Error()})
 		}
 		matchInfo.UserID = uid
 
@@ -57,18 +57,18 @@ func (s *OnboardingService) PostOnboardingForm() fiber.Handler {
 		embedderURL := fmt.Sprintf("http://%s:%s/explore", os.Getenv("EXPLORE_API_HOST"), os.Getenv("EXPLORE_API_PORT"))
 		jsonBody, err := json.Marshal(matchInfo)
 		if err != nil {
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": fmt.Errorf("service: cannot add user information, %v", err).Error(),
 			})
 		}
 		code, _, errs := fiber.Post(embedderURL).Body(jsonBody).Bytes()
 		if errs != nil || len(errs) > 0 {
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": fmt.Errorf("service: cannot get embed vector, %v", errs).Error(),
 			})
 		}
 		if code != fiber.StatusOK {
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "service: cannot get embed vector",
 			})
 		}
