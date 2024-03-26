@@ -1,6 +1,10 @@
 package restapi
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
+
 	"blinders/packages/auth"
 	"blinders/packages/db/models"
 	"blinders/packages/db/repo"
@@ -48,9 +52,25 @@ func (s *OnboardingService) PostOnboardingForm() fiber.Handler {
 		}
 		matchInfo.UserID = uid
 
-		_, err = s.ExploreRepo.InsertNewRawMatchInfo(*matchInfo)
+		// TODO: at here we must notify explore service to add new profile to explore db as well as vector db.
+		// TODO: currently, we make a inter-system http request.
+		embedderURL := fmt.Sprintf("http://%s:%s/explore", os.Getenv("EXPLORE_API_HOST"), os.Getenv("EXPLORE_API_PORT"))
+		jsonBody, err := json.Marshal(matchInfo)
 		if err != nil {
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": fmt.Errorf("service: cannot add user information, %v", err).Error(),
+			})
+		}
+		code, _, errs := fiber.Post(embedderURL).Body(jsonBody).Bytes()
+		if errs != nil || len(errs) > 0 {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": fmt.Errorf("service: cannot get embed vector, %v", errs).Error(),
+			})
+		}
+		if code != fiber.StatusOK {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "service: cannot get embed vector",
+			})
 		}
 		return nil
 	}
