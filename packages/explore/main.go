@@ -17,8 +17,10 @@ import (
 type Explorer interface {
 	// Suggest returns list of users that maybe match with given user
 	Suggest(userID string) ([]models.MatchInfo, error)
-	// AddUserMatchInformation adds user match information to the database. A new user-created event must be fired for the embed worker to embed the recently added user.
+	// AddUserMatchInformation adds user match information to the database.
 	AddUserMatchInformation(info models.MatchInfo) (models.MatchInfo, error)
+	// AddEmbedding adds user embed vector to the vector database.
+	AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error
 }
 
 type MongoExplorer struct {
@@ -149,4 +151,21 @@ func (m *MongoExplorer) AddUserMatchInformation(info models.MatchInfo) (models.M
 		return models.MatchInfo{}, err
 	}
 	return matchInfo, nil
+}
+
+func (m *MongoExplorer) AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error {
+	_, err := m.Db.Matches.GetMatchInfoByUserID(userID)
+	if err != nil {
+		return err
+	}
+	fmt.Println("checkpoint")
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	err = m.RedisClient.JSONSet(ctx,
+		CreateMatchKeyWithUserID(userID.Hex()),
+		"$",
+		map[string]any{"embed": embed, "id": userID},
+	).Err()
+	return err
 }
