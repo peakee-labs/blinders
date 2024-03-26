@@ -18,8 +18,8 @@ func TestInsertNewRawMatchInfo(t *testing.T) {
 		Major:     "student",
 		Native:    "vietnamese",
 		Country:   "vn",
-		Learnings: []string{},
-		Interests: []string{},
+		Learnings: []string{"hello"},
+		Interests: []string{"hello"},
 		Age:       0,
 	}
 	r := manager.Matches
@@ -75,7 +75,7 @@ func TestGetUsersByLanguage(t *testing.T) {
 		Native:    "vietnamese",
 		Country:   "vn",
 		Learnings: []string{"english"},
-		Interests: []string{},
+		Interests: []string{"football"},
 		Age:       0,
 	}
 	numReturn := uint32(10)
@@ -126,7 +126,7 @@ candidateLoop:
 	assert.Equal(t, rawUser, usr)
 }
 
-func TestDropUserWithFirebaseUID(t *testing.T) {
+func TestDropUserByUserID(t *testing.T) {
 	rawUser := models.MatchInfo{
 		UserID:    primitive.NewObjectID(),
 		Name:      "name",
@@ -134,8 +134,8 @@ func TestDropUserWithFirebaseUID(t *testing.T) {
 		Major:     "student",
 		Native:    "vietnamese",
 		Country:   "vn",
-		Learnings: []string{},
-		Interests: []string{},
+		Learnings: []string{"hello"},
+		Interests: []string{"hello"},
 		Age:       0,
 	}
 	r := manager.Matches
