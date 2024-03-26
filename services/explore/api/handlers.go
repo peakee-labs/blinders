@@ -1,11 +1,10 @@
 package exploreapi
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
+	"os"
 
 	"blinders/packages/auth"
 	"blinders/packages/db/models"
@@ -18,7 +17,6 @@ import (
 type Service struct {
 	Core        explore.Explorer
 	RedisClient *redis.Client
-	MatchCh     chan models.MatchInfo
 }
 
 func NewService(
@@ -28,7 +26,6 @@ func NewService(
 	return &Service{
 		Core:        exploreCore,
 		RedisClient: redisClient,
-		MatchCh:     make(chan models.MatchInfo),
 	}
 }
 
@@ -50,13 +47,8 @@ func (s *Service) HandleGetMatches(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(candidates)
 }
 
-// HandleAddUserMatch will add match-related information to match db
+// HandleAddUserMatch will add match-related information to match db, this api could only be called by inter-system service
 func (s *Service) HandleAddUserMatch(ctx *fiber.Ctx) error {
-	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
-	if !ok || userAuth == nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot get user"})
-	}
-
 	userMatch := new(models.MatchInfo)
 	if err := json.Unmarshal(ctx.Body(), userMatch); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -64,10 +56,39 @@ func (s *Service) HandleAddUserMatch(ctx *fiber.Ctx) error {
 		})
 	}
 
-	// currently user.AuthID is firebaseUID
-	if userMatch.UserID.Hex() != userAuth.ID {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Insufficient permissions. The requester and the user in the request body must match.",
+	// TODO: at here, we've to call embedder service to get the embed vector then add this entry into db.
+	embedderURL := fmt.Sprintf("http://%s:%s/explore/embed", os.Getenv("EXPLORE_EMBEDDER_HOST"), os.Getenv("EXPLORE_EMBEDDER_PORT"))
+	jsonBody, err := json.Marshal(userMatch)
+	if err != nil {
+		log.Println("cannot unmarshal body", err)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Errorf("service: cannot add user information, %v", err).Error(),
+		})
+	}
+	fmt.Println(string(jsonBody))
+
+	code, body, errs := fiber.Post(embedderURL).ContentType("application/json").Body(jsonBody).Bytes()
+	if errs != nil || len(errs) > 0 {
+		log.Println("cannot request embed vector", err)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Errorf("service: cannot get embed vector, %v", errs).Error(),
+		})
+	}
+	if code != fiber.StatusOK {
+		log.Println("cannot request embed vector, server response", code)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "service: cannot get embed vector",
+		})
+	}
+
+	type response struct {
+		Embed explore.EmbeddingVector `json:"embed"`
+	}
+	var rsp response
+	if err := json.Unmarshal(body, &rsp); err != nil {
+		log.Println("cannot get embed from server response", err)
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Errorf("service: cannot unmarshall embed vector, err: %v", err),
 		})
 	}
 
@@ -77,27 +98,12 @@ func (s *Service) HandleAddUserMatch(ctx *fiber.Ctx) error {
 			"error": fmt.Errorf("service: cannot add user information, %v", err).Error(),
 		})
 	}
-	s.MatchCh <- info
-	return ctx.Status(fiber.StatusOK).JSON(info)
-}
 
-func (s *Service) Loop() {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	for match := range s.MatchCh {
-		value := map[string]string{
-			"id": match.UserID.Hex(),
-		}
-
-		// fire user-match-entry-created event to the stream
-		if err := s.RedisClient.XAdd(ctx, &redis.XAddArgs{
-			Stream:     "match:embed",
-			NoMkStream: false,
-			Values:     value,
-		}).Err(); err != nil {
-			fmt.Println("error", err)
-			break
-		}
-		fmt.Println("fired event to stream", value)
+	if err := s.Core.AddEmbedding(info.UserID, rsp.Embed); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": fmt.Errorf("service: cannot add user embed, %v", err).Error(),
+		})
 	}
+
+	return ctx.Status(fiber.StatusOK).JSON(info)
 }

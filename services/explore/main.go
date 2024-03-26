@@ -14,6 +14,7 @@ import (
 	exploreapi "blinders/services/explore/api"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 )
@@ -69,12 +70,12 @@ func init() {
 
 	service = exploreapi.NewService(core, redisClient)
 	manager = exploreapi.NewManager(app, authManager, mongoManager, service)
+	manager.App.Use(logger.New())
 	manager.InitRoute()
 }
 
 func main() {
 	port := os.Getenv("EXPLORE_API_PORT")
-	go service.Loop()
 	fmt.Println("listening on: ", port)
 	log.Panic(manager.App.Listen(":" + port))
 }

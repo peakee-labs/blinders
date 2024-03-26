@@ -23,7 +23,7 @@ if __name__ == "__main__":
         service_core.init_route()
 
         app = FastAPI()
-        app.include_router(service_core.router, prefix="/api")
+        app.include_router(service_core.router, prefix="/explore")
         port = os.getenv("EXPLORE_EMBEDDER_PORT")
         port = int(port) if port is not None else 8084
 

@@ -29,7 +29,7 @@ class ServiceWorker(object):
 
     def init_route(self) -> None:
         self.router.add_api_route("/ping", health_check_handler, methods=["GET"])
-        self.router.add_api_route("/explore/embed", self.embed_explore_handler, methods=["POST"])
+        self.router.add_api_route("/embed", self.embed_explore_handler, methods=["POST"])
 
     def embed_explore_handler(self, body: ExplorePostBody):
         print(body)

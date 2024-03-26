@@ -29,8 +29,9 @@ func (m *Manager) InitRoute() {
 		return c.SendString("service healthy")
 	})
 
+	// Temporarily expose this method, it must be call internal, or we will listen to user update-match-information event
+	m.App.Post("/explore", m.Service.HandleAddUserMatch)
+
 	matchRoute := m.App.Group("/explore", cors.New(), auth.FiberAuthMiddleware(m.Auth, m.DB.Users))
 	matchRoute.Get("/suggest", m.Service.HandleGetMatches)
-	// Temporarily expose this method, it must be call internal, or we will listen to user update-match-information event
-	matchRoute.Post("/", m.Service.HandleAddUserMatch)
 }
