@@ -51,7 +51,11 @@ func (m *MongoExplorer) Suggest(userID string) ([]models.MatchInfo, error) {
 
 	oid, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		log.Printf("explore: cannot parse object id with given hex string(%s), err: %v\n", userID, err)
+		log.Printf(
+			"explore: cannot parse object id with given hex string(%s), err: %v\n",
+			userID,
+			err,
+		)
 		return nil, err
 	}
 
@@ -65,11 +69,14 @@ func (m *MongoExplorer) Suggest(userID string) ([]models.MatchInfo, error) {
 	jsonStr, err := m.RedisClient.JSONGet(ctx, CreateMatchKeyWithUserID(userID), "$.embed").Result()
 	if err != nil {
 		log.Println("explore: cannot get explore entry in redis, err", err)
+		return []models.MatchInfo{}, fmt.Errorf(
+			"explore profile not found, might need to check onboarding status",
+		)
 	}
 	var embedArr []EmbeddingVector
 	if err := json.Unmarshal([]byte(jsonStr), &embedArr); err != nil {
 		log.Println("explore: cannot unmarshall embed vector, err", err)
-		return nil, err
+		return []models.MatchInfo{}, fmt.Errorf("something went wrong")
 	}
 	embed := embedArr[0]
 

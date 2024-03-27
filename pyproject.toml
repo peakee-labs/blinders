@@ -1,18 +1,22 @@
 [tool.poetry]
 name = "blinders"
-version = "0.1.0"
+version = "0.1.1"
 description = "Monorepo, microservice back-end project named Blinders for Peakee - a language learning platform."
 authors = ["Tan Le <tanlethanh8266@gmail.com>"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
+
+[tool.poetry.dev-dependencies]
 black = "^23.10.1"
 pylint = "^3.0.2"
 isort = "^5.12.0"
 pyright = "^1.1.334"
 pytest = "^7.4.3"
 flake8 = "^6.1.0"
+flake8-pyproject = "^1.2.3"
 
 
 [build-system]
@@ -23,10 +27,12 @@ build-backend = "poetry.core.masonry.api"
 line-length = 100
 target-version = ['py38']
 
+[tool.flake8]
+max-line-length = 100
+
 [tool.pylint."messages control"]
 ignore = ["setup.py", "__init__.py", "tests"]
 disable = "all"
-enable = ["missing-class-docstring", "missing-function-docstring"]
 
 [tool.isort]
 profile = "black"

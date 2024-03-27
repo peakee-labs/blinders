@@ -1,16 +1,14 @@
 [tool.poetry]
-name = "blinders-explore-core"
+name = "blinders-embedder-core"
 version = "0.1.0"
 description = ""
-authors = ["Dat Nguyen <minhdat15012002@gmail.com>"]
+authors = ["Tan Le <tanlethanh8266@gmail.com>"]
 readme = "README.md"
-packages = [{ include = "blinders" }]                # make build backend success
+packages = [{ include = "blinders" }]
 
 [tool.poetry.dependencies]
 python = "^3.10"
 sentence-transformers = "^2.4.0"
-redis = "^5.0.2"
-firebase-admin = "^6.4.0"
 
 
 [build-system]

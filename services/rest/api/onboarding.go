@@ -1,13 +1,15 @@
 package restapi
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
-	"os"
+	"log"
+	"net/http"
 
 	"blinders/packages/auth"
 	"blinders/packages/db/models"
 	"blinders/packages/db/repo"
+	"blinders/packages/transport"
 	"blinders/packages/utils"
 
 	"github.com/gofiber/fiber/v2"
@@ -18,6 +20,8 @@ type (
 	OnboardingService struct {
 		UserRepo    *repo.UsersRepo
 		ExploreRepo *repo.MatchesRepo
+		Transport   transport.Transport
+		ConsumerMap transport.ConsumerMap
 	}
 	OnboardingForm struct {
 		Name      string   `json:"name"      form:"name"`
@@ -31,11 +35,26 @@ type (
 	}
 )
 
+func NewOnboardingService(
+	userRepo *repo.UsersRepo,
+	matchRepo *repo.MatchesRepo,
+	transporter transport.Transport,
+	consumerMap transport.ConsumerMap,
+) *OnboardingService {
+	return &OnboardingService{
+		UserRepo:    userRepo,
+		ExploreRepo: matchRepo,
+		Transport:   transporter,
+		ConsumerMap: consumerMap,
+	}
+}
+
 func (s *OnboardingService) PostOnboardingForm() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
 		if !ok || userAuth == nil {
-			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot get user"})
+			return ctx.Status(fiber.StatusInternalServerError).
+				JSON(fiber.Map{"error": "cannot get user"})
 		}
 
 		var formValue OnboardingForm
@@ -44,41 +63,36 @@ func (s *OnboardingService) PostOnboardingForm() fiber.Handler {
 		}
 		uid, err := primitive.ObjectIDFromHex(userAuth.ID)
 		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get objectID from userID " + err.Error()})
+			return ctx.Status(fiber.StatusBadRequest).
+				JSON(fiber.Map{"error": "cannot get objectID from userID " + err.Error()})
 		}
 		matchInfo, err := utils.JSONConvert[models.MatchInfo](formValue)
 		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot unmarshal match info from form value" + err.Error()})
+			return ctx.Status(fiber.StatusBadRequest).
+				JSON(fiber.Map{"error": "cannot unmarshal match info from form value" + err.Error()})
 		}
 		matchInfo.UserID = uid
 
-		// TODO: at here we must notify explore service to add new profile to explore db as well as vector db.
-		// TODO: currently, we make a inter-system http request.
-		embedderURL := fmt.Sprintf("http://%s:%s/explore", os.Getenv("EXPLORE_API_HOST"), os.Getenv("EXPLORE_API_PORT"))
-		jsonBody, err := json.Marshal(matchInfo)
+		payload, _ := json.Marshal(transport.AddUserMatchInfoRequest{
+			Request: transport.Request{Type: transport.AddUserMatchInfo},
+			Data:    *matchInfo,
+		})
+		resBytes, err := s.Transport.Request(
+			context.Background(),
+			s.ConsumerMap[transport.Explore],
+			payload,
+		)
 		if err != nil {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": fmt.Errorf("service: cannot add user information, %v", err).Error(),
-			})
+			log.Println("invoke explore error", err)
+			return ctx.SendStatus(http.StatusInternalServerError)
 		}
-		code, _, errs := fiber.Post(embedderURL).Body(jsonBody).Bytes()
-		if errs != nil || len(errs) > 0 {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": fmt.Errorf("service: cannot get embed vector, %v", errs).Error(),
-			})
-		}
-		if code != fiber.StatusOK {
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "service: cannot get embed vector",
-			})
-		}
-		return nil
-	}
-}
 
-func NewOnboardingService(userRepo *repo.UsersRepo, matchRepo *repo.MatchesRepo) *OnboardingService {
-	return &OnboardingService{
-		UserRepo:    userRepo,
-		ExploreRepo: matchRepo,
+		res, err := utils.JSONConvert[transport.AddUserMatchInfoResponse](resBytes)
+		if err != nil || *res.Error != "" {
+			log.Println("explore response error", res.Error)
+			return ctx.SendStatus(http.StatusInternalServerError)
+		}
+
+		return nil
 	}
 }

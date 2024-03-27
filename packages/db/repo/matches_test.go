@@ -18,8 +18,8 @@ func TestInsertNewRawMatchInfo(t *testing.T) {
 		Major:     "student",
 		Native:    "vietnamese",
 		Country:   "vn",
-		Learnings: []string{"hello"},
-		Interests: []string{"hello"},
+		Learnings: make([]string, 0),
+		Interests: make([]string, 0),
 		Age:       0,
 	}
 	r := manager.Matches
@@ -44,8 +44,8 @@ func TestGetMatchInfoByUserID(t *testing.T) {
 		Major:     "student",
 		Native:    "vietnamese",
 		Country:   "vn",
-		Learnings: []string{"hello"},
-		Interests: []string{"hello"},
+		Learnings: make([]string, 0),
+		Interests: make([]string, 0),
 		Age:       0,
 	}
 	r := manager.Matches
@@ -74,8 +74,8 @@ func TestGetUsersByLanguage(t *testing.T) {
 		Major:     "student",
 		Native:    "vietnamese",
 		Country:   "vn",
-		Learnings: []string{"english"},
-		Interests: []string{"football"},
+		Learnings: make([]string, 0),
+		Interests: make([]string, 0),
 		Age:       0,
 	}
 	numReturn := uint32(10)
@@ -134,8 +134,8 @@ func TestDropUserByUserID(t *testing.T) {
 		Major:     "student",
 		Native:    "vietnamese",
 		Country:   "vn",
-		Learnings: []string{"hello"},
-		Interests: []string{"hello"},
+		Learnings: make([]string, 0),
+		Interests: make([]string, 0),
 		Age:       0,
 	}
 	r := manager.Matches

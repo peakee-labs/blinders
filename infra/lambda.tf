@@ -162,7 +162,10 @@ resource "aws_lambda_function" "rest" {
   source_code_hash = data.archive_file.rest.output_base64sha256
 
   environment {
-    variables = merge(local.envs, { NOTIFICATION_FUNCTION_NAME : aws_lambda_function.notification.function_name })
+    variables = merge(local.envs, {
+      NOTIFICATION_FUNCTION_NAME : aws_lambda_function.notification.function_name,
+      EXPLORE_FUNCTION_NAME : aws_lambda_function.explore.function_name
+    })
   }
 }
 
@@ -186,6 +189,32 @@ resource "aws_lambda_function" "notification" {
   runtime          = "provided.al2" # this runtime work with our built lambda (not provided.al2023)
   architectures    = ["arm64"]
   source_code_hash = data.archive_file.notification.output_base64sha256
+
+
+  environment {
+    variables = local.envs
+  }
+}
+
+# explore
+data "archive_file" "explore" {
+  depends_on = [null_resource.go_build]
+
+  type        = "zip"
+  source_dir  = "../dist/explore"
+  output_path = "../dist/explore.zip"
+}
+
+resource "aws_lambda_function" "explore" {
+  function_name = "blinders-explore"
+  filename      = "../dist/explore.zip"
+  handler       = "bootstrap" # default for provided.al2
+  role          = aws_iam_role.lambda_role.arn
+  # temporily disable to prevent cycles
+  # depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+  runtime          = "provided.al2" # this runtime work with our built lambda (not provided.al2023)
+  architectures    = ["arm64"]
+  source_code_hash = data.archive_file.explore.output_base64sha256
 
 
   environment {

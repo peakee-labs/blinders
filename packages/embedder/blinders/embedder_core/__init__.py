@@ -1,7 +1,5 @@
 from sentence_transformers import SentenceTransformer
 
-from blinders.explore_core.types import MatchInfo
-
 
 class Embedder(object):
     model: SentenceTransformer
@@ -10,7 +8,6 @@ class Embedder(object):
         print("loading embedder model")
         self.model = SentenceTransformer(model_name)
 
-    def embed(self, info: MatchInfo) -> list[float]:
-        embed_string = str(info)
-        embeddings = self.model.encode([embed_string])
+    def embed(self, data: str) -> list[float]:
+        embeddings = self.model.encode([data])
         return [float(v) for v in embeddings[0]]

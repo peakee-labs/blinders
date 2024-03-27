@@ -59,6 +59,7 @@ func init() {
 		transport.NewLambdaTransport(cfg),
 		transport.ConsumerMap{
 			transport.Notification: os.Getenv("NOTIFICATION_FUNCTION_NAME"),
+			transport.Explore:      os.Getenv("EXPLORE_FUNCTION_NAME"),
 		},
 	)
 	api.App.Use(logger.New(logger.Config{

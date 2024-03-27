@@ -15,3 +15,6 @@ setup-cli:
 
 rest:
 	air -c ./tools/.air.rest.toml
+
+embedder:
+	poetry run embedder_service
