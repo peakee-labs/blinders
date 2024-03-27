@@ -49,12 +49,10 @@ func init() {
 
 	mongoManager := db.NewMongoManager(url, dbName)
 
-	fmt.Println("Connect to mongo url", url)
+	fmt.Println("Connected to mongo url", url)
 
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_URL"),
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Addr: os.Getenv("REDIS_URL"),
 	})
 	if err := redisClient.Ping(ctx).Err(); err != nil {
 		panic(err)
@@ -68,10 +66,17 @@ func init() {
 
 	core := explore.NewMongoExplorer(mongoManager, redisClient)
 
-	service = exploreapi.NewService(core, redisClient)
+	embedderEndpoint := fmt.Sprintf(
+		"http://localhost:%s/embed",
+		os.Getenv("EMBEDDER_SERVICE_PORT"),
+	)
+	service = exploreapi.NewService(core, redisClient, embedderEndpoint)
+
 	manager = exploreapi.NewManager(app, authManager, mongoManager, service)
 	manager.App.Use(logger.New())
-	manager.InitRoute()
+	// Expose for local development
+	manager.App.Post("/explore", manager.Service.HandleAddUserMatch)
+	manager.InitRoute(exploreapi.InitOptions{Prefix: "/explore"})
 }
 
 func main() {

@@ -23,14 +23,19 @@ func NewManager(app *fiber.App, auth auth.Manager, db *db.MongoManager, service 
 	}
 }
 
-func (m *Manager) InitRoute() {
-	m.App.Get("/ping", func(c *fiber.Ctx) error {
-		return c.SendString("service healthy")
+type InitOptions struct {
+	Prefix string
+}
+
+func (m *Manager) InitRoute(options InitOptions) {
+	if options.Prefix == "" {
+		options.Prefix = "/"
+	}
+
+	m.App.Get(options.Prefix+"/ping", func(c *fiber.Ctx) error {
+		return c.SendString("pong")
 	})
 
-	// Temporarily expose this method, it must be call internal, or we will listen to user update-match-information event
-	m.App.Post("/explore", m.Service.HandleAddUserMatch)
-
-	matchRoute := m.App.Group("/explore", auth.FiberAuthMiddleware(m.Auth, m.DB.Users))
-	matchRoute.Get("/suggest", m.Service.HandleGetMatches)
+	routes := m.App.Group(options.Prefix, auth.FiberAuthMiddleware(m.Auth, m.DB.Users))
+	routes.Get("/suggest", m.Service.HandleGetMatches)
 }

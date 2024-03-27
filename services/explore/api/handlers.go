@@ -4,28 +4,34 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
+	"net/http"
+	"strings"
 
 	"blinders/packages/auth"
 	"blinders/packages/db/models"
 	"blinders/packages/explore"
+	"blinders/packages/transport"
+	"blinders/packages/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
 )
 
 type Service struct {
-	Core        explore.Explorer
-	RedisClient *redis.Client
+	Core             explore.Explorer
+	RedisClient      *redis.Client
+	EmbedderEndpoint string
 }
 
 func NewService(
 	exploreCore explore.Explorer,
 	redisClient *redis.Client,
+	embedderEndpoint string,
 ) *Service {
 	return &Service{
-		Core:        exploreCore,
-		RedisClient: redisClient,
+		Core:             exploreCore,
+		RedisClient:      redisClient,
+		EmbedderEndpoint: embedderEndpoint,
 	}
 }
 
@@ -47,7 +53,7 @@ func (s *Service) HandleGetMatches(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(candidates)
 }
 
-// HandleAddUserMatch will add match-related information to match db, this api could only be called by inter-system service
+// HandleAddUserMatch will add match-related information to match db
 func (s *Service) HandleAddUserMatch(ctx *fiber.Ctx) error {
 	userMatch := new(models.MatchInfo)
 	if err := json.Unmarshal(ctx.Body(), userMatch); err != nil {
@@ -56,54 +62,61 @@ func (s *Service) HandleAddUserMatch(ctx *fiber.Ctx) error {
 		})
 	}
 
-	// TODO: at here, we've to call embedder service to get the embed vector then add this entry into db.
-	embedderURL := fmt.Sprintf("http://%s:%s/explore/embed", os.Getenv("EXPLORE_EMBEDDER_HOST"), os.Getenv("EXPLORE_EMBEDDER_PORT"))
-	jsonBody, err := json.Marshal(userMatch)
+	err := s.AddUserMatch(*userMatch)
 	if err != nil {
-		log.Println("cannot unmarshal body", err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": fmt.Errorf("service: cannot add user information, %v", err).Error(),
+		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
 		})
 	}
-	fmt.Println(string(jsonBody))
 
-	code, body, errs := fiber.Post(embedderURL).ContentType("application/json").Body(jsonBody).Bytes()
+	return ctx.SendStatus(http.StatusOK)
+}
+
+const UserEmbedFormat = "[BEGIN]gender: %s[SEP]age: %v[SEP]job: %s[SEP]native language: %s[SEP]learning language: %s[SEP]country: %s[SEP]interests: %s[END]"
+
+func (s *Service) AddUserMatch(info models.MatchInfo) error {
+	requestPayload := transport.EmbeddingRequest{
+		Request: transport.Request{Type: transport.Embedding},
+		Data: fmt.Sprintf(
+			UserEmbedFormat,
+			info.Gender,
+			info.Age,
+			info.Major,
+			info.Native,
+			strings.Join(info.Learnings, ", "),
+			info.Country,
+			strings.Join(info.Interests, ", "),
+		),
+	}
+	requestBytes, _ := json.Marshal(requestPayload)
+	code, body, errs := fiber.Post(s.EmbedderEndpoint).
+		ContentType("application/json").
+		Body(requestBytes).
+		Bytes()
 	if errs != nil || len(errs) > 0 {
-		log.Println("cannot request embed vector", err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": fmt.Errorf("service: cannot get embed vector, %v", errs).Error(),
-		})
-	}
-	if code != fiber.StatusOK {
+		log.Println("cannot request embed vector", errs)
+		return fmt.Errorf("failed to embed user match")
+	} else if code != fiber.StatusOK {
 		log.Println("cannot request embed vector, server response", code)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "service: cannot get embed vector",
-		})
+		return fmt.Errorf("failed to embed user match")
 	}
 
-	type response struct {
-		Embed explore.EmbeddingVector `json:"embed"`
-	}
-	var rsp response
-	if err := json.Unmarshal(body, &rsp); err != nil {
-		log.Println("cannot get embed from server response", err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": fmt.Errorf("service: cannot unmarshall embed vector, err: %v", err),
-		})
-	}
-
-	info, err := s.Core.AddUserMatchInformation(*userMatch)
+	rsp, err := utils.ParseJSON[transport.EmbeddingResponse](body)
 	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": fmt.Errorf("service: cannot add user information, %v", err).Error(),
-		})
+		log.Println("cannot get embed from embedder response", err)
+		return fmt.Errorf("can not get embed from embedder response")
 	}
 
-	if err := s.Core.AddEmbedding(info.UserID, rsp.Embed); err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": fmt.Errorf("service: cannot add user embed, %v", err).Error(),
-		})
+	info, err = s.Core.AddUserMatchInformation(info)
+	if err != nil {
+		log.Println("cannot add user match information", err)
+		return fmt.Errorf("cannot add user match information")
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(info)
+	if err := s.Core.AddEmbedding(info.UserID, rsp.Embedded); err != nil {
+		log.Println("cannot add user embed", err)
+		return fmt.Errorf("cannot add user embed")
+	}
+
+	return nil
 }
