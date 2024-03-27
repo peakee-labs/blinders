@@ -18,6 +18,6 @@ class API(object):
     def ping_handler(self):
         return {"message": "pong"}
 
-    def embed_handler(self, body: str):
-        embedded = self.embedder.embed(body)
+    def embed_handler(self, body: dict[str, str]):
+        embedded = self.embedder.embed(body["data"])
         return {"embedded": embedded}

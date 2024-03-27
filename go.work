@@ -4,6 +4,7 @@ use (
 	./cli
 	./functions/chat
 	./functions/collecting
+	./functions/explore
 	./functions/grammar
 	./functions/practice
 	./functions/rest
