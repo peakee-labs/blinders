@@ -14,6 +14,7 @@ type Key string
 
 const (
 	Notification Key = "notification"
+	Explore      Key = "explore"
 )
 
 type ConsumerMap map[Key]string
