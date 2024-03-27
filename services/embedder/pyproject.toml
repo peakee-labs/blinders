@@ -12,6 +12,9 @@ embedder_service = "blinders.embedder_service:main"
 [tool.poetry.dependencies]
 python = "^3.10"
 blinders-embedder-core = { path = "../../packages/embedder", develop = true }
+fastapi = "^0.110.0"
+python-dotenv = "^1.0.1"
+uvicorn = "^0.29.0"
 
 [build-system]
 requires = ["poetry-core"]
