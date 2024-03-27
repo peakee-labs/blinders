@@ -42,6 +42,7 @@ func init() {
 		transport.NewLocalTransport(),
 		transport.ConsumerMap{
 			transport.Notification: "notification_service_id",
+			transport.Explore:      "explore_service_id",
 		})
 	apiManager.App.Use(logger.New())
 	_ = apiManager.InitRoute(restapi.InitOptions{})

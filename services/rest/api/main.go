@@ -32,7 +32,7 @@ func NewManager(
 		Users:         NewUsersService(db.Users, db.FriendRequests, transporter, consumerMap),
 		Conversations: NewConversationsService(db.Conversations, db.Users, db.Messages),
 		Messages:      NewMessagesService(db.Messages),
-		Onboardings:   NewOnboardingService(db.Users, db.Matches),
+		Onboardings:   NewOnboardingService(db.Users, db.Matches, transporter, consumerMap),
 	}
 }
 
