@@ -9,6 +9,18 @@ resource "aws_instance" "blinders" {
   }
 }
 
+
+resource "aws_instance" "blinders-services" {
+  ami                    = "ami-02a2af70a66af6dfb"
+  instance_type          = "t2.micro"
+  key_name               = aws_key_pair.blinders_tf_ec2_key.key_name
+  vpc_security_group_ids = [aws_security_group.blinders_ec2_security_group.id]
+
+  tags = {
+    Name = "blinders-services"
+  }
+}
+
 # TODO: need to resolve security group
 resource "aws_security_group" "blinders_ec2_security_group" {
   name = "blinders-ec2-security-group"
@@ -60,6 +72,11 @@ output "enable_key_file" {
   value = "chmod 400 ./tf_ec2_key.pem"
 }
 
-output "ssh_command" {
+output "ssh_command_to_blinders_database" {
   value = "ssh ec2-user@${aws_instance.blinders.public_ip} -i ./tf_ec2_key.pem"
+}
+
+
+output "ssh_command_to_blinders_services" {
+  value = "ssh ec2-user@${aws_instance.blinders-services.public_ip} -i ./tf_ec2_key.pem"
 }
