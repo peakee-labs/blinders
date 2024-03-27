@@ -1,5 +1,4 @@
 {
   "flake8.args": ["--config=pyproject.toml"],
-  "python.analysis.typeCheckingMode": "basic",
-  "python.analysis.extraPaths": ["./packages/dictionary"]
+  "python.analysis.typeCheckingMode": "basic"
 }

@@ -22,6 +22,5 @@ jobs:
       - name: Install development dependencies
         run: pip install poetry && poetry config virtualenvs.create false && poetry install --no-root
 
-      # TODO: need to enable again
-      # - name: Linting
-      #   run: ./scripts/check_pylint.sh
+      - name: Linting
+        run: ./scripts/check_pylint.sh
