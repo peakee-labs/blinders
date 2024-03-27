@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "blinders-embedder-service"
+version = "0.1.0"
+description = ""
+authors = ["Tan Le <tanlethanh8266@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "blinders" }]           # make build backend success
+
+[tool.poetry.scripts]
+embedder_service = "blinders.embedder_service:main"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+blinders-embedder-core = { path = "../../packages/embedder", develop = true }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

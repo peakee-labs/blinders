@@ -100,7 +100,10 @@ Run REST api with Air
 make rest
 ```
 
-### Refs
+Run Embedder service
 
-- AWS Websocket API Gateway [https://github.com/aws-samples/apigateway-websockets-golang](https://github.com/aws-samples/apigateway-websockets-golang)
-- [https://github.com/aws-samples/websocket-chat-application](https://github.com/aws-samples/websocket-chat-application)
+```
+make embedder
+# or
+poetry run embedder_service
+```
