@@ -33,7 +33,6 @@ max-line-length = 100
 [tool.pylint."messages control"]
 ignore = ["setup.py", "__init__.py", "tests"]
 disable = "all"
-enable = ["missing-class-docstring", "missing-function-docstring"]
 
 [tool.isort]
 profile = "black"
