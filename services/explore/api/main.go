@@ -28,8 +28,9 @@ func (m *Manager) InitRoute() {
 		return c.SendString("service healthy")
 	})
 
-	matchRoute := m.App.Group("/match", auth.FiberAuthMiddleware(m.Auth, m.DB.Users))
-	matchRoute.Get("/suggest", m.Service.HandleGetMatches)
 	// Temporarily expose this method, it must be call internal, or we will listen to user update-match-information event
-	matchRoute.Post("/", m.Service.HandleAddUserMatch)
+	m.App.Post("/explore", m.Service.HandleAddUserMatch)
+
+	matchRoute := m.App.Group("/explore", auth.FiberAuthMiddleware(m.Auth, m.DB.Users))
+	matchRoute.Get("/suggest", m.Service.HandleGetMatches)
 }

@@ -15,6 +15,7 @@ type Manager struct {
 	Users         *UsersService
 	Conversations *ConversationsService
 	Messages      *MessagesService
+	Onboardings   *OnboardingService
 }
 
 func NewManager(
@@ -31,6 +32,7 @@ func NewManager(
 		Users:         NewUsersService(db.Users, db.FriendRequests, transporter, consumerMap),
 		Conversations: NewConversationsService(db.Conversations, db.Users, db.Messages),
 		Messages:      NewMessagesService(db.Messages),
+		Onboardings:   NewOnboardingService(db.Users, db.Matches),
 	}
 }
 
@@ -86,6 +88,8 @@ func (m Manager) InitRoute(options InitOptions) error {
 	conversations.Post("/", m.Conversations.CreateNewIndividualConversation)
 
 	authorized.Get("/messages/:id", m.Messages.GetMessageByID)
+
+	authorized.Post("/onboarding", m.Onboardings.PostOnboardingForm())
 
 	return nil
 }

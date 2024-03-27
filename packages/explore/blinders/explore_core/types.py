@@ -3,8 +3,6 @@ import dataclasses
 
 @dataclasses.dataclass
 class MatchInfo:
-    userId: str
-    "hex string of objectID"
     name: str
     gender: str
     major: str

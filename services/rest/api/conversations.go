@@ -209,7 +209,7 @@ func (s ConversationsService) GetMessagesOfConversation(ctx *fiber.Ctx) error {
 		})
 	}
 
-	limit, err := (strconv.Atoi(ctx.Query("limit", "30")))
+	limit, err := strconv.Atoi(ctx.Query("limit", "30"))
 	if err != nil {
 		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
 			"error": "invalid limit",

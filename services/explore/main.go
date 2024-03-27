@@ -14,6 +14,7 @@ import (
 	exploreapi "blinders/services/explore/api"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 )
@@ -24,8 +25,15 @@ var (
 )
 
 func init() {
-	if err := godotenv.Load(".env"); err != nil {
-		panic(err)
+	environment := os.Getenv("ENVIRONMENT")
+	log.Println("explore api running on environment:", environment)
+	envFile := ".env"
+	if environment != "" {
+		envFile = fmt.Sprintf(".env.%s", environment)
+	}
+
+	if err := godotenv.Load(envFile); err != nil {
+		log.Fatal("failed to load env", err)
 	}
 	app := fiber.New(fiber.Config{
 		WriteTimeout:          time.Second * 5,
@@ -36,16 +44,10 @@ func init() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	url := fmt.Sprintf(
-		db.MongoURLTemplate,
-		os.Getenv("MONGO_USERNAME"),
-		os.Getenv("MONGO_PASSWORD"),
-		os.Getenv("MONGO_HOST"),
-		os.Getenv("MONGO_PORT"),
-		os.Getenv("MONGO_DATABASE"),
-	)
+	dbName := os.Getenv("MONGO_DATABASE")
+	url := os.Getenv("MONGO_DATABASE_URL")
 
-	mongoManager := db.NewMongoManager(url, os.Getenv("MONGO_DATABASE"))
+	mongoManager := db.NewMongoManager(url, dbName)
 
 	fmt.Println("Connect to mongo url", url)
 
@@ -68,12 +70,12 @@ func init() {
 
 	service = exploreapi.NewService(core, redisClient)
 	manager = exploreapi.NewManager(app, authManager, mongoManager, service)
+	manager.App.Use(logger.New())
 	manager.InitRoute()
 }
 
 func main() {
-	port := os.Getenv("EXPLORE_SERVICE_PORT")
-	go service.Loop()
+	port := os.Getenv("EXPLORE_API_PORT")
 	fmt.Println("listening on: ", port)
 	log.Panic(manager.App.Listen(":" + port))
 }

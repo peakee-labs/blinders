@@ -18,8 +18,8 @@ func TestInsertNewRawMatchInfo(t *testing.T) {
 		Major:     "student",
 		Native:    "vietnamese",
 		Country:   "vn",
-		Learnings: []string{},
-		Interests: []string{},
+		Learnings: []string{"hello"},
+		Interests: []string{"hello"},
 		Age:       0,
 	}
 	r := manager.Matches
@@ -34,36 +34,6 @@ func TestInsertNewRawMatchInfo(t *testing.T) {
 	deleted, err := r.DropMatchInfoByUserID(rawUser.UserID)
 	assert.Nil(t, err)
 	assert.Equal(t, rawUser, deleted)
-}
-
-func TestGetMatchInfoByFirebaseUID(t *testing.T) {
-	rawUser := models.MatchInfo{
-		UserID:    primitive.NewObjectID(),
-		Name:      "name",
-		Gender:    "male",
-		Major:     "student",
-		Native:    "vietnamese",
-		Country:   "vn",
-		Learnings: []string{},
-		Interests: []string{},
-		Age:       0,
-	}
-	r := manager.Matches
-	usr, err := r.InsertNewRawMatchInfo(rawUser)
-	assert.Nil(t, err)
-	assert.Equal(t, rawUser, usr)
-
-	gotWithUserID, err := r.GetMatchInfoByUserID(rawUser.UserID)
-	assert.Nil(t, err)
-	assert.Equal(t, rawUser, gotWithUserID)
-
-	deleted, err := r.DropMatchInfoByUserID(rawUser.UserID)
-	assert.Nil(t, err)
-	assert.Equal(t, rawUser, deleted)
-
-	gotFailed, err := r.GetMatchInfoByUserID(rawUser.UserID)
-	assert.NotNil(t, err)
-	assert.Equal(t, models.MatchInfo{}, gotFailed)
 }
 
 func TestGetMatchInfoByUserID(t *testing.T) {
@@ -74,8 +44,8 @@ func TestGetMatchInfoByUserID(t *testing.T) {
 		Major:     "student",
 		Native:    "vietnamese",
 		Country:   "vn",
-		Learnings: []string{},
-		Interests: []string{},
+		Learnings: []string{"hello"},
+		Interests: []string{"hello"},
 		Age:       0,
 	}
 	r := manager.Matches
@@ -105,7 +75,7 @@ func TestGetUsersByLanguage(t *testing.T) {
 		Native:    "vietnamese",
 		Country:   "vn",
 		Learnings: []string{"english"},
-		Interests: []string{},
+		Interests: []string{"football"},
 		Age:       0,
 	}
 	numReturn := uint32(10)
@@ -156,7 +126,7 @@ candidateLoop:
 	assert.Equal(t, rawUser, usr)
 }
 
-func TestDropUserWithFirebaseUID(t *testing.T) {
+func TestDropUserByUserID(t *testing.T) {
 	rawUser := models.MatchInfo{
 		UserID:    primitive.NewObjectID(),
 		Name:      "name",
@@ -164,8 +134,8 @@ func TestDropUserWithFirebaseUID(t *testing.T) {
 		Major:     "student",
 		Native:    "vietnamese",
 		Country:   "vn",
-		Learnings: []string{},
-		Interests: []string{},
+		Learnings: []string{"hello"},
+		Interests: []string{"hello"},
 		Age:       0,
 	}
 	r := manager.Matches
