@@ -1,6 +1,7 @@
-# Blinders
 
-Monorepo, a microservices backend project named Blinders for a language learning platform. Almost use Golang, Python, and Terraform for provisioning, all the services are hosted on AWS.
+<h1 align="center">Blinders</h1>
+<p align="center">Monorepo, microservices backend for a language learning platform - Peakee.</p>
+<p align="center">Golang, Python, Langchain, AWS, Terraform, Firebase, MongoDB</p>
 
 ## System Architecture
 
