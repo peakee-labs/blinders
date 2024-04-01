@@ -41,3 +41,5 @@ volumes
 qodana.yaml
 
 tmp
+
+**/lambda_bundle
