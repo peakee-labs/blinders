@@ -8,7 +8,6 @@ use (
 	./functions/grammar
 	./functions/practice
 	./functions/rest
-	./functions/suggest
 	./functions/translate
 	./functions/utils
 	./functions/websocket

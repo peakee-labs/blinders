@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "blinders-suggest-lambda"
+version = "0.1.0"
+description = ""
+authors = ["Tan Le <tanlethanh8266@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "blinders" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+blinders-pysuggest-core = { path = "../../packages/pysuggest", develop = true }
+orjson = "^3.10.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
