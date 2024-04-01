@@ -20,6 +20,7 @@ const (
 	MessageCollection       = "messages"
 	MatchCollection         = "matches"
 	FriendRequestCollection = "friendrequests"
+	FeedbackCollection      = "feedbacks"
 )
 
 type MongoManager struct {
@@ -30,6 +31,7 @@ type MongoManager struct {
 	Messages       *repo.MessagesRepo
 	Matches        *repo.MatchesRepo
 	FriendRequests *repo.FriendRequestsRepo
+	Feedbacks      *repo.FeedbacksRepo
 }
 
 func NewMongoManager(url string, name string) *MongoManager {
@@ -59,5 +61,6 @@ func NewMongoManager(url string, name string) *MongoManager {
 		FriendRequests: repo.NewFriendRequestsRepo(
 			client.Database(name).Collection(FriendRequestCollection),
 		),
+		Feedbacks: repo.NewFeedbackRepo(client.Database(name).Collection(FeedbackCollection)),
 	}
 }

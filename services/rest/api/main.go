@@ -16,6 +16,7 @@ type Manager struct {
 	Conversations *ConversationsService
 	Messages      *MessagesService
 	Onboardings   *OnboardingService
+	Feedbacks     *FeedbacksService
 }
 
 func NewManager(
@@ -33,6 +34,7 @@ func NewManager(
 		Conversations: NewConversationsService(db.Conversations, db.Users, db.Messages),
 		Messages:      NewMessagesService(db.Messages),
 		Onboardings:   NewOnboardingService(db.Users, db.Matches, transporter, consumerMap),
+		Feedbacks:     NewFeedbacksService(db.Feedbacks),
 	}
 }
 
@@ -49,9 +51,11 @@ func (m Manager) InitRoute(options InitOptions) error {
 	rootRoute.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("hello from Peakee Rest API")
 	})
+	rootRoute.Post("/feedback/:id", m.Feedbacks.CreateFeedback)
 
 	authorizedWithoutUser := rootRoute.Group(
 		"/users/self",
+
 		auth.FiberAuthMiddleware(m.Auth, m.DB.Users,
 			auth.MiddlewareOptions{
 				CheckUser: false,
