@@ -1,10 +1,10 @@
 package restapi
 
 import (
+	"blinders/packages/auth"
 	"blinders/packages/db/models"
 	"blinders/packages/db/repo"
 	"blinders/packages/utils"
-
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -22,10 +22,11 @@ type CreateFeedbackDTO struct {
 }
 
 func (s FeedbacksService) CreateFeedback(ctx *fiber.Ctx) error {
-	// TODO: currently accept request from anonymous user
-	userIDParams := ctx.Params("id")
-	userID, _ := primitive.ObjectIDFromHex(userIDParams)
-
+	userAuth := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
+	if userAuth == nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "required user auth"})
+	}
+	userID, _ := primitive.ObjectIDFromHex(userAuth.ID)
 	feedback, err := utils.ParseJSON[models.Feedback](ctx.Body())
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).

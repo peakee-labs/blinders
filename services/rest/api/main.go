@@ -51,7 +51,6 @@ func (m Manager) InitRoute(options InitOptions) error {
 	rootRoute.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("hello from Peakee Rest API")
 	})
-	rootRoute.Post("/feedback/:id", m.Feedbacks.CreateFeedback)
 
 	authorizedWithoutUser := rootRoute.Group(
 		"/users/self",
@@ -94,6 +93,8 @@ func (m Manager) InitRoute(options InitOptions) error {
 	authorized.Get("/messages/:id", m.Messages.GetMessageByID)
 
 	authorized.Post("/onboarding", m.Onboardings.PostOnboardingForm())
+
+	authorized.Post("/feedback", m.Feedbacks.CreateFeedback)
 
 	return nil
 }
