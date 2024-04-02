@@ -16,6 +16,7 @@ type Manager struct {
 	Conversations *ConversationsService
 	Messages      *MessagesService
 	Onboardings   *OnboardingService
+	Feedbacks     *FeedbacksService
 }
 
 func NewManager(
@@ -33,6 +34,7 @@ func NewManager(
 		Conversations: NewConversationsService(db.Conversations, db.Users, db.Messages),
 		Messages:      NewMessagesService(db.Messages),
 		Onboardings:   NewOnboardingService(db.Users, db.Matches, transporter, consumerMap),
+		Feedbacks:     NewFeedbacksService(db.Feedbacks),
 	}
 }
 
@@ -52,6 +54,7 @@ func (m Manager) InitRoute(options InitOptions) error {
 
 	authorizedWithoutUser := rootRoute.Group(
 		"/users/self",
+
 		auth.FiberAuthMiddleware(m.Auth, m.DB.Users,
 			auth.MiddlewareOptions{
 				CheckUser: false,
@@ -90,6 +93,8 @@ func (m Manager) InitRoute(options InitOptions) error {
 	authorized.Get("/messages/:id", m.Messages.GetMessageByID)
 
 	authorized.Post("/onboarding", m.Onboardings.PostOnboardingForm())
+
+	authorized.Post("/feedback", m.Feedbacks.CreateFeedback)
 
 	return nil
 }
