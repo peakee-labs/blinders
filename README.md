@@ -107,3 +107,19 @@ make embedder
 # or
 poetry run embedder_service
 ```
+
+# Deployment
+
+Prepare environment file `.env`
+
+Pre-build suggest function
+
+```
+sh ./scripts/build_pysuggest.sh
+```
+
+Deploy
+
+```
+cd infra && terraform apply
+```
