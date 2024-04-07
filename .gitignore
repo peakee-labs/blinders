@@ -39,5 +39,6 @@ volumes
 
 #qodana
 qodana.yaml
-
 tmp
+
+**.cer
