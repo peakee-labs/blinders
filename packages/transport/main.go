@@ -1,13 +1,18 @@
-/*
-This package provides transport layer for all services, for both local development and production on AWS
-*/
 package transport
 
-import "context"
+import (
+	"context"
+)
+
+type RequestConfig struct {
+	Header map[string][]string
+	Method string
+}
 
 type Transport interface {
 	Request(ctx context.Context, id string, payload []byte) (response []byte, err error)
 	Push(ctx context.Context, id string, payload []byte) error
+	Do(ctx context.Context, id string, payload []byte, config RequestConfig) (response []byte, err error)
 }
 
 type Key string
@@ -15,6 +20,8 @@ type Key string
 const (
 	Notification Key = "notification"
 	Explore      Key = "explore"
+	Logging      Key = "logging"
+	Suggest      Key = "suggest"
 )
 
 type ConsumerMap map[Key]string
