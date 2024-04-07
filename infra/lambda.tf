@@ -8,6 +8,18 @@ resource "aws_lambda_function" "dictionary" {
   depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
 }
 
+
+resource "aws_lambda_function" "pysuggest" {
+  function_name    = "blinders-pysuggest"
+  filename         = "../functions/suggest/lambda_bundle.zip"
+  handler          = "blinders.suggest_lambda.lambda_handler"
+  source_code_hash = filebase64sha256("../functions/suggest/lambda_bundle.zip")
+  role             = aws_iam_role.lambda_role.arn
+  runtime          = "python3.10"
+  architectures    = ["arm64"]
+  depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+}
+
 resource "null_resource" "go_build" {
   provisioner "local-exec" {
     command = "cd .. && sh ./scripts/build_golambda.sh"

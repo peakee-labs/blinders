@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "blinders-pysuggest-core"
+version = "0.1.0"
+description = ""
+authors = ["Tan Le <tanlethanh8266@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "blinders" }]
+
+[tool.poetry.scripts]
+suggest = "blinders.pysuggest:main"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+langchain = "^0.1.13"
+langchain-core = "^0.1.36"
+langchain-community = "^0.0.29"
+langchain-openai = "^0.1.1"
+python-dotenv = "^1.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

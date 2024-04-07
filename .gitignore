@@ -39,6 +39,8 @@ volumes
 
 #qodana
 qodana.yaml
+
 tmp
 
+**/lambda_bundle
 **.cer
