@@ -4,6 +4,7 @@ import (
 	"blinders/packages/auth"
 	"blinders/packages/db"
 	"blinders/packages/transport"
+
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -13,7 +14,7 @@ type Service struct {
 	Db          *db.MongoManager
 	Transport   transport.Transport
 	ConsumerMap transport.ConsumerMap
-	//Suggester suggest.Suggester // this field is deprecated
+	// Suggester   suggest.Suggester // this field is deprecated
 }
 
 func NewService(
@@ -39,7 +40,8 @@ func (s *Service) InitRoute() {
 	})
 
 	authorized := chatRoute.Group("/", auth.FiberAuthMiddleware(s.Auth, s.Db.Users))
-	//authorized.Post("/text", s.HandleChatSuggestion)
-	//authorized.Post("/chat", s.HandleTextSuggestion)
+
+	// authorized.Post("/text", s.HandleChatSuggestion)
+	// authorized.Post("/chat", s.HandleTextSuggestion)
 	authorized.Get("/practice/unit", s.HandleSuggestLanguageUnit)
 }

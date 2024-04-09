@@ -1,7 +1,6 @@
 package main
 
 import (
-	"blinders/packages/transport"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +8,7 @@ import (
 
 	"blinders/packages/auth"
 	"blinders/packages/db"
+	"blinders/packages/transport"
 	"blinders/packages/utils"
 	suggestapi "blinders/services/suggest/api"
 
@@ -16,9 +16,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var (
-	service suggestapi.Service
-)
+var service suggestapi.Service
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
