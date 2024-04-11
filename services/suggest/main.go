@@ -16,7 +16,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var service suggestapi.Service
+var service *suggestapi.Service
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
@@ -31,14 +31,14 @@ func init() {
 
 	app := fiber.New()
 	adminJSON, _ := utils.GetFile("firebase.admin.development.json")
-	url := os.Getenv("MONGO_DATABASE")
+	url := os.Getenv("MONGO_DATABASE_URL")
 	dbName := os.Getenv("MONGO_DATABASE")
 
 	mongoManager := db.NewMongoManager(url, dbName)
 	authManager, _ := auth.NewFirebaseManager(adminJSON)
-	service = *suggestapi.NewService(app, authManager, mongoManager, transport.NewLocalTransport(), transport.ConsumerMap{
-		transport.Logging: fmt.Sprintf(":%s", os.Getenv("LOGGING_SERVICE_PORT")),
-		transport.Suggest: fmt.Sprintf(":%s", os.Getenv("PYSUGGEST_SERVICE_PORT")), // python suggest service
+	service = suggestapi.NewService(app, authManager, mongoManager, transport.NewLocalTransport(), transport.ConsumerMap{
+		transport.Logging: fmt.Sprintf("http://localhost:%s/", os.Getenv("LOGGING_SERVICE_PORT")),
+		transport.Suggest: fmt.Sprintf("http://localhost:%s/", os.Getenv("PYSUGGEST_SERVICE_PORT")), // python suggest service
 	})
 	service.InitRoute()
 }

@@ -40,8 +40,5 @@ func (s *Service) InitRoute() {
 	})
 
 	authorized := chatRoute.Group("/", auth.FiberAuthMiddleware(s.Auth, s.Db.Users))
-
-	// authorized.Post("/text", s.HandleChatSuggestion)
-	// authorized.Post("/chat", s.HandleTextSuggestion)
 	authorized.Get("/practice/unit", s.HandleSuggestLanguageUnit)
 }
