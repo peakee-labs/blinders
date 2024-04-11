@@ -3,6 +3,7 @@ package transport
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -54,8 +55,12 @@ func (t LocalTransport) Do(
 	if rsp.ContentLength > 0 && rsp.ContentLength != written {
 		return nil, fmt.Errorf("expected %d bytes from body, readed %d", rsp.ContentLength, written)
 	}
-	if 200 > rsp.StatusCode || rsp.StatusCode > 299 {
-		return bodyReader.Bytes(), fmt.Errorf("received unexpected status code from %s, code: %d", id, rsp.StatusCode)
+	if 200 < rsp.StatusCode || rsp.StatusCode > 299 {
+		msg := ParseResponseMessage(rsp.Body)
+		if msg != "" {
+			return bodyReader.Bytes(), fmt.Errorf(msg)
+		}
+		return bodyReader.Bytes(), fmt.Errorf("cannot make push request to target, statuscode: %d", rsp.StatusCode)
 	}
 
 	return bodyReader.Bytes(), nil
@@ -76,7 +81,27 @@ func (t LocalTransport) Push(_ context.Context, id string, body []byte) error {
 		return err
 	}
 	if 200 > rsp.StatusCode || rsp.StatusCode > 299 {
-		return fmt.Errorf("received unexpected status code from %s, code: %d", id, rsp.StatusCode)
+		msg := ParseResponseMessage(rsp.Body)
+		if msg != "" {
+			return fmt.Errorf(msg)
+		}
+		return fmt.Errorf("cannot make push request to target, statuscode: %d", rsp.StatusCode)
 	}
 	return nil
+}
+
+// ParseResponseMessage tries to parse the response body from a failed request.
+// The message could be passed via the 'error' field of the JSON body.
+func ParseResponseMessage(body io.ReadCloser) string {
+	bodyReader := new(bytes.Buffer)
+	_, err := io.Copy(bodyReader, body)
+	if err != nil {
+		return ""
+	}
+
+	res := make(map[string]string)
+	if err := json.Unmarshal(bodyReader.Bytes(), &res); err != nil {
+		return ""
+	}
+	return res["error"]
 }
