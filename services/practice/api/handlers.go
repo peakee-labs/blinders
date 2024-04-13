@@ -1,9 +1,11 @@
 package suggestapi
 
 import (
+	"log"
 	"math/rand"
 
 	"blinders/packages/auth"
+	"blinders/packages/logging"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,17 +22,18 @@ func (s *Service) HandleSuggestLanguageUnit(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
 	}
 
+	var rsp logging.SuggestPracticeUnitResponse
 	loggedEvent, err := s.Logger.GetSuggestPracticeUnitEventLogByUserID(userOID)
-	if err != nil {
+	if err != nil || len(loggedEvent) == 0 {
+		log.Printf("practice: cannot get log event from Logger, err: %v, event num: %v\n", err, len(loggedEvent))
 		// we could return some pre-defined document here.
-		return s.HandleGetDefaultLanguageUnit(ctx)
+		idx := rand.Intn(len(DefaultLanguageUnit))
+		rsp = DefaultLanguageUnit[idx]
+	} else {
+		// currently, randomly return practice unit to user
+		idx := rand.Intn(len(loggedEvent))
+		rsp = loggedEvent[idx].Response
 	}
-	// currently, randomly return practice unit to user
-	idx := rand.Intn(len(loggedEvent))
-	return ctx.Status(fiber.StatusOK).JSON(loggedEvent[idx].Response)
-}
 
-// HandleGetDefaultLanguageUnit returns 1 random pre-defined LanguageUnit.
-func (s *Service) HandleGetDefaultLanguageUnit(ctx *fiber.Ctx) error {
-	return nil
+	return ctx.Status(fiber.StatusOK).JSON(rsp)
 }
