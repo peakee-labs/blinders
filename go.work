@@ -25,6 +25,7 @@ use (
 	./packages/utils
 	./services/chat
 	./services/explore
+	./services/practice
 	./services/rest
 	./services/suggest
 	./tests
