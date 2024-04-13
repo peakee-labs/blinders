@@ -66,7 +66,7 @@ func TestLocalTransportPush(t *testing.T) {
 		tc := testcases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			tp := transport.NewLocalTransport(s.Client())
-			rsp, err := tp.Do(context.TODO(), tc.endpoint, tc.body, transport.RequestConfig{
+			rsp, err := tp.Request(context.TODO(), tc.endpoint, tc.body, transport.RequestConfig{
 				Method: "POST",
 			})
 			if tc.expectedError {

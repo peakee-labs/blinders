@@ -10,9 +10,9 @@ type RequestConfig struct {
 }
 
 type Transport interface {
-	Request(ctx context.Context, id string, payload []byte) (response []byte, err error)
+	Request(ctx context.Context, id string, payload []byte, config ...RequestConfig) (response []byte, err error)
 	Push(ctx context.Context, id string, payload []byte) error
-	Do(ctx context.Context, id string, payload []byte, config RequestConfig) (response []byte, err error)
+	// Do(ctx context.Context, id string, payload []byte, config RequestConfig) (response []byte, err error)
 }
 
 type Key string

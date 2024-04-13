@@ -26,21 +26,28 @@ func NewLocalTransport(client ...*http.Client) *LocalTransport {
 	}
 }
 
-func (t LocalTransport) Do(
+func (t LocalTransport) Request(
 	_ context.Context,
 	id string,
 	payload []byte,
-	config RequestConfig,
+	config ...RequestConfig,
 ) (response []byte, err error) {
-	req, err := http.NewRequest(config.Method, id, bytes.NewReader(payload))
+	method := "GET"
+	header := make(http.Header)
+	if len(config) == 1 {
+		method = config[0].Method
+		for key, vals := range config[0].Header {
+			for _, val := range vals {
+				header.Add(key, val)
+			}
+		}
+	}
+
+	req, err := http.NewRequest(method, id, bytes.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
-	for key, vals := range config.Header {
-		for _, val := range vals {
-			req.Header.Add(key, val)
-		}
-	}
+	req.Header = header
 
 	rsp, err := t.client.Do(req)
 	if err != nil {
@@ -64,14 +71,6 @@ func (t LocalTransport) Do(
 	}
 
 	return bodyReader.Bytes(), nil
-}
-
-func (t LocalTransport) Request(
-	ctx context.Context,
-	addr string, // with LocalTransport, id is addr of target service
-	body []byte,
-) (response []byte, err error) {
-	return t.Do(ctx, addr, body, RequestConfig{Method: "GET"})
 }
 
 func (t LocalTransport) Push(_ context.Context, id string, body []byte) error {
