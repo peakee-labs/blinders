@@ -8,15 +8,16 @@ import (
 
 	"blinders/packages/auth"
 	"blinders/packages/db"
+	"blinders/packages/logging"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
-	suggestapi "blinders/services/suggest/api"
+	practiceapi "blinders/services/practice/api"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 )
 
-var service *suggestapi.Service
+var service *practiceapi.Service
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
@@ -36,10 +37,15 @@ func init() {
 
 	mongoManager := db.NewMongoManager(url, dbName)
 	authManager, _ := auth.NewFirebaseManager(adminJSON)
-	service = suggestapi.NewService(app, authManager, mongoManager, transport.NewLocalTransport(), transport.ConsumerMap{
-		transport.Logging: fmt.Sprintf("http://localhost:%s/", os.Getenv("LOGGING_SERVICE_PORT")),
-		transport.Suggest: fmt.Sprintf("http://localhost:%s/", os.Getenv("PYSUGGEST_SERVICE_PORT")), // python suggest service
-	})
+	service = practiceapi.NewService(
+		app,
+		authManager,
+		mongoManager,
+		logging.NewEventLogger(mongoManager.Client.Database(dbName)),
+		transport.NewLocalTransport(),
+		transport.ConsumerMap{
+			transport.Suggest: fmt.Sprintf("http://localhost:%s/", os.Getenv("PYSUGGEST_SERVICE_PORT")), // python suggest service
+		})
 	service.InitRoute()
 }
 
