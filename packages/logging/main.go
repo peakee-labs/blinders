@@ -104,15 +104,15 @@ func (l EventLogger) GetSuggestPracticeUnitLogByID(logID primitive.ObjectID) (*S
 func (l EventLogger) GetSuggestPracticeUnitEventLogByUserID(userID primitive.ObjectID) ([]SuggestPracticeUnitEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	filter := bson.M{"userID": userID}
+	filter := bson.M{"userId": userID}
 
 	cur, err := l.Col.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
 
-	var res []SuggestPracticeUnitEventLog
-	if err := cur.All(ctx, res); err != nil {
+	res := make([]SuggestPracticeUnitEventLog, 0)
+	if err := cur.All(ctx, &res); err != nil {
 		return nil, err
 	}
 	return res, nil
