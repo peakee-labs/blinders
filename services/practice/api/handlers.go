@@ -44,13 +44,10 @@ func (s Service) HandleSuggestLanguageUnit(ctx *fiber.Ctx) error {
 			// use pre-defined language tag as default language tag
 			rsp, _ = s.GetRandomPracticeUnitWithLangCode(DefaultLanguageLocale)
 		}
-
-		goto response
 	} else {
 		// currently, randomly return practice unit to user
 		idx := rand.Intn(len(loggedEvent))
 		rsp = loggedEvent[idx].Response
-		goto response
 	}
 
 response:
@@ -62,7 +59,7 @@ func (s Service) HandleGetRandomLanguageUnit(ctx *fiber.Ctx) error {
 	unit, err := s.GetRandomPracticeUnitWithLangCode(localeCode)
 	if err != nil {
 		// use pre-defined language tag as default language tag
-		unit, err = s.GetRandomPracticeUnitWithLangCode(DefaultLanguageLocale)
+		unit, _ = s.GetRandomPracticeUnitWithLangCode(DefaultLanguageLocale)
 	}
 	return ctx.Status(fiber.StatusOK).JSON(unit)
 }
