@@ -1,4 +1,4 @@
-package suggestapi
+package practiceapi
 
 import (
 	"blinders/packages/auth"
@@ -38,11 +38,11 @@ func NewService(
 }
 
 func (s *Service) InitRoute() {
-	chatRoute := s.App.Group("/suggest")
-	chatRoute.Get("/ping", func(c *fiber.Ctx) error {
-		return c.SendString("hello from suggest service")
+	practiceRoute := s.App.Group("/practice")
+	practiceRoute.Get("/ping", func(c *fiber.Ctx) error {
+		return c.SendString("hello from practice service")
 	})
 
-	authorized := chatRoute.Group("/", auth.FiberAuthMiddleware(s.Auth, s.Db.Users))
+	authorized := practiceRoute.Group("/", auth.FiberAuthMiddleware(s.Auth, s.Db.Users))
 	authorized.Get("/practice/unit", s.HandleSuggestLanguageUnit)
 }

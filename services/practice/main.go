@@ -50,9 +50,9 @@ func init() {
 }
 
 func main() {
-	port := os.Getenv("SUGGEST_SERVICE_PORT")
+	port := os.Getenv("PRACTICE_SERVICE_PORT")
 	err := service.App.Listen(fmt.Sprintf(":%s", port))
 	if err != nil {
-		log.Println("launch suggest service error", err)
+		log.Println("launch practice service error", err)
 	}
 }

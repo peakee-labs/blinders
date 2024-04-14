@@ -1,4 +1,4 @@
-package suggestapi
+package practiceapi
 
 import (
 	"log"
