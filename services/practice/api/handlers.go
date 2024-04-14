@@ -40,22 +40,24 @@ func (s Service) HandleSuggestLanguageUnit(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(rsp)
 }
 
-func (s Service) GetRandomPracticeUnitForUser(userID primitive.ObjectID) logging.SuggestPracticeUnitResponse {
-	// user's learning language code with RFC-5646 format
-	lang := ""
-
-	usr, err := s.Db.Matches.GetMatchInfoByUserID(userID)
-	if err == nil {
-		// we could index the most 'active' language with index 0 that mark that specific is currently actively learning by user.
-		lang = strings.Split(usr.Learnings[0], "-")[0] // we only take the Two-character primary language subtags (ex: "en-US" => "en")
+func (s Service) HandleGetRandomLanguageUnit(ctx *fiber.Ctx) error {
+	localeCode := ctx.Query("lang")
+	unit, err := s.GetRandomPracticeUnitWithLangCode(localeCode)
+	if err != nil {
+		// use pre-defined language tag as default language tag
+		unit, err = s.GetRandomPracticeUnitWithLangCode(DefaultLanguageLocale)
 	}
+	return ctx.Status(fiber.StatusOK).JSON(unit)
+}
 
-	units, ok := DefaultLanguageUnit[lang]
+// GetRandomPracticeUnitWithLangCode return random practiceunit with given langCode
+func (s Service) GetRandomPracticeUnitWithLangCode(langCode string) (logging.SuggestPracticeUnitResponse, error) {
+	// user's learning language code with RFC-5646 format
+	units, ok := DefaultLanguageUnit[langCode]
 	if !ok {
-		// use english as default
-		units = DefaultLanguageUnit[DefaultLanguageLocale]
+		return logging.SuggestPracticeUnitResponse{}, fmt.Errorf("language unit with given language is not existed")
 	}
 
 	idx := rand.Intn(len(units))
-	return units[idx]
+	return units[idx], nil
 }
