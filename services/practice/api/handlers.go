@@ -1,6 +1,7 @@
 package practiceapi
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"strings"
@@ -28,15 +29,31 @@ func (s Service) HandleSuggestLanguageUnit(ctx *fiber.Ctx) error {
 	var rsp logging.SuggestPracticeUnitResponse
 	loggedEvent, err := s.Logger.GetSuggestPracticeUnitEventLogByUserID(userOID)
 	if err != nil || len(loggedEvent) == 0 {
+		// try to return some pre-defined document here.
 		log.Printf("practice: cannot get log event from Logger, err: %v, event num: %v\n", err, len(loggedEvent))
-		// we could return some pre-defined document here.
-		rsp = s.GetRandomPracticeUnitForUser(userOID)
+		usr, err := s.Db.Matches.GetMatchInfoByUserID(userOID)
+		if err != nil {
+			rsp, _ = s.GetRandomPracticeUnitWithLangCode(DefaultLanguageLocale)
+			goto response
+		}
+
+		// we could index the most 'active' language with index 0 that mark that specific is currently actively learning by user.
+		lang := strings.Split(usr.Learnings[0], "-")[0] // we only take the Two-character primary language subtags (ex: "en-US" => "en")
+		rsp, err = s.GetRandomPracticeUnitWithLangCode(lang)
+		if err != nil {
+			// use pre-defined language tag as default language tag
+			rsp, _ = s.GetRandomPracticeUnitWithLangCode(DefaultLanguageLocale)
+		}
+
+		goto response
 	} else {
 		// currently, randomly return practice unit to user
 		idx := rand.Intn(len(loggedEvent))
 		rsp = loggedEvent[idx].Response
+		goto response
 	}
 
+response:
 	return ctx.Status(fiber.StatusOK).JSON(rsp)
 }
 
