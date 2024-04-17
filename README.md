@@ -1,4 +1,3 @@
-
 <h1 align="center">Blinders</h1>
 <p align="center">Monorepo, microservices backend for a language learning platform - Peakee.</p>
 <p align="center">Golang, Python, Langchain, AWS, Terraform, Firebase, MongoDB</p>
@@ -107,4 +106,34 @@ Run Embedder service
 make embedder
 # or
 poetry run embedder_service
+```
+
+## Deployment
+
+We have 3 separated environments which are `dev`, `staging` and `prod`. Each deployment environment have a deployment state.
+
+Also we have a `shared` state for managing `route53_certificate` and deploying some shared ec2 instances for `dev` and `staging` environments
+
+Use `.env.dev|staging|prod`, `firebase.admin.dev|staging|prod.json` at root corresponding to `dev|staging|prod`
+
+Pre-build functions
+
+```
+sh scripts/build_golambda.sh dev|staging|prod
+sh scripts/build_pylambda.sh dev|staging|prod
+sh scripts/build_pysuggest.sh dev|staging|prod
+```
+
+At the first time or having any update to shared state
+
+```
+cd infra/shared && terraform plan
+terraform apply
+```
+
+For a specific environment
+
+```
+cd infra/dev|staging|prod && terraform plan
+terraform apply
 ```
