@@ -13,5 +13,5 @@ module "core" {
     websocket = "dev.ws.peakee.co"
   }
 
-  env_filename = "../../.env.development"
+  env_filename = "../../.env.dev"
 }
