@@ -8,6 +8,11 @@ variable "profile" {
   default = "admin.peakee"
 }
 
+variable "project_name" {
+  type    = string
+  default = "blinders"
+}
+
 variable "aws_route53_zone_name" {
   type    = string
   default = "peakee.co"
