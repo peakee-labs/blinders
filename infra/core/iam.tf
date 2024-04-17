@@ -1,5 +1,5 @@
 resource "aws_iam_role" "lambda_role" {
-  name               = "BlindersLambdaRole"
+  name               = "${var.project.name}-lambda-role-${var.project.environment}"
   assume_role_policy = <<EOF
 {
     "Version": "2012-10-17",
@@ -19,7 +19,7 @@ data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_policy" "iam_policy_for_lambda" {
-  name        = "BlindersLambdaPolicy"
+  name        = "${var.project.name}-lambda-policy-${var.project.environment}"
   path        = "/"
   description = "AWS IAM Policy for managing aws lambda role"
   policy      = <<EOF
