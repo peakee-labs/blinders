@@ -1,6 +1,6 @@
-# Blinders
-
-Monorepo, a microservices backend project named Blinders for a language learning platform. Almost use Golang, Python, and Terraform for provisioning, all the services are hosted on AWS.
+<h1 align="center">Blinders</h1>
+<p align="center">Monorepo, microservices backend for a language learning platform - Peakee.</p>
+<p align="center">Golang, Python, Langchain, AWS, Terraform, Firebase, MongoDB</p>
 
 ## System Architecture
 
@@ -110,16 +110,30 @@ poetry run embedder_service
 
 # Deployment
 
-Prepare environment file `.env`
+We have 3 separated environments which are `dev`, `staging` and `prod`. Each deployment environment have a deployment state.
 
-Pre-build suggest function
+Also we have a `shared` state for managing `route53_certificate` and deploying some shared ec2 instances for `dev` and `staging` environments
 
-```
-sh ./scripts/build_pysuggest.sh
-```
+Use `.env.dev|staging|prod`, `firebase.admin.dev|staging|prod.json` at root corresponding to `dev|staging|prod`
 
-Deploy
+Pre-build functions
 
 ```
-cd infra && terraform apply
+sh scripts/build_golambda.sh dev|staging|prod
+sh scripts/build_pylambda.sh dev|staging|prod
+sh scripts/build_pysuggest.sh dev|staging|prod
+```
+
+At the first time or having any update to shared state
+
+```
+cd infra/shared && terraform plan
+terraform apply
+```
+
+For a specific environment
+
+```
+cd infra/dev|staging|prod && terraform plan
+terraform apply
 ```

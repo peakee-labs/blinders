@@ -66,13 +66,15 @@ func (m *MongoExplorer) Suggest(userID string) ([]models.MatchInfo, error) {
 	}
 
 	// JSONGet return value wrapped in an array.
+	// at here, if there aren't entries in redis, the jsonStr will be empty, we could check it here then return
 	jsonStr, err := m.RedisClient.JSONGet(ctx, CreateMatchKeyWithUserID(userID), "$.embed").Result()
-	if err != nil {
+	if err != nil || jsonStr == "" {
 		log.Println("explore: cannot get explore entry in redis, err", err)
 		return []models.MatchInfo{}, fmt.Errorf(
 			"explore profile not found, might need to check onboarding status",
 		)
 	}
+
 	var embedArr []EmbeddingVector
 	if err := json.Unmarshal([]byte(jsonStr), &embedArr); err != nil {
 		log.Println("explore: cannot unmarshall embed vector, err", err)
