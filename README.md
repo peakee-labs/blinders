@@ -108,7 +108,7 @@ make embedder
 poetry run embedder_service
 ```
 
-# Deployment
+## Deployment
 
 We have 3 separated environments which are `dev`, `staging` and `prod`. Each deployment environment have a deployment state.
 
