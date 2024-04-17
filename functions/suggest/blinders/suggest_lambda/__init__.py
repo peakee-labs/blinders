@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict
 
-from blinders.pysuggest import explain_text_in_sentence_by_gpt
+from blinders.pysuggest import explain_text_in_sentence_by_gpt_v2
 
 request_types = ["explain-text-in-sentence"]
 models = ["gpt"]
@@ -44,6 +44,6 @@ def lambda_handler(event: Dict[str, Any], context):
                     "headers": default_headers,
                     "body": "text and sentence are required for gpt",
                 }
-            suggest = explain_text_in_sentence_by_gpt(text, sentence)
+            suggest = explain_text_in_sentence_by_gpt_v2(text, sentence)
             print("suggest", suggest)
             return {"statusCode": 200, "headers": default_headers, "body": json.dumps(suggest)}
