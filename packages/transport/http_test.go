@@ -22,8 +22,8 @@ var (
 	postBodyNil     = make([]byte, 0)
 )
 
-func TestLocalTransportPush(t *testing.T) {
-	prefix := "/push"
+func TestLocalTransportPost(t *testing.T) {
+	prefix := "/post"
 	s := InitMockServer(prefix)
 	s.Start()
 	defer s.Close()

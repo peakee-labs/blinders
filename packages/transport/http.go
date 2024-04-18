@@ -10,23 +10,23 @@ import (
 	"net/http"
 )
 
-var _ Transport = &LocalTransport{}
+var _ Transport = &HTTPTransport{}
 
-type LocalTransport struct {
+type HTTPTransport struct {
 	client *http.Client
 }
 
-func NewLocalTransport(client ...*http.Client) *LocalTransport {
+func NewLocalTransport(client ...*http.Client) *HTTPTransport {
 	c := http.DefaultClient
 	if len(client) == 1 {
 		c = client[0]
 	}
-	return &LocalTransport{
+	return &HTTPTransport{
 		client: c,
 	}
 }
 
-func (t LocalTransport) Request(
+func (t HTTPTransport) Request(
 	_ context.Context,
 	id string,
 	payload []byte,
@@ -73,7 +73,7 @@ func (t LocalTransport) Request(
 	return bodyReader.Bytes(), nil
 }
 
-func (t LocalTransport) Push(_ context.Context, id string, body []byte) error {
+func (t HTTPTransport) Push(_ context.Context, id string, body []byte) error {
 	log.Println("[local transport] push to", id)
 	rsp, err := t.client.Post(id, "application/json", bytes.NewReader(body))
 	if err != nil {
