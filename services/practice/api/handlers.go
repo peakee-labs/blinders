@@ -27,7 +27,7 @@ func (s Service) HandleSuggestLanguageUnit(ctx *fiber.Ctx) error {
 	}
 
 	var rsp collecting.SuggestPracticeUnitResponse
-	loggedEvent, err := s.Logger.GetSuggestPracticeUnitEventLogByUserID(userOID)
+	loggedEvent, err := s.Logger.GetSuggestPracticeUnitLogByUserID(userOID)
 	if err != nil || len(loggedEvent) == 0 {
 		// try to return some pre-defined document here.
 		log.Printf("practice: cannot get log event from Logger, err: %v, event num: %v\n", err, len(loggedEvent))

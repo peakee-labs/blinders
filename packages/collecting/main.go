@@ -15,31 +15,31 @@ var (
 	LogCollection                          = "logs"
 )
 
-type EventLogger struct {
+type EventCollector struct {
 	// TODO: maybe use another db
 	Col *mongo.Collection // Log collection
 }
 
-func NewEventLogger(db *mongo.Database) *EventLogger {
-	return &EventLogger{
+func NewEventCollector(db *mongo.Database) *EventCollector {
+	return &EventCollector{
 		Col: db.Collection(LogCollection),
 	}
 }
 
-func (l EventLogger) AddTranslateLog(log *TranslateEventLog) (*TranslateEventLog, error) {
+func (l EventCollector) AddTranslateLog(log *TranslateEventLog) (*TranslateEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	_, err := l.Col.InsertOne(ctx, log)
 	return log, err
 }
 
-func (l EventLogger) AddRawTranslateLog(log *TranslateEventLog) (*TranslateEventLog, error) {
+func (l EventCollector) AddRawTranslateLog(log *TranslateEventLog) (*TranslateEventLog, error) {
 	log.ID = primitive.NewObjectID()
 	log.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 	return l.AddTranslateLog(log)
 }
 
-func (l EventLogger) GetTranslateLogByID(logID primitive.ObjectID) (*TranslateEventLog, error) {
+func (l EventCollector) GetTranslateLogByID(logID primitive.ObjectID) (*TranslateEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -50,7 +50,7 @@ func (l EventLogger) GetTranslateLogByID(logID primitive.ObjectID) (*TranslateEv
 	return translateLog, err
 }
 
-func (l EventLogger) GetTranslateLogByUserID(userID primitive.ObjectID) ([]TranslateEventLog, error) {
+func (l EventCollector) GetTranslateLogByUserID(userID primitive.ObjectID) ([]TranslateEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	filter := bson.M{"userID": userID}
@@ -67,20 +67,20 @@ func (l EventLogger) GetTranslateLogByUserID(userID primitive.ObjectID) ([]Trans
 	return res, nil
 }
 
-func (l EventLogger) AddSuggestPracticeLog(log *SuggestPracticeUnitEventLog) (*SuggestPracticeUnitEventLog, error) {
+func (l EventCollector) AddSuggestPracticeLog(log *SuggestPracticeUnitEventLog) (*SuggestPracticeUnitEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	_, err := l.Col.InsertOne(ctx, log)
 	return log, err
 }
 
-func (l EventLogger) AddRawSuggestPracticeUnitLog(log *SuggestPracticeUnitEventLog) (*SuggestPracticeUnitEventLog, error) {
+func (l EventCollector) AddRawSuggestPracticeUnitLog(log *SuggestPracticeUnitEventLog) (*SuggestPracticeUnitEventLog, error) {
 	log.ID = primitive.NewObjectID()
 	log.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 	return l.AddSuggestPracticeLog(log)
 }
 
-func (l EventLogger) GetSuggestPracticeUnitLogByID(logID primitive.ObjectID) (*SuggestPracticeUnitEventLog, error) {
+func (l EventCollector) GetSuggestPracticeUnitLogByID(logID primitive.ObjectID) (*SuggestPracticeUnitEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -91,7 +91,7 @@ func (l EventLogger) GetSuggestPracticeUnitLogByID(logID primitive.ObjectID) (*S
 	return translateLog, err
 }
 
-func (l EventLogger) GetSuggestPracticeUnitEventLogByUserID(userID primitive.ObjectID) ([]SuggestPracticeUnitEventLog, error) {
+func (l EventCollector) GetSuggestPracticeUnitLogByUserID(userID primitive.ObjectID) ([]SuggestPracticeUnitEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	filter := bson.M{"userId": userID}

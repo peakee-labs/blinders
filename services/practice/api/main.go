@@ -15,7 +15,7 @@ type Service struct {
 	Db          *db.MongoManager
 	Transport   transport.Transport
 	ConsumerMap transport.ConsumerMap
-	Logger      collecting.EventLogger // Temporarily use, logging should run in separate service
+	Logger      collecting.EventCollector // Temporarily use, logging should run in separate service
 	// Suggester   suggest.Suggester // this field is deprecated
 }
 
@@ -23,7 +23,7 @@ func NewService(
 	app *fiber.App,
 	auth auth.Manager,
 	db *db.MongoManager,
-	logger *collecting.EventLogger,
+	logger *collecting.EventCollector,
 	transport transport.Transport,
 	consumerMap transport.ConsumerMap,
 ) *Service {

@@ -42,7 +42,7 @@ func init() {
 		app,
 		authManager,
 		mongoManager,
-		collecting.NewEventLogger(mongoManager.Client.Database(dbName)),
+		collecting.NewEventCollector(mongoManager.Client.Database(dbName)),
 		transport.NewLocalTransport(),
 		transport.ConsumerMap{
 			transport.Suggest: fmt.Sprintf("http://localhost:%s/", os.Getenv("PYSUGGEST_SERVICE_PORT")), // python suggest service
