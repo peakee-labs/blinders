@@ -6,6 +6,8 @@ then
     exit 1
 fi
 
+rm -rf dist/dictionary*
+
 cd functions/dictionary
 poetry build
 poetry run pip install --upgrade -t bundle dist/*.whl

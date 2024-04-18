@@ -5,6 +5,9 @@ then
     exit 1
 fi
 
+
+rm -rf dist/suggest*
+
 suggest_bundle="functions/suggest/lambda_bundle"
 suggest_bundle_zip="functions/suggest/lambda_bundle.zip"
 

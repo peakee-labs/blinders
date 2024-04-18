@@ -11,6 +11,11 @@ resource "aws_lambda_function" "dictionary" {
   role             = aws_iam_role.lambda_role.arn
   runtime          = "python3.10"
   depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
+  }
 }
 
 resource "aws_lambda_function" "pysuggest" {
@@ -27,6 +32,11 @@ resource "aws_lambda_function" "pysuggest" {
   environment {
     variables = local.envs
   }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
+  }
 }
 
 resource "aws_lambda_function" "translate" {
@@ -41,6 +51,11 @@ resource "aws_lambda_function" "translate" {
 
   environment {
     variables = local.envs
+  }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
   }
 }
 
@@ -57,6 +72,11 @@ resource "aws_lambda_function" "ws_connect" {
   environment {
     variables = local.envs
   }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
+  }
 }
 
 resource "aws_lambda_function" "ws_authorizer" {
@@ -72,6 +92,11 @@ resource "aws_lambda_function" "ws_authorizer" {
   environment {
     variables = local.envs
   }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
+  }
 }
 
 resource "aws_lambda_function" "ws_disconnect" {
@@ -84,9 +109,13 @@ resource "aws_lambda_function" "ws_disconnect" {
   depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
   source_code_hash = filebase64sha256("../../dist/disconnect-${var.project.environment}.zip")
 
-
   environment {
     variables = local.envs
+  }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
   }
 }
 
@@ -102,6 +131,11 @@ resource "aws_lambda_function" "ws_chat" {
 
   environment {
     variables = local.envs
+  }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
   }
 }
 
@@ -121,6 +155,11 @@ resource "aws_lambda_function" "rest" {
       EXPLORE_FUNCTION_NAME : aws_lambda_function.explore.function_name
     })
   }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
+  }
 }
 
 resource "aws_lambda_function" "notification" {
@@ -134,9 +173,13 @@ resource "aws_lambda_function" "notification" {
   architectures    = ["arm64"]
   source_code_hash = filebase64sha256("../../dist/notification-${var.project.environment}.zip")
 
-
   environment {
     variables = local.envs
+  }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
   }
 }
 
@@ -151,9 +194,13 @@ resource "aws_lambda_function" "explore" {
   architectures    = ["arm64"]
   source_code_hash = filebase64sha256("../../dist/explore-${var.project.environment}.zip")
 
-
   environment {
     variables = local.envs
+  }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
   }
 }
 
