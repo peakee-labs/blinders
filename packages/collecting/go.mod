@@ -1,4 +1,4 @@
-module blinders/packages/logging
+module blinders/packages/collecting
 
 go 1.22.1
 

@@ -1,8 +1,8 @@
 package practiceapi
 
-import "blinders/packages/logging"
+import "blinders/packages/collecting"
 
-var DefaultLanguageUnit = map[string][]logging.SuggestPracticeUnitResponse{
+var DefaultLanguageUnit = map[string][]collecting.SuggestPracticeUnitResponse{
 	"en": {
 		{
 			Word:        "Entrepreneur",

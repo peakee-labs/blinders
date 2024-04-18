@@ -1,4 +1,4 @@
-package logging
+package collecting
 
 import (
 	"context"
@@ -26,7 +26,6 @@ func NewEventLogger(db *mongo.Database) *EventLogger {
 	}
 }
 
-// AddTranslateLog adds translate log into db.
 func (l EventLogger) AddTranslateLog(log *TranslateEventLog) (*TranslateEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -34,15 +33,12 @@ func (l EventLogger) AddTranslateLog(log *TranslateEventLog) (*TranslateEventLog
 	return log, err
 }
 
-// AddRawTranslateLog assigns unique primitive.ObjectID and primitive.DateTime to log then pass
-// to EventLogger.AddTranslateLog method
 func (l EventLogger) AddRawTranslateLog(log *TranslateEventLog) (*TranslateEventLog, error) {
 	log.ID = primitive.NewObjectID()
 	log.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 	return l.AddTranslateLog(log)
 }
 
-// GetTranslateLogByID returns translate log with TranslateEventLog.ID equal to params.logID in db.
 func (l EventLogger) GetTranslateLogByID(logID primitive.ObjectID) (*TranslateEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -54,7 +50,6 @@ func (l EventLogger) GetTranslateLogByID(logID primitive.ObjectID) (*TranslateEv
 	return translateLog, err
 }
 
-// GetTranslateLogByUserID returns list of translate log belongs to user with ID userID.
 func (l EventLogger) GetTranslateLogByUserID(userID primitive.ObjectID) ([]TranslateEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -72,7 +67,6 @@ func (l EventLogger) GetTranslateLogByUserID(userID primitive.ObjectID) ([]Trans
 	return res, nil
 }
 
-// AddSuggestPracticeLog adds suggest practice unit log into db.
 func (l EventLogger) AddSuggestPracticeLog(log *SuggestPracticeUnitEventLog) (*SuggestPracticeUnitEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -80,15 +74,12 @@ func (l EventLogger) AddSuggestPracticeLog(log *SuggestPracticeUnitEventLog) (*S
 	return log, err
 }
 
-// AddRawSuggestPracticeUnitLog assigns unique primitive.ObjectID and primitive.DateTime to log then pass
-// to EventLogger.AddSuggestPracticeLog method
 func (l EventLogger) AddRawSuggestPracticeUnitLog(log *SuggestPracticeUnitEventLog) (*SuggestPracticeUnitEventLog, error) {
 	log.ID = primitive.NewObjectID()
 	log.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 	return l.AddSuggestPracticeLog(log)
 }
 
-// GetSuggestPracticeUnitLogByID returns suggest practice unit with SuggestPracticeUnitEventLog.ID equal to params.logID in db.
 func (l EventLogger) GetSuggestPracticeUnitLogByID(logID primitive.ObjectID) (*SuggestPracticeUnitEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -100,7 +91,6 @@ func (l EventLogger) GetSuggestPracticeUnitLogByID(logID primitive.ObjectID) (*S
 	return translateLog, err
 }
 
-// GetSuggestPracticeUnitEventLogByUserID returns suggest practice unit logs belong to user with userID
 func (l EventLogger) GetSuggestPracticeUnitEventLogByUserID(userID primitive.ObjectID) ([]SuggestPracticeUnitEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()

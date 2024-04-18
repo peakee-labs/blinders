@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"blinders/packages/auth"
-	"blinders/packages/logging"
+	"blinders/packages/collecting"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -26,7 +26,7 @@ func (s Service) HandleSuggestLanguageUnit(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
 	}
 
-	var rsp logging.SuggestPracticeUnitResponse
+	var rsp collecting.SuggestPracticeUnitResponse
 	loggedEvent, err := s.Logger.GetSuggestPracticeUnitEventLogByUserID(userOID)
 	if err != nil || len(loggedEvent) == 0 {
 		// try to return some pre-defined document here.
@@ -65,11 +65,11 @@ func (s Service) HandleGetRandomLanguageUnit(ctx *fiber.Ctx) error {
 }
 
 // GetRandomPracticeUnitWithLangCode return random practiceunit with given langCode
-func (s Service) GetRandomPracticeUnitWithLangCode(langCode string) (logging.SuggestPracticeUnitResponse, error) {
+func (s Service) GetRandomPracticeUnitWithLangCode(langCode string) (collecting.SuggestPracticeUnitResponse, error) {
 	// user's learning language code with RFC-5646 format
 	units, ok := DefaultLanguageUnit[langCode]
 	if !ok {
-		return logging.SuggestPracticeUnitResponse{}, fmt.Errorf("language unit with given language is not existed")
+		return collecting.SuggestPracticeUnitResponse{}, fmt.Errorf("language unit with given language is not existed")
 	}
 
 	idx := rand.Intn(len(units))

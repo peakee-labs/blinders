@@ -12,18 +12,19 @@ use (
 	./functions/utils
 	./functions/websocket
 	./packages/apigateway
+	./packages/collecting
 	./packages/common
 	./packages/db
 	./packages/explore
 	./packages/goauth
 	./packages/interfaces
-	./packages/logging
 	./packages/session
 	./packages/suggest
 	./packages/translate
 	./packages/transport
 	./packages/utils
 	./services/chat
+	./services/collecting
 	./services/explore
 	./services/practice
 	./services/rest

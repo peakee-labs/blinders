@@ -7,13 +7,14 @@ import (
 	"strings"
 
 	"blinders/packages/auth"
+	"blinders/packages/collecting"
 	"blinders/packages/db"
-	"blinders/packages/logging"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
 	practiceapi "blinders/services/practice/api"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 )
 
@@ -41,11 +42,12 @@ func init() {
 		app,
 		authManager,
 		mongoManager,
-		logging.NewEventLogger(mongoManager.Client.Database(dbName)),
+		collecting.NewEventLogger(mongoManager.Client.Database(dbName)),
 		transport.NewLocalTransport(),
 		transport.ConsumerMap{
 			transport.Suggest: fmt.Sprintf("http://localhost:%s/", os.Getenv("PYSUGGEST_SERVICE_PORT")), // python suggest service
 		})
+	service.App.Use(cors.New())
 	service.InitRoute()
 }
 

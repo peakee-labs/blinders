@@ -2,8 +2,8 @@ package practiceapi
 
 import (
 	"blinders/packages/auth"
+	"blinders/packages/collecting"
 	"blinders/packages/db"
-	"blinders/packages/logging"
 	"blinders/packages/transport"
 
 	"github.com/gofiber/fiber/v2"
@@ -15,7 +15,7 @@ type Service struct {
 	Db          *db.MongoManager
 	Transport   transport.Transport
 	ConsumerMap transport.ConsumerMap
-	Logger      logging.EventLogger // Temporarily use, logging should run in separate service
+	Logger      collecting.EventLogger // Temporarily use, logging should run in separate service
 	// Suggester   suggest.Suggester // this field is deprecated
 }
 
@@ -23,7 +23,7 @@ func NewService(
 	app *fiber.App,
 	auth auth.Manager,
 	db *db.MongoManager,
-	logger *logging.EventLogger,
+	logger *collecting.EventLogger,
 	transport transport.Transport,
 	consumerMap transport.ConsumerMap,
 ) *Service {
