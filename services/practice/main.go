@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"blinders/packages/auth"
-	"blinders/packages/collecting"
 	"blinders/packages/db"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
@@ -42,10 +41,10 @@ func init() {
 		app,
 		authManager,
 		mongoManager,
-		collecting.NewEventCollector(mongoManager.Client.Database(dbName)),
 		transport.NewLocalTransport(),
 		transport.ConsumerMap{
-			transport.Suggest: fmt.Sprintf("http://localhost:%s/", os.Getenv("PYSUGGEST_SERVICE_PORT")), // python suggest service
+			transport.Suggest:    fmt.Sprintf("http://localhost:%s/", os.Getenv("PYSUGGEST_SERVICE_PORT")), // python suggest service
+			transport.Collecting: fmt.Sprintf("http://localhost:%s/", os.Getenv("COLLECTING_SERVICE_PORT")),
 		})
 	service.App.Use(cors.New())
 	service.InitRoute()
