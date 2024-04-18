@@ -18,7 +18,7 @@ var DefaultLanguageLocale = "en"
 func (s Service) HandleSuggestLanguageUnit(ctx *fiber.Ctx) error {
 	authUser := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
 	if authUser == nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get user auth information"})
+		return fmt.Errorf("cannot get user auth information")
 	}
 
 	var unit collecting.SuggestPracticeUnitResponse
