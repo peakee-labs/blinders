@@ -3,7 +3,6 @@ package transport_test
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -19,7 +18,6 @@ var (
 	failedEndpoint  = "/failed"
 	failedResponse  = []byte("failed-get")
 	postBody        = []byte("body")
-	postBodyNil     = make([]byte, 0)
 )
 
 func TestLocalTransportPost(t *testing.T) {
@@ -33,7 +31,6 @@ func TestLocalTransportPost(t *testing.T) {
 		endpoint        string
 		expectedError   bool
 		body            []byte
-		rsp             []byte
 	}
 	testcases := []Testcase{
 		{
@@ -42,15 +39,6 @@ func TestLocalTransportPost(t *testing.T) {
 			endpoint:        fmt.Sprintf("%s%s%s", s.URL, prefix, successEndpoint),
 			expectedError:   false,
 			body:            postBody,
-			rsp:             postBody,
-		},
-		{
-			name:            "DoSuccessWithEmptyResponse",
-			transportClient: s.Client(),
-			endpoint:        fmt.Sprintf("%s%s%s", s.URL, prefix, successEndpoint),
-			expectedError:   false,
-			body:            postBodyNil,
-			rsp:             nil,
 		},
 		{
 			name:            "DoFailed",
@@ -58,7 +46,6 @@ func TestLocalTransportPost(t *testing.T) {
 			endpoint:        fmt.Sprintf("%s%s%s", s.URL, prefix, failedEndpoint),
 			expectedError:   true,
 			body:            postBody,
-			rsp:             nil,
 		},
 	}
 
@@ -66,13 +53,10 @@ func TestLocalTransportPost(t *testing.T) {
 		tc := testcases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			tp := transport.NewLocalTransport(s.Client())
-			rsp, err := tp.Request(context.TODO(), tc.endpoint, tc.body, transport.RequestConfig{
-				Method: "POST",
-			})
+			err := tp.Push(context.TODO(), tc.endpoint, tc.body)
 			if tc.expectedError {
 				require.NotNil(t, err)
 			}
-			require.Equal(t, tc.rsp, rsp)
 		})
 	}
 }
@@ -120,24 +104,14 @@ func TestLocalTransportRequest(t *testing.T) {
 	}
 }
 
-var ServeSuccessGetEndpoint http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
+var ServeSuccessGetEndpoint http.HandlerFunc = func(writer http.ResponseWriter, _ *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	switch request.Method {
-	case "POST":
-		_, _ = io.Copy(writer, request.Body)
-	default:
-		_, _ = writer.Write(successResponse)
-	}
+	_, _ = writer.Write(successResponse)
 }
 
-var ServeFailedGetEndpoint http.HandlerFunc = func(writer http.ResponseWriter, request *http.Request) {
+var ServeFailedGetEndpoint http.HandlerFunc = func(writer http.ResponseWriter, _ *http.Request) {
 	writer.WriteHeader(http.StatusBadRequest)
-	switch request.Method {
-	case "POST":
-		return
-	default:
-		_, _ = writer.Write(failedResponse)
-	}
+	_, _ = writer.Write(failedResponse)
 }
 
 func InitMockServer(prefix string) *httptest.Server {

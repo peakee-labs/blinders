@@ -21,7 +21,6 @@ func (t LambdaTransport) Request(
 	ctx context.Context,
 	id string,
 	payload []byte,
-	_ ...RequestConfig,
 ) (response []byte, err error) {
 	log.Println("[lambda transport] request to", id)
 	res, err := t.Invoke(ctx, &lambda.InvokeInput{

@@ -12,7 +12,7 @@ func (m MockTransport) Push(_ context.Context, id string, payload []byte) error 
 	return nil
 }
 
-func (m MockTransport) Request(_ context.Context, id string, payload []byte, config ...RequestConfig) (response []byte, err error) {
+func (m MockTransport) Request(_ context.Context, id string, payload []byte) (response []byte, err error) {
 	fmt.Printf("transport: Request to %v, payload: %v\n", id, payload)
 	return nil, nil
 }

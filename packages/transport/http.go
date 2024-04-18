@@ -6,11 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 )
-
-var _ Transport = &HTTPTransport{}
 
 type HTTPTransport struct {
 	client *http.Client
@@ -30,24 +27,11 @@ func (t HTTPTransport) Request(
 	_ context.Context,
 	id string,
 	payload []byte,
-	config ...RequestConfig,
 ) (response []byte, err error) {
-	method := "GET"
-	header := make(http.Header)
-	if len(config) == 1 {
-		method = config[0].Method
-		for key, vals := range config[0].Header {
-			for _, val := range vals {
-				header.Add(key, val)
-			}
-		}
-	}
-
-	req, err := http.NewRequest(method, id, bytes.NewReader(payload))
+	req, err := http.NewRequest("GET", id, bytes.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
-	req.Header = header
 
 	rsp, err := t.client.Do(req)
 	if err != nil {
@@ -74,7 +58,6 @@ func (t HTTPTransport) Request(
 }
 
 func (t HTTPTransport) Push(_ context.Context, id string, body []byte) error {
-	log.Println("[local transport] push to", id)
 	rsp, err := t.client.Post(id, "application/json", bytes.NewReader(body))
 	if err != nil {
 		return err
