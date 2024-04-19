@@ -27,3 +27,12 @@ type AddFriendEvent struct {
 	AddFriendRequestID string `json:"addFriendRequestId"`
 	Action             AddFriendAction
 }
+
+// GenericEvent could be used to embed specific event as payload.
+//
+// The event producer and consumer could identify payload type by checking
+// Event.Type value of GenericEvent.Event field
+type GenericEvent struct {
+	Event   `json:",inline"`
+	Payload any `json:",inline"`
+}

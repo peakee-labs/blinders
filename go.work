@@ -1,4 +1,4 @@
-go 1.22.0
+go 1.22.1
 
 use (
 	./cli
@@ -12,6 +12,7 @@ use (
 	./functions/utils
 	./functions/websocket
 	./packages/apigateway
+	./packages/collecting
 	./packages/common
 	./packages/db
 	./packages/explore
@@ -23,7 +24,9 @@ use (
 	./packages/transport
 	./packages/utils
 	./services/chat
+	./services/collecting
 	./services/explore
+	./services/practice
 	./services/rest
 	./services/suggest
 	./tests

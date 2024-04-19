@@ -1,9 +1,9 @@
-/*
-This package provides transport layer for all services, for both local development and production on AWS
-*/
+// Package transport provides transport layer for all services, for both local development and production on AWS
 package transport
 
-import "context"
+import (
+	"context"
+)
 
 type Transport interface {
 	Request(ctx context.Context, id string, payload []byte) (response []byte, err error)
@@ -15,6 +15,8 @@ type Key string
 const (
 	Notification Key = "notification"
 	Explore      Key = "explore"
+	Collecting   Key = "collecting"
+	Suggest      Key = "suggest"
 )
 
 type ConsumerMap map[Key]string
