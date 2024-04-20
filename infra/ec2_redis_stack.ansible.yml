@@ -73,15 +73,17 @@
         dest: /etc/redis-stack.conf
         mode: "0644"
 
-    # /etc/systemd/system/redis-stack-server.service
+    # there is some problem with starting without reloading daemon
+    # need to overwrite default ExecStart with direct redis-stack-server path
+    - name: Overwrite Redis Stack Server systemd service
+      ansible.builtin.template:
+        src: ./templates/redis-stack-server.service
+        dest: /etc/systemd/system/redis-stack-server.service
+        mode: "0644"
+
     - name: Start Redis Stack Server
       ansible.builtin.systemd:
         name: redis-stack-server
+        daemon_reload: true
         enabled: true
         state: started
-
-    # - name: Gather facts on listening ports
-    #   community.general.listen_ports_facts:
-    # when: "6379 not in (ansible_facts.tcp_listen + ansible_facts.udp_listen) | map(attribute='port') | unique | sort | list"
-    # changed_when: "6379 in (ansible_facts.tcp_listen + ansible_facts.udp_listen) | map(attribute='port') | unique | sort | list"
-    # kill port: sudo kill -9 $(sudo lsof -t -i:8080)
