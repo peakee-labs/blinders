@@ -6,6 +6,16 @@ resource "aws_instance" "database" {
 
   tags = { Name = "${var.project_name}-database-shared" }
 
+  provisioner "remote-exec" {
+    connection {
+      type        = "ssh"
+      host        = self.public_ip
+      user        = "ec2-user"
+      private_key = file("./tf_ec2_key.pem")
+    }
+    script = "../wait_for_instance.sh"
+  }
+
   provisioner "local-exec" {
     command = <<EOT
     ansible-playbook ../ec2_mongodb.ansible.yml -u ec2-user -i '${self.public_ip},' \
