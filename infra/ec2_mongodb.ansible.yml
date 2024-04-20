@@ -1,14 +1,10 @@
 - name: Setup MongoDB on EC2
-  hosts: shared
+  hosts: all
   gather_facts: false
   become: true
-  vars_prompt:
-    - name: admin_mongodb_username
-      prompt: Type username to create admin user of mongoDB
-      private: false
-    - name: admin_mongodb_password
-      prompt: Type password to create admin user of mongoDB
-      private: true
+  # vars:
+  #   - mongodb_admin_username
+  #   - mongodb_admin_password
   tasks:
     - name: Ping my hosts
       ansible.builtin.ping:
@@ -53,10 +49,10 @@
     - name: Configure Users
       community.mongodb.mongodb_user:
         database: admin
-        name: "{{ admin_mongodb_username }}"
-        password: "{{ admin_mongodb_password }}"
-        login_user: "{{ admin_mongodb_username }}"
-        login_password: "{{ admin_mongodb_password }}"
+        name: "{{ mongodb_admin_username }}"
+        password: "{{ mongodb_admin_password }}"
+        # login_user: "{{ mongodb_admin_username }}"
+        # login_password: "{{ mongodb_admin_password }}"
         roles:
           - role: userAdminAnyDatabase
             db: admin
