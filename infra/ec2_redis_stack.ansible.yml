@@ -31,9 +31,9 @@
         status_code: [200, 304]
 
     - name: Import Redis key
-      ansible.builtin.command: sudo rpm --import /tmp/redis.key
-      args:
-        creates: /tmp/redis.key
+      ansible.builtin.rpm_key:
+        key: "/tmp/redis.key"
+      # ansible.builtin.command: sudo rpm --import /tmp/redis.key
 
     - name: Install Redis Stack
       ansible.builtin.yum:
