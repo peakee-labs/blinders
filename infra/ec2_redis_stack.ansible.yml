@@ -46,10 +46,6 @@
         dest: /tmp/compat-openssl10-1.0.2o-4.el8_6.x86_64.rpm
         creates: /tmp/compat-openssl10-1.0.2o-4.el8_6.x86_64.rpm
 
-    # - name: Gather facts about installed packages
-    #   ansible.builtin.package_facts:
-    #     manager: auto
-
     - name: Get yum installed packages
       ansible.builtin.yum:
         list: installed
@@ -58,7 +54,8 @@
     - name: Install compat-openssl10.x86_64 package if it's not installed
       ansible.builtin.command: yum install -y /tmp/compat-openssl10-1.0.2o-4.el8_6.x86_64.rpm
       # do not need this condition if provisioning only
-      when: "'compat-openssl10.x86_64' in yum_packages.results | map(attribute='name') | list "
+      when: "'compat-openssl10.x86_64' not in yum_packages.results | map(attribute='name') | list"
+      changed_when: "'compat-openssl10.x86_64' in yum_packages.results | map(attribute='name') | list"
 
     # sudo yum install -y /tmp/compat-openssl10-1.0.2o-4.el8_6.x86_64.rpm works fine but failed with ansible.builtin.yum:
     #   ansible.builtin.yum:
@@ -66,6 +63,11 @@
     #       - /tmp/compat-openssl10-1.0.2o-4.el8_6.x86_64.rpm
 
     # After installing Redis Stack, we have redis-cli, redis-server, redis-stack-server
+
+    # - name: Gather facts on listening ports
+    #   community.general.listen_ports_facts:
+    # when: "6379 not in (ansible_facts.tcp_listen + ansible_facts.udp_listen) | map(attribute='port') | unique | sort | list"
+    # changed_when: "6379 in (ansible_facts.tcp_listen + ansible_facts.udp_listen) | map(attribute='port') | unique | sort | list"
 
     - name: Add Redis Configs
       ansible.builtin.template:
