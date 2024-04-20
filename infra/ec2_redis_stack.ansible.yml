@@ -1,0 +1,39 @@
+- name: Setup Redis Stack on EC2
+  hosts: shared
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Ping my hosts
+      ansible.builtin.ping:
+
+    - name: Print message
+      ansible.builtin.debug:
+        msg: Hello world
+
+    - name: Setup Yum repository for Redis Stack
+      ansible.builtin.template:
+        src: ./templates/yum-repos-redis.repo
+        dest: /etc/yum.repos.d/redis.repo
+        mode: "0644"
+
+    - name: Install the Dependencies
+      ansible.builtin.yum:
+        name:
+          - mongodb-org
+
+    - name: Install Redis install key
+      ansible.builtin.uri:
+        url: https://packages.redis.io/gpg
+        dest: /tmp/redis.key
+        follow_redirects: safe
+        status_code: [200, 304]
+
+    - name: Import Redis key
+      ansible.builtin.command: sudo rpm --import /tmp/redis.key
+      args:
+        creates: /tmp/redis.key
+
+    - name: Install Redis Stack
+      ansible.builtin.yum:
+        name:
+          - redis-stack-server
