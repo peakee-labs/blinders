@@ -5,6 +5,23 @@ resource "aws_instance" "database" {
   vpc_security_group_ids = [aws_security_group.ec2_security_group.id]
 
   tags = { Name = "${var.project_name}-database-shared" }
+
+  provisioner "local-exec" {
+    command = <<EOT
+    ansible-playbook ../ec2_mongodb.ansible.yml -u ec2-user -i '${self.public_ip},' \
+     --key-file ./tf_ec2_key.pem \
+     --extra-vars 'mongodb_admin_username=${var.mongodb_admin_username} \
+      mongodb_admin_password=${var.mongodb_admin_password}'
+    EOT
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+    ansible-playbook ../ec2_redis_stack.ansible.yml -u ec2-user -i '${self.public_ip},' \
+     --key-file ./tf_ec2_key.pem \
+     --extra-vars 'redis_default_password=${var.redis_default_password}'
+    EOT
+  }
 }
 
 
@@ -57,15 +74,27 @@ resource "aws_key_pair" "tf_ec2_key" {
   public_key = tls_private_key.tf_ec2_key.public_key_openssh
 }
 
-output "instance_public_ip" {
-  description = "Public IP address of the database EC2 instance"
-  value       = aws_instance.database.public_ip
-}
 
 output "enable_key_file" {
   value = "chmod 400 ./tf_ec2_key.pem"
 }
 
+output "database_public_ip" {
+  description = "Public IP address of the database EC2 instance"
+  value       = aws_instance.database.public_ip
+}
+
+
 output "ssh_command_to_database" {
   value = "ssh ec2-user@${aws_instance.database.public_ip} -i ./tf_ec2_key.pem"
+}
+
+output "services_public_ip" {
+  description = "Public IP address of the services EC2 instance"
+  value       = aws_instance.services.public_ip
+}
+
+
+output "ssh_command_to_sevices" {
+  value = "ssh ec2-user@${aws_instance.services.public_ip} -i ./tf_ec2_key.pem"
 }
