@@ -1,14 +1,11 @@
 package db
 
 import (
-	"context"
 	"log"
-	"time"
 
 	"blinders/packages/db/repo"
 
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // username:password@host:port/database
@@ -35,17 +32,9 @@ type MongoManager struct {
 }
 
 func NewMongoManager(url string, name string) *MongoManager {
-	ctx, cal := context.WithTimeout(context.Background(), time.Second*10)
-	defer cal()
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(url))
+	client, err := InitMongoClient(url)
 	if err != nil {
-		log.Println("cannot connect to mongo", err)
-		return nil
-	}
-
-	if err := client.Ping(ctx, nil); err != nil {
-		log.Println("cannot ping to the server", err)
+		log.Println("cannot init mongo client", err)
 		return nil
 	}
 
