@@ -20,8 +20,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-var service *collectingapi.Service
-var fiberLambda *fiberadapter.FiberLambda
+var (
+	service     *collectingapi.Service
+	fiberLambda *fiberadapter.FiberLambda
+)
 
 func init() {
 	log.Println("collecting api running on environment:", os.Getenv("ENVIRONMENT"))
