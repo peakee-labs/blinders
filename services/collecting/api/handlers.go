@@ -1,11 +1,10 @@
 package collectingapi
 
 import (
-	"fmt"
 	"log"
 
-	"blinders/packages/auth"
 	"blinders/packages/collecting"
+	"blinders/packages/transport"
 	"blinders/packages/utils"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,15 +12,26 @@ import (
 )
 
 func (s Service) HandlePushEvent(ctx *fiber.Ctx) error {
-	e, err := utils.ParseJSON[collecting.GenericEvent](ctx.Body())
+	req, err := utils.ParseJSON[transport.CollectEventRequest](ctx.Body())
 	if err != nil {
-		log.Printf("cannot get generic event from request's body, err: %v\n", err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get log from body"})
+		log.Printf("cannot get collect event from request's body, err: %v\n", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get event from body"})
 	}
 
-	switch e.Type {
+	if req.Request.Type != transport.CollectEvent {
+		log.Printf("event type mismatch, type: %v\n", req.Request.Type)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get event from body"})
+	}
+
+	if req.Type != transport.CollectEvent {
+		log.Printf("invalid request type: %v", req.Type)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request type"})
+	}
+
+	event := req.Data
+	switch event.Type {
 	case collecting.EventTypeSuggestPracticeUnit:
-		event, err := utils.JSONConvert[collecting.SuggestPracticeUnitEvent](e.Payload)
+		event, err := utils.JSONConvert[collecting.SuggestPracticeUnitEvent](event.Payload)
 		if err != nil {
 			log.Printf("cannot get suggest practice unit event from payload")
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "mismatch event type and event payload"})
@@ -36,8 +46,9 @@ func (s Service) HandlePushEvent(ctx *fiber.Ctx) error {
 		}
 
 		return ctx.Status(fiber.StatusOK).JSON(eventLog)
+
 	case collecting.EventTypeTranslate:
-		event, err := utils.JSONConvert[collecting.TranslateEvent](e.Payload)
+		event, err := utils.JSONConvert[collecting.TranslateEvent](event.Payload)
 		if err != nil {
 			log.Printf("cannot get translate event from payload")
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "mismatch event type and event payload"})
@@ -52,27 +63,74 @@ func (s Service) HandlePushEvent(ctx *fiber.Ctx) error {
 		}
 
 		return ctx.Status(fiber.StatusOK).JSON(eventLog)
+
+	case collecting.EventTypeExplain:
+		event, err := utils.JSONConvert[collecting.ExplainEvent](event.Payload)
+		if err != nil {
+			log.Printf("cannot get explain event from payload")
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "mismatch event type and event payload"})
+		}
+
+		eventLog, err := s.Collector.AddRawExplainLog(&collecting.ExplainEventLog{
+			ExplainEvent: *event,
+		})
+		if err != nil {
+			log.Printf("logger: cannot add raw explain log, err: %v", err)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot append explain log"})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(eventLog)
+
 	default:
-		log.Printf("receive undefined event")
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unsupported event type: " + e.Type})
+		log.Printf("receive unsupport event, type: %v", event.Type)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "unsupported event type: " + event.Type,
+		})
 	}
 }
 
 func (s Service) HandleGetEvent(ctx *fiber.Ctx) error {
-	authUser, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
-	if !ok {
-		log.Println("collector:  cannot get auth user from fiber context")
-		return fmt.Errorf("cannot get auth user")
+	req, err := utils.ParseJSON[transport.GetEventRequest](ctx.Body())
+	if err != nil {
+		log.Println("collector: cannot get event request from body")
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get request body"})
 	}
-	userOID, err := primitive.ObjectIDFromHex(authUser.ID)
+
+	userOID, err := primitive.ObjectIDFromHex(req.UserID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get userID from request"})
 	}
-	logs, err := s.Collector.GetTranslateLogByUserID(userOID)
-	if err != nil {
-		log.Println("collecting: cannot get logs of user", err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get user's log event"})
-	}
 
-	return ctx.Status(fiber.StatusOK).JSON(logs)
+	switch req.Type {
+	case collecting.EventTypeExplain:
+		logs, err := s.Collector.GetExplainLogByUserID(userOID)
+		if err != nil {
+			log.Println("collecting: cannot get logs of user", err)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get user's log event"})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(logs[:req.NumReturn])
+
+	case collecting.EventTypeTranslate:
+		logs, err := s.Collector.GetTranslateLogByUserID(userOID)
+		if err != nil {
+			log.Println("collecting: cannot get logs of user", err)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get user's log event"})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(logs[:req.NumReturn])
+
+	case collecting.EventTypeSuggestPracticeUnit:
+		logs, err := s.Collector.GetSuggestPracticeUnitLogByUserID(userOID)
+		if err != nil {
+			log.Println("collecting: cannot get logs of user", err)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get user's log event"})
+		}
+
+		return ctx.Status(fiber.StatusOK).JSON(logs[:req.NumReturn])
+
+	default:
+		log.Printf("collecting: received undefined event type (%v)\n", req.Type)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unsupported event"})
+	}
 }
