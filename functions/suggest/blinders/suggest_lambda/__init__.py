@@ -1,7 +1,9 @@
 import json
 from typing import Any, Dict
+import os
 
 from blinders.pysuggest import explain_text_in_sentence_by_gpt_v2
+from blinders.pytransport.aws import LambdaTransport
 
 request_types = ["explain-text-in-sentence"]
 models = ["gpt"]
@@ -9,6 +11,10 @@ models = ["gpt"]
 default_headers = {
     "Access-Control-Allow-Origin": "*",
 }
+
+lambdaTransport = LambdaTransport()
+collect = "COLLECT"
+consumeMap = {collect: os.getenv("COLLECTING_FUNCTION_NAME", "")}
 
 
 def lambda_handler(event: Dict[str, Any], context):
@@ -46,4 +52,26 @@ def lambda_handler(event: Dict[str, Any], context):
                 }
             suggest = explain_text_in_sentence_by_gpt_v2(text, sentence)
             print("suggest", suggest)
+
+            # TODO: make struct
+            suggestEvent = {
+                "request": {
+                    "text": text,
+                    "sentence": sentence,
+                },
+                "response": {
+                    "translate": suggest["translate"],
+                    "grammarAnalysis": suggest["grammarAnalysis"],
+                    "expandWords": suggest["grammarAnalysis"],
+                },
+            }
+            transportEvent = {
+                "type": "COLLECT_EVENT",
+                "data": {
+                    "type": "EXPLAIN",
+                    "payload": suggestEvent,
+                },
+            }
+
+            lambdaTransport.Push(consumeMap[collect], json.dumps(transportEvent))
             return {"statusCode": 200, "headers": default_headers, "body": json.dumps(suggest)}
