@@ -1,6 +1,6 @@
 import json
-from typing import Any, Dict
 import os
+from typing import Any, Dict
 
 from blinders.pysuggest import explain_text_in_sentence_by_gpt_v2
 from blinders.pytransport.aws import LambdaTransport

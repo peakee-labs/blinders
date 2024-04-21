@@ -1,5 +1,3 @@
-import json
-
 from blinders.dictionary_core import handle_dictionary
 
 

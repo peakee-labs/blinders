@@ -4,7 +4,6 @@ from blinders.pytransport import ITransport
 
 
 class LambdaTransport(ITransport):
-
     def __init__(self, *args):
         self.client = boto3.client("lambda", args)
 
