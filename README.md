@@ -131,6 +131,9 @@ Pre-build functions
 sh scripts/build_golambda.sh dev|staging|prod
 sh scripts/build_pylambda.sh dev|staging|prod
 sh scripts/build_pysuggest.sh dev|staging|prod
+
+# or build all functions
+sh scripts/build_all.sh dev|staging|prod
 ```
 
 At the first time or having any update to shared state

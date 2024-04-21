@@ -32,3 +32,5 @@ if [ -d "$suggest_bundle" ]; then
 else
     echo "Directory does not exist, build failed!"
 fi
+
+cd ../..
