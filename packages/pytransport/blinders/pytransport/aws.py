@@ -20,7 +20,7 @@ class LambdaTransport(ITransport):
                 response["FunctionError"],
             )
 
-        return response["Payload"]
+        return str(response["Payload"])
 
     def Push(self, id: str, payload: str):
         print("lambda transport: push to", id)
