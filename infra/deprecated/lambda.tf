@@ -12,12 +12,17 @@ resource "aws_lambda_function" "dictionary" {
 resource "aws_lambda_function" "pysuggest" {
   function_name    = "blinders-pysuggest"
   filename         = "../functions/suggest/lambda_bundle.zip"
+  timeout          = 60
   handler          = "blinders.suggest_lambda.lambda_handler"
   source_code_hash = filebase64sha256("../functions/suggest/lambda_bundle.zip")
   role             = aws_iam_role.lambda_role.arn
   runtime          = "python3.10"
   architectures    = ["arm64"]
   depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+
+  environment {
+    variables = local.envs
+  }
 }
 
 resource "null_resource" "go_build" {

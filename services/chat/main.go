@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"blinders/packages/auth"
 	"blinders/packages/utils"
@@ -16,15 +17,22 @@ import (
 var service chatapi.Service
 
 func init() {
+	env := os.Getenv("ENVIRONMENT")
+	envFile := ".env"
+	if env != "" {
+		envFile = strings.ToLower(".env." + env)
+	}
+	log.Println("init service in environment", env, "loading env at", envFile)
+	if err := godotenv.Load(envFile); err != nil {
+		log.Fatal("failed to load env", err)
+	}
+
 	app := fiber.New()
-	adminJSON, _ := utils.GetFile("firebase.admin.development.json")
+	adminJSON, _ := utils.GetFile("firebase.admin.json")
 
 	authManager, _ := auth.NewFirebaseManager(adminJSON)
 	service = chatapi.Service{App: app, Auth: authManager}
 	service.InitRoute()
-	if err := godotenv.Load(".env.development"); err != nil {
-		log.Fatal("failed to load env", err)
-	}
 }
 
 func main() {

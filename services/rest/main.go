@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"blinders/packages/auth"
 	"blinders/packages/db"
@@ -19,7 +20,13 @@ import (
 var apiManager restapi.Manager
 
 func init() {
-	if err := godotenv.Load(".env.development"); err != nil {
+	env := os.Getenv("ENVIRONMENT")
+	envFile := ".env"
+	if env != "" {
+		envFile = ".env." + strings.ToLower(env)
+	}
+	log.Println("init service in environment", env, "loading env at", envFile)
+	if err := godotenv.Load(envFile); err != nil {
 		log.Fatal("failed to load env", err)
 	}
 
@@ -34,7 +41,7 @@ func init() {
 		log.Fatal("cannot create database manager")
 	}
 
-	adminJSON, _ := utils.GetFile("firebase.admin.development.json")
+	adminJSON, _ := utils.GetFile("firebase.admin.json")
 	authManager, _ := auth.NewFirebaseManager(adminJSON)
 
 	apiManager = *restapi.NewManager(
