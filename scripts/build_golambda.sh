@@ -16,9 +16,9 @@ then
     exit 1
 fi
 
-rm -rf dist/connect* dist/translate* dist/authorizer* \
-    dist/explore* dist/disconnect* dist/wschat* \
-    dist/rest* dist/notification* dist/ws_authorizer*
+rm -rf dist/connect*$1 dist/translate*$1 dist/authorizer*$1 \
+    dist/explore*$1 dist/disconnect*$1 dist/wschat*$1$1 \
+    dist/rest*$1 dist/notification*$1 dist/ws_authorizer*$1
 
 echo "cleaned previous build artifacts"
 

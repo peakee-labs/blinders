@@ -6,7 +6,7 @@ then
 fi
 
 
-rm -rf dist/suggest*
+rm -rf dist/suggest*$1
 
 suggest_bundle="functions/suggest/lambda_bundle"
 suggest_bundle_zip="functions/suggest/lambda_bundle.zip"

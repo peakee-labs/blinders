@@ -155,3 +155,13 @@ terraform apply
 # or with a profile
 terraform apply -var="profile=..."
 ```
+
+Otherwise, we have `trydev` stage which is used for deployment testing with same env as `dev` stage, use this stage to test your new updating deployment before creating PR. Build step and resource files are same as `dev`
+
+```
+cd infra/trydev && terraform plan
+terraform apply
+
+# or with a profile
+terraform apply -var="profile=..."
+```
