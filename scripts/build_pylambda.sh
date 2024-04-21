@@ -6,7 +6,7 @@ then
     exit 1
 fi
 
-rm -rf dist/dictionary*
+rm -rf dist/dictionary*$1
 
 cd functions/dictionary
 poetry build
