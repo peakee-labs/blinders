@@ -1,0 +1,91 @@
+- name: Setup Redis Stack on EC2
+  hosts: all
+  gather_facts: false
+  become: true
+  # vars:
+  #   - redis_default_password
+  tasks:
+    - name: Ping my hosts
+      ansible.builtin.ping:
+
+    - name: Print message
+      ansible.builtin.debug:
+        msg: Hello world
+
+    - name: Setup Yum repository for Redis Stack
+      ansible.builtin.template:
+        src: ./templates/yum-repos-redis.repo
+        dest: /etc/yum.repos.d/redis.repo
+        mode: "0644"
+
+    - name: Install the Dependencies
+      ansible.builtin.yum:
+        name:
+          - mongodb-org
+
+    - name: Install Redis install key
+      ansible.builtin.uri:
+        url: https://packages.redis.io/gpg
+        dest: /tmp/redis.key
+        follow_redirects: safe
+        status_code: [200, 304]
+
+    - name: Import Redis key
+      ansible.builtin.rpm_key:
+        key: "/tmp/redis.key"
+      # ansible.builtin.command: sudo rpm --import /tmp/redis.key
+
+    - name: Install Redis Stack
+      ansible.builtin.yum:
+        name:
+          - redis-stack-server
+
+    - name: Download compat-openssl10 for missing Libssl.so.10 in Redis Stack
+      ansible.builtin.uri:
+        url: https://repo.almalinux.org/almalinux/8/AppStream/x86_64/os/Packages/compat-openssl10-1.0.2o-4.el8_6.x86_64.rpm
+        dest: /tmp/compat-openssl10-1.0.2o-4.el8_6.x86_64.rpm
+        creates: /tmp/compat-openssl10-1.0.2o-4.el8_6.x86_64.rpm
+
+    - name: Get yum installed packages
+      ansible.builtin.yum:
+        list: installed
+      register: yum_packages
+
+    - name: Install compat-openssl10.x86_64 package if it's not installed
+      ansible.builtin.command: yum install -y /tmp/compat-openssl10-1.0.2o-4.el8_6.x86_64.rpm
+      # do not need this condition if provisioning only
+      when: "'compat-openssl10.x86_64' not in yum_packages.results | map(attribute='name') | list"
+      changed_when: "'compat-openssl10.x86_64' in yum_packages.results | map(attribute='name') | list"
+
+    # sudo yum install -y /tmp/compat-openssl10-1.0.2o-4.el8_6.x86_64.rpm works fine but failed with ansible.builtin.yum:
+    #   ansible.builtin.yum:
+    #     name:
+    #       - /tmp/compat-openssl10-1.0.2o-4.el8_6.x86_64.rpm
+
+    # After installing Redis Stack, we have redis-cli, redis-server, redis-stack-server
+
+    # - name: Gather facts on listening ports
+    #   community.general.listen_ports_facts:
+    # when: "6379 not in (ansible_facts.tcp_listen + ansible_facts.udp_listen) | map(attribute='port') | unique | sort | list"
+    # changed_when: "6379 in (ansible_facts.tcp_listen + ansible_facts.udp_listen) | map(attribute='port') | unique | sort | list"
+
+    - name: Add Redis Configs
+      ansible.builtin.template:
+        src: ./templates/redis-stack.conf
+        dest: /etc/redis-stack.conf
+        mode: "0644"
+
+    # there is some problem with starting without reloading daemon
+    # need to overwrite default ExecStart with direct redis-stack-server path
+    - name: Overwrite Redis Stack Server systemd service
+      ansible.builtin.template:
+        src: ./templates/redis-stack-server.service
+        dest: /etc/systemd/system/redis-stack-server.service
+        mode: "0644"
+
+    - name: Start Redis Stack Server
+      ansible.builtin.systemd:
+        name: redis-stack-server
+        daemon_reload: true
+        enabled: true
+        state: started

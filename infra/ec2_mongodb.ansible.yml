@@ -1,0 +1,78 @@
+- name: Setup MongoDB on EC2
+  hosts: all
+  gather_facts: false
+  become: true
+  # vars:
+  #   - mongodb_admin_username
+  #   - mongodb_admin_password
+  tasks:
+    - name: Ping my hosts
+      ansible.builtin.ping:
+
+    - name: Print message
+      ansible.builtin.debug:
+        msg: Hello world
+
+    - name: Setup Yum repository for MongoDB
+      ansible.builtin.template:
+        src: ./templates/yum-repos-mongodb-org-7.0.repo
+        dest: /etc/yum.repos.d/mongodb-org-7.0.repo
+        mode: "0644"
+
+    - name: Install the MongoDB packages
+      ansible.builtin.yum:
+        name:
+          - mongodb-org
+
+    - name: Start MongoDB server
+      ansible.builtin.systemd:
+        state: started
+        name: mongod
+
+    - name: Install get-pip by curl
+      ansible.builtin.uri:
+        url: https://bootstrap.pypa.io/get-pip.py
+        dest: get-pip.py
+      args:
+        creates: get-pip.py
+
+    - name: Install pip with get-pip
+      ansible.builtin.command: python3 get-pip.py --user
+      args:
+        creates: /bin/pip3
+
+    - name: Install pymongo
+      ansible.builtin.pip:
+        name:
+          - pymongo
+
+    - name: Configure Users
+      community.mongodb.mongodb_user:
+        database: admin
+        name: "{{ mongodb_admin_username }}"
+        password: "{{ mongodb_admin_password }}"
+        # login_user: "{{ mongodb_admin_username }}"
+        # login_password: "{{ mongodb_admin_password }}"
+        roles:
+          - role: userAdminAnyDatabase
+            db: admin
+          - role: readWriteAnyDatabase
+            db: admin
+
+    - name: Config MongoDB authentication
+      ansible.builtin.template:
+        src: ./templates/mongod.conf
+        dest: /etc/mongod.conf
+        mode: "0644"
+
+    - name: Start MongoDB server
+      ansible.builtin.systemd:
+        state: restarted
+        name: mongod
+
+    - name: Resolve OpenSSL conflict to use mongosh
+      ansible.builtin.yum:
+        name:
+          - mongodb-mongosh-shared-openssl3
+          - mongodb-mongosh
+        autoremove: true

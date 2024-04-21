@@ -1,0 +1,5 @@
+[Redis]
+name=Redis
+baseurl=http://packages.redis.io/rpm/rhel7
+enabled=1
+gpgcheck=1
