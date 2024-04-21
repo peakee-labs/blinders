@@ -17,7 +17,7 @@ import (
 var convService restapi.ConversationsService
 
 func init() {
-	_ = godotenv.Load("../../../.env.development")
+	_ = godotenv.Load("../../../.env")
 	dbName := os.Getenv("MONGO_DATABASE")
 	url := os.Getenv("MONGO_DATABASE_URL")
 	log.Println("database url: ", url)

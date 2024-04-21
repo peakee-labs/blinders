@@ -12,12 +12,9 @@ import (
 var translator Translator
 
 func init() {
-	cwd, _ := os.Getwd()
-	fmt.Println("test", cwd)
-
-	err := godotenv.Load("../../.env.test")
+	err := godotenv.Load("../../.env")
 	if err != nil {
-		fmt.Println("Error loading .env.test file")
+		fmt.Println("Error loading .env file", err)
 	}
 
 	translator = YandexTranslator{APIKey: os.Getenv("YANDEX_API_KEY")}

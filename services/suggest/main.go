@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"blinders/packages/auth"
 	"blinders/packages/db"
@@ -19,11 +20,17 @@ import (
 var service suggestapi.Service
 
 func init() {
-	if err := godotenv.Load(".env.development"); err != nil {
+	env := os.Getenv("ENVIRONMENT")
+	envFile := ".env"
+	if env != "" {
+		envFile = ".env." + strings.ToLower(env)
+	}
+	log.Println("init service in environment", env, "loading env at", envFile)
+	if err := godotenv.Load(envFile); err != nil {
 		log.Fatal("failed to load env", err)
 	}
 	app := fiber.New()
-	adminJSON, _ := utils.GetFile("firebase.admin.development.json")
+	adminJSON, _ := utils.GetFile("firebase.admin.json")
 	url := fmt.Sprintf(
 		db.MongoURLTemplate,
 		os.Getenv("MONGO_USERNAME"),
@@ -45,7 +52,12 @@ func init() {
 		log.Fatal("failed to init openai client", err)
 	}
 
-	service = suggestapi.Service{App: app, Auth: authManager, Suggester: suggester, Db: mongoManager}
+	service = suggestapi.Service{
+		App:       app,
+		Auth:      authManager,
+		Suggester: suggester,
+		Db:        mongoManager,
+	}
 	service.InitRoute()
 }
 

@@ -8,9 +8,9 @@
 
 ## Resources
 
-Prepare env file `.env.development`, please check from `.env.example` for more detail
+For local development, we use `.env` as default for running services locally and for testing. Have a look at `.env.example`. Also, we use `firebase.admin.json` for firebase authentication integration in local.
 
-Prepare firebase admin credentials file, create file `firebase.admin.development.json`
+For deployment with stages, we use `.env.dev`, `.env.staging`, `.env.prod` for corresponding stages `dev`, `staging`, `prod`. With firebase, we use `firebase.admin.dev.json`, `firebase.admin.staging.json` and `firebase.admin.prod.json`
 
 ## Go development setup
 
