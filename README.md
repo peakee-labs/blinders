@@ -8,9 +8,11 @@
 
 ## Resources
 
-Prepare env file `.env.development`, please check from `.env.example` for more detail
+For local development, we use `.env` as default for running services locally and for testing. Have a look at `.env.example`. Also, we use `firebase.admin.json` for firebase authentication integration in local.
 
-Prepare firebase admin credentials file, create file `firebase.admin.development.json`
+For deployment with stages, we use `.env.dev`, `.env.staging`, `.env.prod` for corresponding stages `dev`, `staging`, `prod`. With firebase, we use `firebase.admin.dev.json`, `firebase.admin.staging.json` and `firebase.admin.prod.json`.
+
+Just a convention, we try to use `dev stage` nearly the same as `local development`, e.g firebase admin, api keys,...
 
 ## Go development setup
 
@@ -116,12 +118,22 @@ Also we have a `shared` state for managing `route53_certificate` and deploying s
 
 Use `.env.dev|staging|prod`, `firebase.admin.dev|staging|prod.json` at root corresponding to `dev|staging|prod`
 
+We using `s3` backend to store deployment state, you need to setup config file `infra/backend.conf`, see backend.conf.example. Remember to pre-create bucket and dynamodb table following [setup s3 backend](https://developer.hashicorp.com/terraform/language/settings/backends/s3). For each state, init terraform at the first time:
+
+```
+cd infra/shared|dev|staging|prod
+terraform init -backend-config=../backend.conf
+```
+
 Pre-build functions
 
 ```
 sh scripts/build_golambda.sh dev|staging|prod
 sh scripts/build_pylambda.sh dev|staging|prod
 sh scripts/build_pysuggest.sh dev|staging|prod
+
+# or build all functions
+sh scripts/build_all.sh dev|staging|prod
 ```
 
 At the first time or having any update to shared state
@@ -129,6 +141,9 @@ At the first time or having any update to shared state
 ```
 cd infra/shared && terraform plan
 terraform apply
+
+# or with a profile
+terraform apply -var="profile=..."
 ```
 
 For a specific environment
@@ -136,4 +151,7 @@ For a specific environment
 ```
 cd infra/dev|staging|prod && terraform plan
 terraform apply
+
+# or with a profile
+terraform apply -var="profile=..."
 ```

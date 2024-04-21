@@ -31,7 +31,7 @@ func init() {
 	}
 
 	app := fiber.New()
-	adminJSON, _ := utils.GetFile("firebase.admin.development.json")
+	adminJSON, _ := utils.GetFile("firebase.admin.json")
 	url := os.Getenv("MONGO_DATABASE_URL")
 	dbName := os.Getenv("MONGO_DATABASE")
 
@@ -43,8 +43,14 @@ func init() {
 		mongoManager,
 		transport.NewLocalTransport(),
 		transport.ConsumerMap{
-			transport.Suggest:    fmt.Sprintf("http://localhost:%s/", os.Getenv("PYSUGGEST_SERVICE_PORT")), // python suggest service
-			transport.Collecting: fmt.Sprintf("http://localhost:%s/", os.Getenv("COLLECTING_SERVICE_PORT")),
+			transport.Suggest: fmt.Sprintf(
+				"http://localhost:%s/",
+				os.Getenv("PYSUGGEST_SERVICE_PORT"),
+			), // python suggest service
+			transport.Collecting: fmt.Sprintf(
+				"http://localhost:%s/",
+				os.Getenv("COLLECTING_SERVICE_PORT"),
+			),
 		})
 	service.App.Use(cors.New())
 	service.InitRoute()

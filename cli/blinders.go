@@ -18,17 +18,22 @@ func main() {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "env",
-				Value: "development",
+				Value: "default",
 				Usage: "Define environment for the CLI",
 			},
 		},
 		Commands: []*cli.Command{&commands.AuthCommand},
 		Before: func(ctx *cli.Context) error {
-			fmt.Println("running on", ctx.String("env"))
+			env := ctx.String("env")
+			fmt.Println("CLI is running on environment:", env)
 
-			envFile := fmt.Sprintf(".env.%s", ctx.String("env"))
+			envFile := ".env"
+			if env != "default" {
+				envFile = fmt.Sprintf(".env.%s", env)
+			}
+
 			if godotenv.Load(envFile) != nil {
-				log.Fatal("Error loading .env file ", envFile)
+				log.Fatal("Can not load env:", envFile)
 			}
 			return nil
 		},

@@ -1,0 +1,4 @@
+bucket         = "" # bucket name
+region         = "" # region which bucket is stored
+dynamodb_table = "" # created dynamodb table for state locking
+profile        = "" # AWS profile setup on your machine

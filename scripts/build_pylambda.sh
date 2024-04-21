@@ -16,3 +16,5 @@ cd ..
 rm -rf ./dist ./bundle
 
 cp ./lambda_bundle.zip ../../dist/dictionary-$1.zip
+
+cd ../..
