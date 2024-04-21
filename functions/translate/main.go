@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
+	"blinders/packages/collecting"
 	"blinders/packages/translate"
+	"blinders/packages/transport"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/config"
 )
 
 type TranslatePayload struct {
@@ -23,14 +27,29 @@ type TranslateResponse struct {
 	Languages  string `json:"languages"`
 }
 
-var translator translate.Translator
+var (
+	translator  translate.Translator
+	transporter transport.Transport
+	consumerMap transport.ConsumerMap
+)
 
 func init() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 	translator = translate.YandexTranslator{APIKey: os.Getenv("YANDEX_API_KEY")}
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		log.Fatal("failed too load aws config", cfg)
+	}
+
+	transporter = transport.NewLambdaTransport(cfg)
+	consumerMap = transport.ConsumerMap{
+		transport.Collecting: os.Getenv("COLLECTING_FUNCTION_NAME"),
+	}
 }
 
 func HandleRequest(
-	_ context.Context,
+	ctx context.Context,
 	event events.APIGatewayV2HTTPRequest,
 ) (events.APIGatewayV2HTTPResponse, error) {
 	text, ok := event.QueryStringParameters["text"]
@@ -63,6 +82,34 @@ func HandleRequest(
 		Languages:  langs,
 	}
 
+	//  push event to collecting service
+	translateEvent := collecting.TranslateEvent{
+		Request: collecting.TranslateRequest{
+			Text: text,
+		},
+		Response: collecting.TranslateResponse{
+			Translate: translated,
+		},
+	}
+
+	eventPayload, _ := json.Marshal(
+		transport.CollectEventRequest{
+			Request: transport.Request{
+				Type: transport.CollectEvent,
+			},
+			Data: collecting.NewGenericEvent(collecting.EventTypeTranslate, translateEvent),
+		},
+	)
+
+	if err := transporter.Push(
+		ctx,
+		consumerMap[transport.Collecting],
+		eventPayload,
+	); err != nil {
+		log.Printf("cannot push event to collecting service, err: %v\n", err)
+	}
+
+	// respond result to user
 	resInBytes, _ := json.Marshal(res)
 	return events.APIGatewayV2HTTPResponse{
 		StatusCode: 200,
