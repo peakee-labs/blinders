@@ -21,6 +21,8 @@
 
 *.pem
 local_inventory.yml
+backend.conf
+!backend.conf.example
 
 .env
 .env.*

@@ -1,3 +1,13 @@
+provider "aws" {
+  region  = var.region
+  profile = var.profile
+}
+
+terraform {
+  backend "s3" {
+    key = "blinders-staging-state"
+  }
+}
 
 module "core" {
   source = "../core"
