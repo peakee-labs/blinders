@@ -112,7 +112,7 @@ poetry run embedder_service
 
 ## Deployment
 
-We have 3 separate environments: ' dev`, `staging`, and `prod`. Each deployment environment has a deployment state.
+We have 3 separate environments:  `dev`, `staging`, and `prod`. Each deployment environment has a deployment state.
 
 Also, we have a `shared` state for managing `route53_certificate` and deploying some shared ec2 instances for `dev` and `staging` environments
 
