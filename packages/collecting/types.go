@@ -34,6 +34,7 @@ type (
 		Translate       string         `json:"translate" bson:"translate"`
 		GrammarAnalysis map[string]any `json:"grammarAnalysis" bson:"grammarAnalysis"`
 		ExpandWords     []string       `json:"expandWords" bson:"expandWords"`
+		KeyWords        []string       `json:"keyWords" bson:"keyWords"`
 	}
 	ExplainEvent struct {
 		UserID   primitive.ObjectID `json:"userId" bson:"userId"`
