@@ -7,7 +7,7 @@ class LambdaTransport(ITransport):
     def __init__(self, *args):
         self.client = boto3.client("lambda", args)
 
-    def Request(self, id: str, payload: str) -> str:
+    def Request(self, id: str, payload: bytes) -> bytes:
         print("lambda transport: request to", id)
         response = self.client.invoke(
             FunctionName=id,
@@ -20,9 +20,9 @@ class LambdaTransport(ITransport):
                 response["FunctionError"],
             )
 
-        return str(response["Payload"])
+        return response["Payload"].read()
 
-    def Push(self, id: str, payload: str):
+    def Push(self, id: str, payload: bytes):
         print("lambda transport: push to", id)
         response = self.client.invoke(
             FunctionName=id,
