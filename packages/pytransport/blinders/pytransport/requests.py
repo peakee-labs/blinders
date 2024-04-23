@@ -1,6 +1,5 @@
 import typing
 
-
 type_collect_event = "COLLECT_EVENT"
 
 
