@@ -1,6 +1,7 @@
 package collectingapi
 
 import (
+	"fmt"
 	"log"
 
 	"blinders/packages/collecting"
@@ -14,85 +15,29 @@ import (
 func (s Service) HandlePushEvent(ctx *fiber.Ctx) error {
 	req, err := utils.ParseJSON[transport.CollectEventRequest](ctx.Body())
 	if err != nil {
-		log.Printf("cannot get collect event from request's body, err: %v\n", err)
+		log.Printf("collecting: cannot get collect event from request's body, err: %v\n", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get event from body"})
 	}
 
 	if req.Request.Type != transport.CollectEvent {
-		log.Printf("event type mismatch, type: %v\n", req.Request.Type)
+		log.Printf("collecting: event type mismatch, type: %v\n", req.Request.Type)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get event from body"})
 	}
 
-	if req.Type != transport.CollectEvent {
-		log.Printf("invalid request type: %v", req.Type)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request type"})
+	eventID, err := s.HandleGenericEvent(req.Data)
+	if err != nil {
+		log.Printf("collecting: cannot process generic event, err: %v\n", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	event := req.Data
-	switch event.Type {
-	case collecting.EventTypeSuggestPracticeUnit:
-		event, err := utils.JSONConvert[collecting.SuggestPracticeUnitEvent](event.Payload)
-		if err != nil {
-			log.Printf("cannot get suggest practice unit event from payload")
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "mismatch event type and event payload"})
-		}
-
-		eventLog, err := s.Collector.AddRawSuggestPracticeUnitLog(&collecting.SuggestPracticeUnitEventLog{
-			SuggestPracticeUnitEvent: *event,
-		})
-		if err != nil {
-			log.Printf("logger: cannot add raw translate log, err: %v", err)
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot append translate log"})
-		}
-
-		return ctx.Status(fiber.StatusOK).JSON(eventLog)
-
-	case collecting.EventTypeTranslate:
-		event, err := utils.JSONConvert[collecting.TranslateEvent](event.Payload)
-		if err != nil {
-			log.Printf("cannot get translate event from payload")
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "mismatch event type and event payload"})
-		}
-
-		eventLog, err := s.Collector.AddRawTranslateLog(&collecting.TranslateEventLog{
-			TranslateEvent: *event,
-		})
-		if err != nil {
-			log.Printf("logger: cannot add raw translate log, err: %v", err)
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot append translate log"})
-		}
-
-		return ctx.Status(fiber.StatusOK).JSON(eventLog)
-
-	case collecting.EventTypeExplain:
-		event, err := utils.JSONConvert[collecting.ExplainEvent](event.Payload)
-		if err != nil {
-			log.Printf("cannot get explain event from payload")
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "mismatch event type and event payload"})
-		}
-
-		eventLog, err := s.Collector.AddRawExplainLog(&collecting.ExplainEventLog{
-			ExplainEvent: *event,
-		})
-		if err != nil {
-			log.Printf("logger: cannot add raw explain log, err: %v", err)
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot append explain log"})
-		}
-
-		return ctx.Status(fiber.StatusOK).JSON(eventLog)
-
-	default:
-		log.Printf("receive unsupport event, type: %v", event.Type)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "unsupported event type: " + event.Type,
-		})
-	}
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"id": eventID})
 }
 
+// TODO: aws transport.push fail to this endpoint, fix
 func (s Service) HandleGetEvent(ctx *fiber.Ctx) error {
 	req, err := utils.ParseJSON[transport.GetEventRequest](ctx.Body())
 	if err != nil {
-		log.Println("collector: cannot get event request from body")
+		log.Printf("collecting: cannot get event request from body, err: %v\n", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get request body"})
 	}
 
@@ -132,5 +77,68 @@ func (s Service) HandleGetEvent(ctx *fiber.Ctx) error {
 	default:
 		log.Printf("collecting: received undefined event type (%v)\n", req.Type)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unsupported event"})
+	}
+}
+
+// HandleGeneric will check the generic event types and then add event to correspond storage,
+//
+// This method return id of new added event and error if occurs.
+// Error returns from this method is ready to response to client
+func (s Service) HandleGenericEvent(event collecting.GenericEvent) (string, error) {
+	switch event.Type {
+	case collecting.EventTypeSuggestPracticeUnit:
+		event, err := utils.JSONConvert[collecting.SuggestPracticeUnitEvent](event.Payload)
+		if err != nil {
+			log.Printf("collecting: cannot get suggest practice unit event from payload, err: %v\n", err)
+			return "", fmt.Errorf("mismatch event type and event payload")
+		}
+
+		eventLog, err := s.Collector.AddRawSuggestPracticeUnitLog(&collecting.SuggestPracticeUnitEventLog{
+			SuggestPracticeUnitEvent: *event,
+		})
+		if err != nil {
+			log.Printf("collecting: cannot add raw translate log, err: %v", err)
+			return "", fmt.Errorf("cannot append translate log")
+		}
+
+		return eventLog.ID.Hex(), nil
+
+	case collecting.EventTypeTranslate:
+		event, err := utils.JSONConvert[collecting.TranslateEvent](event.Payload)
+		if err != nil {
+			log.Printf("collecting: cannot get translate event from payload, err: %v\n", err)
+			return "", fmt.Errorf("mismatch event type and event payload")
+		}
+
+		eventLog, err := s.Collector.AddRawTranslateLog(&collecting.TranslateEventLog{
+			TranslateEvent: *event,
+		})
+		if err != nil {
+			log.Printf("collecting: cannot add raw translate log, err: %v\n", err)
+			return "", fmt.Errorf("cannot append translate log")
+		}
+
+		return eventLog.ID.Hex(), nil
+
+	case collecting.EventTypeExplain:
+		event, err := utils.JSONConvert[collecting.ExplainEvent](event.Payload)
+		if err != nil {
+			log.Printf("collecting: cannot get explain event from payload, err :%v\n", err)
+			return "", fmt.Errorf("mismatch event type and event payload")
+		}
+
+		eventLog, err := s.Collector.AddRawExplainLog(&collecting.ExplainEventLog{
+			ExplainEvent: *event,
+		})
+		if err != nil {
+			log.Printf("collecting: cannot add raw explain log, err: %v\n", err)
+			return "", fmt.Errorf("cannot append explain log")
+		}
+
+		return eventLog.ID.Hex(), nil
+
+	default:
+		log.Printf("collecting: receive unsupport event, type: %v", event.Type)
+		return "", fmt.Errorf("unsupported event type: %v", event.Type)
 	}
 }

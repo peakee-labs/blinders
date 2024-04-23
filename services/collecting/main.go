@@ -17,7 +17,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var service collectingapi.Service
+var service collectingapi.Manager
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
@@ -45,7 +45,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	service = *collectingapi.NewCollectingService(
+	service = *collectingapi.NewManager(
 		app,
 		collecting.NewEventCollector(mongoManager.Client.Database(dbName)),
 		authManager)
