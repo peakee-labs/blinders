@@ -6,10 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"blinders/packages/auth"
 	"blinders/packages/collecting"
 	"blinders/packages/db"
-	"blinders/packages/utils"
 	collectingapi "blinders/services/collecting/api"
 
 	"github.com/gofiber/fiber/v2"
@@ -36,19 +34,9 @@ func init() {
 
 	mongoManager := db.NewMongoManager(url, dbName)
 
-	adminConfig, err := utils.GetFile("firebase.admin.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	authManager, err := auth.NewFirebaseManager(adminConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
 	service = *collectingapi.NewManager(
 		app,
-		collecting.NewEventCollector(mongoManager.Client.Database(dbName)),
-		authManager)
+		collecting.NewEventCollector(mongoManager.Client.Database(dbName)))
 	service.App.Use(cors.New())
 	_ = service.InitRoute()
 }

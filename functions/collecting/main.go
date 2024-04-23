@@ -15,9 +15,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-var (
-	service *collectingapi.Service
-)
+var service *collectingapi.Service
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
@@ -40,8 +38,8 @@ func init() {
 	service = &collectingapi.Service{Collector: collector}
 }
 
-func ProxiHandler(
-	ctx context.Context,
+func LambdaHandler(
+	_ context.Context,
 	eventRequest transport.CollectEventRequest,
 ) (
 	events.APIGatewayV2HTTPResponse,
@@ -72,5 +70,5 @@ func ProxiHandler(
 }
 
 func main() {
-	lambda.Start(ProxiHandler)
+	lambda.Start(LambdaHandler)
 }
