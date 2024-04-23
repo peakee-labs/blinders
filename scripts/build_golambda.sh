@@ -18,12 +18,15 @@ fi
 
 rm -rf dist/connect*$1 dist/translate*$1 dist/authorizer*$1 \
     dist/explore*$1 dist/disconnect*$1 dist/wschat*$1$1 \
-    dist/rest*$1 dist/notification*$1 dist/ws_authorizer*$1
+    dist/rest*$1 dist/notification*$1 dist/ws_authorizer*$1 \
+    dist/collecting*$1 
 
 echo "cleaned previous build artifacts"
 
 GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/translate-$1/bootstrap ./functions/translate
 echo "build translate lambda function completed"
+cp ./firebase.admin.$1.json ./dist/translate-$1/firebase.admin.json
+echo "copied firebase.admin.json to translate"
 cd ./dist/translate-$1
 zip -r ../translate-$1.zip .
 cd ../..
@@ -71,8 +74,16 @@ cd ../..
 
 GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -tags lambda.norpc -mod=readonly -ldflags='-s -w' -o ./dist/explore-$1/bootstrap ./functions/explore
 echo "build explore lambda function completed"
-cp ./firebase.admin.$1.json ./dist/explore/firebase.admin.json
+cp ./firebase.admin.$1.json ./dist/explore-$1/firebase.admin.json
 echo "copied firebase.admin.json to explore api"
 cd ./dist/explore-$1
 zip -r ../explore-$1.zip .
+cd ../..
+
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/collecting-$1/bootstrap ./functions/collecting
+echo "build collecting lambda function completed"
+cp ./firebase.admin.$1.json ./dist/collecting-$1/firebase.admin.json
+echo "copied firebase.admin.json to collecting api"
+cd ./dist/collecting-$1
+zip -r ../collecting-$1.zip .
 cd ../..
