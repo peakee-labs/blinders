@@ -2,17 +2,23 @@ import json
 import os
 from typing import Any, Dict
 
+import botocore.session
+
 from blinders.pysuggest import explain_text_in_sentence_by_gpt_v2
 from blinders.pytransport.aws import LambdaTransport
+from blinders.pytransport.requests import TransportRequest, type_collect_event
 
 request_types = ["explain-text-in-sentence"]
 models = ["gpt"]
 
 default_headers = {
     "Access-Control-Allow-Origin": "*",
+    "Content-Type": "application/json",
 }
 
-lambdaTransport = LambdaTransport()
+session = botocore.session.get_session()
+client = session.create_client("lambda")
+transport = LambdaTransport(client)
 collect = "COLLECT"
 consumeMap = {collect: os.getenv("COLLECTING_FUNCTION_NAME", "")}
 
@@ -51,27 +57,31 @@ def lambda_handler(event: Dict[str, Any], context):
                     "body": "text and sentence are required for gpt",
                 }
             suggest = explain_text_in_sentence_by_gpt_v2(text, sentence)
-            print("suggest", suggest)
 
             # TODO: make struct
-            suggestEvent = {
+            suggest_event = {
                 "request": {
                     "text": text,
                     "sentence": sentence,
                 },
                 "response": {
-                    "translate": suggest["translate"],
-                    "grammarAnalysis": suggest["grammarAnalysis"],
-                    "expandWords": suggest["grammarAnalysis"],
+                    "translate": suggest.get("translate", ""),
+                    "grammarAnalysis": suggest.get("grammar_analysis", ""),
+                    "expandWords": suggest.get("expand_words", ""),
+                    "keyWords": suggest.get("key_words", ""),
                 },
             }
-            transportEvent = {
-                "type": "COLLECT_EVENT",
-                "data": {
-                    "type": "EXPLAIN",
-                    "payload": suggestEvent,
-                },
+            generic_event = {
+                "type": "EXPLAIN",
+                "event": suggest_event,
             }
+            transport_event = TransportRequest(type=type_collect_event, data=generic_event)
 
-            lambdaTransport.Push(consumeMap[collect], json.dumps(transportEvent))
+            try:
+                payload = json.dumps(transport_event.json()).encode("utf-8")
+                transport.push(consumeMap[collect], payload)
+
+            except Exception as e:
+                print("pysuggest: cannot push to collecting", e)
+
             return {"statusCode": 200, "headers": default_headers, "body": json.dumps(suggest)}
