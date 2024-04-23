@@ -6,28 +6,22 @@ import (
 	"log"
 	"os"
 
-	"blinders/packages/auth"
 	"blinders/packages/collecting"
 	"blinders/packages/db"
-	"blinders/packages/utils"
+	"blinders/packages/transport"
 	collectingapi "blinders/services/collecting/api"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	fiberadapter "github.com/awslabs/aws-lambda-go-api-proxy/fiber"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 var (
-	service     *collectingapi.Service
-	fiberLambda *fiberadapter.FiberLambda
+	service *collectingapi.Service
 )
 
 func init() {
-	log.Println("collecting api running on environment:", os.Getenv("ENVIRONMENT"))
-	app := fiber.New()
+	env := os.Getenv("ENVIRONMENT")
+	log.Println("collecting api running on environment:", env)
 	url := fmt.Sprintf(
 		db.MongoURLTemplate,
 		os.Getenv("MONGO_USERNAME"),
@@ -42,42 +36,39 @@ func init() {
 		log.Fatalf("cannot init mongo client, err: %v", err)
 	}
 
-	adminConfig, err := utils.GetFile("firebase.admin.json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	authManager, err := auth.NewFirebaseManager(adminConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	collector := collecting.NewEventCollector(client.Database(dbName))
-	service = collectingapi.NewCollectingService(app, collector, authManager)
-	service.App.Use(logger.New(logger.Config{
-		Format: "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n",
-	}))
-
-	service.App.Use(cors.New(cors.Config{
-		AllowOrigins: "https://app.peakee.co, http://localhost:3000",
-		AllowMethods: "GET,POST",
-		AllowHeaders: "*",
-	}))
-
-	err = service.InitRoute()
-	if err != nil {
-		panic(err)
-	}
-	fiberLambda = fiberadapter.New(service.App)
+	service = &collectingapi.Service{Collector: collector}
 }
 
 func ProxiHandler(
 	ctx context.Context,
-	req events.APIGatewayV2HTTPRequest,
+	eventRequest transport.CollectEventRequest,
 ) (
 	events.APIGatewayV2HTTPResponse,
 	error,
 ) {
-	return fiberLambda.ProxyWithContextV2(ctx, req)
+	fmt.Println("received", eventRequest)
+	if eventRequest.Request.Type != transport.CollectEvent {
+		log.Printf("collecting: event type mismatch, type: %v\n", eventRequest.Request.Type)
+		return events.APIGatewayV2HTTPResponse{
+			StatusCode: 400,
+			Body:       "request type mismatch",
+		}, nil
+	}
+
+	eventID, err := service.HandleGenericEvent(eventRequest.Data)
+	if err != nil {
+		log.Printf("collecting: cannot process generic event, err: %v\n", err)
+		return events.APIGatewayV2HTTPResponse{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("failed to process event, err: %v", err),
+		}, nil
+	}
+
+	return events.APIGatewayV2HTTPResponse{
+		StatusCode: 200,
+		Body:       eventID,
+	}, nil
 }
 
 func main() {
