@@ -10,15 +10,11 @@ type (
 		Type    EventType `json:"type"`
 		Payload any       `json:"event"` //  event struct
 	}
-
 	TranslateRequest struct {
-		Text     string `json:"text" bson:"text"`
-		Sentence string `json:"sentence" bson:"sentence"`
+		Text string `json:"text" bson:"text"`
 	}
 	TranslateResponse struct {
-		Translate       string         `json:"translate" bson:"translate"`
-		GrammarAnalysis map[string]any `json:"grammarAnalysis" bson:"grammarAnalysis"`
-		ExpandWords     []string       `json:"expandWords" bson:"expandWords"`
+		Translate string `json:"translate" bson:"translate"`
 	}
 	TranslateEvent struct {
 		UserID   primitive.ObjectID `json:"userId" bson:"userId"`
@@ -29,6 +25,26 @@ type (
 		TranslateEvent `json:",inline" bson:",inline"`
 		ID             primitive.ObjectID `json:"logId" bson:"_id"`
 		CreatedAt      primitive.DateTime `json:"createdAt" bson:"createdAt"`
+	}
+	ExplainRequest struct {
+		Text     string `json:"text" bson:"text"`
+		Sentence string `json:"sentence" bson:"sentence"`
+	}
+	ExplainResponse struct {
+		Translate       string         `json:"translate" bson:"translate"`
+		GrammarAnalysis map[string]any `json:"grammarAnalysis" bson:"grammarAnalysis"`
+		ExpandWords     []string       `json:"expandWords" bson:"expandWords"`
+		KeyWords        []string       `json:"keyWords" bson:"keyWords"`
+	}
+	ExplainEvent struct {
+		UserID   primitive.ObjectID `json:"userId" bson:"userId"`
+		Request  ExplainRequest     `json:"request" bson:"request"`
+		Response ExplainResponse    `json:"response" bson:"response"`
+	}
+	ExplainEventLog struct {
+		ExplainEvent `json:",inline" bson:",inline"`
+		ID           primitive.ObjectID `json:"logId" bson:"_id"`
+		CreatedAt    primitive.DateTime `json:"createdAt" bson:"createdAt"`
 	}
 	SuggestPracticeUnitRequest struct {
 		Text    string `json:"text" bson:"text"`

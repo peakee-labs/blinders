@@ -1,29 +1,36 @@
 package collectingapi
 
 import (
+	"blinders/packages/auth"
 	"blinders/packages/collecting"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-type Service struct {
-	App       *fiber.App
-	Collector *collecting.EventCollector
-}
+type (
+	Manager struct {
+		App               *fiber.App
+		Auth              auth.Manager
+		CollectingService Service
+	}
+	Service struct {
+		Collector *collecting.EventCollector
+	}
+)
 
-func NewCollectingService(app *fiber.App, collector *collecting.EventCollector) *Service {
-	return &Service{
-		App:       app,
-		Collector: collector,
+func NewManager(app *fiber.App, collector *collecting.EventCollector) *Manager {
+	return &Manager{
+		App:               app,
+		CollectingService: Service{Collector: collector},
 	}
 }
 
-func (s *Service) InitRoute() error {
+func (s *Manager) InitRoute() error {
 	s.App.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("service healthy")
 	})
 
-	s.App.Post("/", s.HandlePushEvent)
-	s.App.Get("/", s.HandleGetEvent)
+	s.App.Post("/", s.CollectingService.HandlePushEvent)
+	s.App.Get("/", s.CollectingService.HandleGetEvent)
 	return nil
 }

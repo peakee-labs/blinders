@@ -30,7 +30,9 @@ resource "aws_lambda_function" "pysuggest" {
   depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
 
   environment {
-    variables = local.envs
+    variables = merge(local.envs,{
+      COLLECTING_FUNCTION_NAME : aws_lambda_function.collecting.function_name
+    })
   }
 
   tags = {
@@ -50,7 +52,9 @@ resource "aws_lambda_function" "translate" {
   source_code_hash = filebase64sha256("../../dist/translate-${var.project.environment}.zip")
 
   environment {
-    variables = local.envs
+    variables = merge(local.envs,{
+      COLLECTING_FUNCTION_NAME : aws_lambda_function.collecting.function_name
+    })
   }
 
   tags = {
@@ -204,3 +208,23 @@ resource "aws_lambda_function" "explore" {
   }
 }
 
+
+resource "aws_lambda_function" "collecting" {
+  function_name    = "${var.project.name}-collecting-${var.project.environment}"
+  filename         = "../../dist/collecting-${var.project.environment}.zip"
+  handler          = "bootstrap"
+  role             = aws_iam_role.lambda_role.arn
+  runtime          = "provided.al2"
+  architectures    = ["arm64"]
+  # depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+  source_code_hash = filebase64sha256("../../dist/collecting-${var.project.environment}.zip")
+
+  environment {
+    variables = local.envs
+  }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
+  }
+}

@@ -12,6 +12,7 @@ import (
 var (
 	EventTypeSuggestPracticeUnit EventType = "SUGGEST_LANGUAGE_UNIT"
 	EventTypeTranslate           EventType = "TRANSLATE"
+	EventTypeExplain             EventType = "EXPLAIN"
 	LogCollection                          = "logs"
 )
 
@@ -103,6 +104,47 @@ func (l EventCollector) GetSuggestPracticeUnitLogByUserID(userID primitive.Objec
 
 	res := make([]SuggestPracticeUnitEventLog, 0)
 	if err := cur.All(ctx, &res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (l EventCollector) AddExplainLog(log *ExplainEventLog) (*ExplainEventLog, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	_, err := l.Col.InsertOne(ctx, log)
+	return log, err
+}
+
+func (l EventCollector) AddRawExplainLog(log *ExplainEventLog) (*ExplainEventLog, error) {
+	log.ID = primitive.NewObjectID()
+	log.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
+	return l.AddExplainLog(log)
+}
+
+func (l EventCollector) GetExplainLogByID(logID primitive.ObjectID) (*ExplainEventLog, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	filter := bson.M{"_id": logID}
+	translateLog := new(ExplainEventLog)
+	err := l.Col.FindOne(ctx, filter).Decode(translateLog)
+
+	return translateLog, err
+}
+
+func (l EventCollector) GetExplainLogByUserID(userID primitive.ObjectID) ([]ExplainEventLog, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	filter := bson.M{"userID": userID}
+
+	cur, err := l.Col.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	var res []ExplainEventLog
+	if err := cur.All(ctx, res); err != nil {
 		return nil, err
 	}
 	return res, nil

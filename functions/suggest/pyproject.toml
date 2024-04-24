@@ -10,6 +10,7 @@ packages = [{ include = "blinders" }]
 python = "^3.10"
 blinders-pysuggest-core = { path = "../../packages/pysuggest", develop = true }
 orjson = "^3.10.0"
+blinders-pytransport-core = { path = "../../packages/pytransport", develop = true }
 
 [build-system]
 requires = ["poetry-core"]
