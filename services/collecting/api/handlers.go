@@ -24,7 +24,7 @@ func (s Service) HandlePushEvent(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get event from body"})
 	}
 
-	eventID, err := s.HandleGenericEvent(req.Data)
+	eventID, err := s.HandleAddGenericEvent(req.Data)
 	if err != nil {
 		log.Printf("collecting: cannot process generic event, err: %v\n", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -33,7 +33,6 @@ func (s Service) HandlePushEvent(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"id": eventID})
 }
 
-// TODO: aws transport.push fail to this endpoint, fix
 func (s Service) HandleGetEvent(ctx *fiber.Ctx) error {
 	req, err := utils.ParseJSON[transport.GetEventRequest](ctx.Body())
 	if err != nil {
@@ -46,45 +45,18 @@ func (s Service) HandleGetEvent(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get userID from request"})
 	}
 
-	switch req.Type {
-	case collecting.EventTypeExplain:
-		logs, err := s.Collector.GetExplainLogByUserID(userOID)
-		if err != nil {
-			log.Println("collecting: cannot get logs of user", err)
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get user's log event"})
-		}
-
-		return ctx.Status(fiber.StatusOK).JSON(logs[:req.NumReturn])
-
-	case collecting.EventTypeTranslate:
-		logs, err := s.Collector.GetTranslateLogByUserID(userOID)
-		if err != nil {
-			log.Println("collecting: cannot get logs of user", err)
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get user's log event"})
-		}
-
-		return ctx.Status(fiber.StatusOK).JSON(logs[:req.NumReturn])
-
-	case collecting.EventTypeSuggestPracticeUnit:
-		logs, err := s.Collector.GetSuggestPracticeUnitLogByUserID(userOID)
-		if err != nil {
-			log.Println("collecting: cannot get logs of user", err)
-			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get user's log event"})
-		}
-
-		return ctx.Status(fiber.StatusOK).JSON(logs[:req.NumReturn])
-
-	default:
-		log.Printf("collecting: received undefined event type (%v)\n", req.Type)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unsupported event"})
+	event, err := s.HandleGetGenericEvent(userOID, req.Type, GetEventOptions{NumReturn: req.NumReturn})
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err})
 	}
+	return ctx.Status(fiber.StatusOK).JSON(event.Payload)
 }
 
 // HandleGeneric will check the generic event types and then add event to correspond storage,
 //
 // This method return id of new added event and error if occurs.
 // Error returns from this method is ready to response to client
-func (s Service) HandleGenericEvent(event collecting.GenericEvent) (string, error) {
+func (s Service) HandleAddGenericEvent(event collecting.GenericEvent) (string, error) {
 	switch event.Type {
 	case collecting.EventTypeSuggestPracticeUnit:
 		event, err := utils.JSONConvert[collecting.SuggestPracticeUnitEvent](event.Payload)
@@ -140,5 +112,44 @@ func (s Service) HandleGenericEvent(event collecting.GenericEvent) (string, erro
 	default:
 		log.Printf("collecting: receive unsupport event, type: %v", event.Type)
 		return "", fmt.Errorf("unsupported event type: %v", event.Type)
+	}
+}
+
+type GetEventOptions struct {
+	NumReturn int
+}
+
+func (s Service) HandleGetGenericEvent(userOID primitive.ObjectID, eventType collecting.EventType, opt ...GetEventOptions) (collecting.GenericEvent, error) {
+	switch eventType {
+	case collecting.EventTypeExplain:
+		// TODO: optimized this
+		logs, err := s.Collector.GetExplainLogByUserID(userOID)
+		if err != nil {
+			log.Println("collecting: cannot get logs of user", err)
+			return collecting.GenericEvent{}, err
+		}
+		return collecting.NewGenericEvent(eventType, logs[0]), nil
+
+	case collecting.EventTypeTranslate:
+		logs, err := s.Collector.GetTranslateLogByUserID(userOID)
+		if err != nil {
+			log.Println("collecting: cannot get logs of user", err)
+			return collecting.GenericEvent{}, err
+		}
+
+		return collecting.NewGenericEvent(eventType, logs[0]), nil
+
+	case collecting.EventTypeSuggestPracticeUnit:
+		logs, err := s.Collector.GetSuggestPracticeUnitLogByUserID(userOID)
+		if err != nil {
+			log.Println("collecting: cannot get logs of user", err)
+			return collecting.GenericEvent{}, err
+		}
+
+		return collecting.NewGenericEvent(eventType, logs[0]), nil
+
+	default:
+		log.Printf("collecting: received undefined event type (%v)\n", eventType)
+		return collecting.GenericEvent{}, fmt.Errorf("unsupported event")
 	}
 }
