@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -12,7 +11,6 @@ import (
 	"blinders/packages/transport"
 	collectingapi "blinders/services/collecting/api"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -44,31 +42,30 @@ func LambdaHandler(
 	ctx context.Context,
 	eventRequest transport.GetEventRequest,
 ) (
-	events.APIGatewayV2HTTPResponse,
+	transport.GetEventResponse,
 	error,
 ) {
 	if eventRequest.Request.Type != transport.GetEvent {
 		log.Printf("collecting: event type mismatch, type: %v\n", eventRequest.Request.Type)
-		return events.APIGatewayV2HTTPResponse{
-			StatusCode: 400,
-			Body:       "request type mismatch",
-		}, nil
+		return transport.GetEventResponse{}, fmt.Errorf("event type mismatch")
 	}
-	userOID, _ := primitive.ObjectIDFromHex(eventRequest.UserID)
+	userOID, err := primitive.ObjectIDFromHex(eventRequest.UserID)
+	if err != nil {
+		log.Println("cannot get object id from event", err)
+		return transport.GetEventResponse{}, err
+	}
 
 	event, err := service.HandleGetGenericEvent(userOID, eventRequest.Type)
 	if err != nil {
-		return events.APIGatewayV2HTTPResponse{
-			StatusCode: 400,
-			Body:       fmt.Sprintf("failed to get event, err: %v", err),
-		}, nil
+		log.Println("collecting: failed to get event", event)
+		return transport.GetEventResponse{}, nil
 	}
-
-	payloadBytes, _ := json.Marshal(event.Payload)
-	return events.APIGatewayV2HTTPResponse{
-		StatusCode: 200,
-		Body:       string(payloadBytes),
-	}, nil
+	response := transport.GetEventResponse{
+		Data: []collecting.GenericEvent{
+			event,
+		},
+	}
+	return response, nil
 }
 
 func main() {
