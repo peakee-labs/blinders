@@ -20,7 +20,7 @@ session = botocore.session.get_session()
 client = session.create_client("lambda")
 transport = LambdaTransport(client)
 collect = "COLLECT"
-consumeMap = {collect: os.getenv("COLLECTING_FUNCTION_NAME", "")}
+consumeMap = {collect: os.getenv("COLLECTING_PUSH_FUNCTION_NAME", "")}
 
 
 def lambda_handler(event: Dict[str, Any], context):
