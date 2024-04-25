@@ -20,9 +20,9 @@ var (
 
 type EventCollector struct {
 	// TODO: maybe use another db
-	ExplainCol             *mongo.Collection // Log collection
-	SuggestPracticeUnitCol *mongo.Collection // Log collection
-	TranslateCol           *mongo.Collection // Log collection
+	ExplainCol             *mongo.Collection
+	SuggestPracticeUnitCol *mongo.Collection
+	TranslateCol           *mongo.Collection
 }
 
 func NewEventCollector(db *mongo.Database) *EventCollector {

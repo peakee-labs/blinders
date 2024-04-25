@@ -20,7 +20,7 @@ func Test_TranslateLog(t *testing.T) {
 	db := GetDatabase(t)
 
 	eventCollector := collecting.NewEventCollector(db)
-	defer eventCollector.Col.Drop(context.Background())
+	defer eventCollector.ExplainCol.Drop(context.Background())
 
 	userOID := primitive.NewObjectID()
 
@@ -80,7 +80,7 @@ func Test_ExplainLog(t *testing.T) {
 	db := GetDatabase(t)
 
 	eventCollector := collecting.NewEventCollector(db)
-	defer eventCollector.Col.Drop(context.Background())
+	defer eventCollector.ExplainCol.Drop(context.Background())
 
 	userOID := primitive.NewObjectID()
 
