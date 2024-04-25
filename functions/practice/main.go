@@ -22,7 +22,8 @@ import (
 )
 
 var (
-	fiberLambda *fiberadapter.FiberLambda
+	fiberLambda    *fiberadapter.FiberLambda
+	authMiddleware auth.LambdaMiddleware
 )
 
 func init() {
@@ -80,6 +81,7 @@ func init() {
 	api.InitRoute()
 
 	fiberLambda = fiberadapter.New(api.App)
+	authMiddleware = auth.LambdaAuthMiddleware(authManager, database.Users)
 }
 
 func HandleRequest(
@@ -90,5 +92,5 @@ func HandleRequest(
 }
 
 func main() {
-	lambda.Start(HandleRequest)
+	lambda.Start(authMiddleware(HandleRequest))
 }
