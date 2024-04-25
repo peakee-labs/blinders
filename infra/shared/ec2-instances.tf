@@ -4,7 +4,11 @@ resource "aws_instance" "database" {
   key_name               = aws_key_pair.tf_ec2_key.key_name
   vpc_security_group_ids = [aws_security_group.ec2_security_group.id]
 
-  tags = { Name = "${var.project_name}-database-shared" }
+  tags = {
+    Name        = "${var.project_name}-database-shared"
+    project     = var.project_name,
+    environment = "shared"
+  }
 
   provisioner "remote-exec" {
     connection {
@@ -44,9 +48,11 @@ resource "aws_instance" "services" {
   key_name               = aws_key_pair.tf_ec2_key.key_name
   vpc_security_group_ids = [aws_security_group.ec2_security_group.id]
 
-  tags = merge(
-    { Name = "${var.project_name}-services-shared" },
-  )
+  tags = {
+    Name        = "${var.project_name}-services-shared",
+    project     = var.project_name,
+    environment = "shared"
+  }
 }
 
 # TODO: need to resolve security group
@@ -68,6 +74,11 @@ resource "aws_security_group" "ec2_security_group" {
     protocol    = "all"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = {
+    project     = var.project_name
+    environment = "shared"
+  }
 }
 
 # Create RSA key of size 4096 bits
@@ -84,6 +95,11 @@ resource "local_file" "tf_ec2_key" {
 resource "aws_key_pair" "tf_ec2_key" {
   key_name   = "tf_ec2_key"
   public_key = tls_private_key.tf_ec2_key.public_key_openssh
+
+  tags = {
+    project     = var.project_name
+    environment = "shared"
+  }
 }
 
 
