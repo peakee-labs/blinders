@@ -72,8 +72,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	// mock this
-	authMiddleware = auth.LambdaAuthMiddleware(authManager, database.Users, auth.MiddlewareOptions{CheckUser: false})
+	authMiddleware = auth.LambdaAuthMiddleware(authManager, database.Users)
 }
 
 func HandleRequest(
