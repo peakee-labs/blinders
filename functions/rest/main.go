@@ -71,7 +71,7 @@ func init() {
 		AllowHeaders: "*",
 	}))
 
-	err = api.InitRoute(restapi.InitOptions{Prefix: os.Getenv("ENVIRONMENT")})
+	err = api.InitRoute()
 	if err != nil {
 		panic(err)
 	}
