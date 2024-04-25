@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 
-	"blinders/packages/auth"
 	"blinders/packages/collecting"
 	"blinders/packages/db"
 	"blinders/packages/transport"
@@ -48,11 +47,6 @@ func LambdaHandler(
 	events.APIGatewayV2HTTPResponse,
 	error,
 ) {
-	authUser, ok := ctx.Value(auth.UserAuthKey).(*auth.UserAuth)
-	if !ok {
-		log.Panicln("unexpected err, authUser not included in ctx")
-	}
-	fmt.Println("received", eventRequest)
 	if eventRequest.Request.Type != transport.GetEvent {
 		log.Printf("collecting: event type mismatch, type: %v\n", eventRequest.Request.Type)
 		return events.APIGatewayV2HTTPResponse{
@@ -60,7 +54,7 @@ func LambdaHandler(
 			Body:       "request type mismatch",
 		}, nil
 	}
-	userOID, _ := primitive.ObjectIDFromHex(authUser.ID)
+	userOID, _ := primitive.ObjectIDFromHex(eventRequest.UserID)
 
 	event, err := service.HandleGetGenericEvent(userOID, eventRequest.Type)
 	if err != nil {
@@ -78,6 +72,5 @@ func LambdaHandler(
 }
 
 func main() {
-	// TODO: auth lambda
 	lambda.Start(LambdaHandler)
 }
