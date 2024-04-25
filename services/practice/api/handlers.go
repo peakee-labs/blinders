@@ -50,13 +50,9 @@ func (s Service) HandleGetLanguageUnit(ctx *fiber.Ctx) error {
 		log.Printf("practice: cannot parse result from collecting service, err: %v\n", err)
 	}
 
-	if len(rsp.Data) == numReturn {
-		log.Printf("practice: response includes no event: \n")
+	if len(rsp.Data) != numReturn {
+		log.Printf("practice: expected return %v event, got %v\n", numReturn, rsp)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get practice unit"})
-	}
-
-	if (len(rsp.Data)) != numReturn {
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get expected amount of language unit"})
 	}
 
 	event := rsp.Data[0]
