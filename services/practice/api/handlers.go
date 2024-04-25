@@ -40,7 +40,6 @@ func (s Service) HandleGetLanguageUnit(ctx *fiber.Ctx) error {
 		s.ConsumerMap[transport.CollectingGet],
 		transportBytes,
 	)
-
 	if err != nil {
 		log.Printf("practice: cannot get log event from collecting service, err: %v\n", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get practice unit"})
@@ -58,7 +57,7 @@ func (s Service) HandleGetLanguageUnit(ctx *fiber.Ctx) error {
 	event := rsp.Data[0]
 	switch event.Type {
 	case collecting.EventTypeExplain:
-		return ctx.Status(fiber.StatusOK).JSON(event.Payload) //ExplainEvent
+		return ctx.Status(fiber.StatusOK).JSON(event.Payload)
 
 	default:
 		log.Printf("practice: unsupported event type (%v)\n", event.Type)

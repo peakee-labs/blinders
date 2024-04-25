@@ -39,7 +39,7 @@ func init() {
 }
 
 func LambdaHandler(
-	ctx context.Context,
+	_ context.Context,
 	eventRequest transport.GetEventRequest,
 ) (
 	transport.GetEventResponse,

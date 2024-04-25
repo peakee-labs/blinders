@@ -1,9 +1,10 @@
 package collecting_test
 
 import (
-	"blinders/packages/collecting"
 	"context"
 	"testing"
+
+	"blinders/packages/collecting"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,7 +21,6 @@ func Test_TranslateLog(t *testing.T) {
 	db := GetDatabase(t)
 
 	eventCollector := collecting.NewEventCollector(db)
-	defer eventCollector.ExplainCol.Drop(context.Background())
 
 	userOID := primitive.NewObjectID()
 
@@ -74,13 +74,14 @@ func Test_TranslateLog(t *testing.T) {
 	l, err := eventCollector.GetTranslateLogByID(anotherAddedLog.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, *anotherAddedLog, *l)
+
+	assert.Nil(t, eventCollector.ExplainCol.Drop(context.Background()))
 }
 
 func Test_ExplainLog(t *testing.T) {
 	db := GetDatabase(t)
 
 	eventCollector := collecting.NewEventCollector(db)
-	defer eventCollector.ExplainCol.Drop(context.Background())
 
 	userOID := primitive.NewObjectID()
 
@@ -142,6 +143,8 @@ func Test_ExplainLog(t *testing.T) {
 	assert.NotEmpty(t, getLog)
 
 	assert.Equal(t, 2, len(getLog))
+
+	assert.Nil(t, eventCollector.ExplainCol.Drop(context.Background()))
 }
 
 func GetDatabase(t *testing.T) *mongo.Database {

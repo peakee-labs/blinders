@@ -123,7 +123,7 @@ type GetEventOptions struct {
 	NumReturn int
 }
 
-func (s Service) HandleGetGenericEvent(userOID primitive.ObjectID, eventType collecting.EventType, opt ...GetEventOptions) (collecting.GenericEvent, error) {
+func (s Service) HandleGetGenericEvent(userOID primitive.ObjectID, eventType collecting.EventType, _ ...GetEventOptions) (collecting.GenericEvent, error) {
 	log.Printf("collecting: get event with type %v for user %v\n", eventType, userOID.Hex())
 	switch eventType {
 	case collecting.EventTypeExplain:
@@ -133,7 +133,7 @@ func (s Service) HandleGetGenericEvent(userOID primitive.ObjectID, eventType col
 			return collecting.GenericEvent{}, err
 		}
 
-		if logs == nil || len(logs) == 0 {
+		if len(logs) == 0 {
 			log.Println("collecting: explain log of user not found", logs)
 			return collecting.GenericEvent{}, fmt.Errorf("explain log of user not found")
 		}
@@ -145,7 +145,7 @@ func (s Service) HandleGetGenericEvent(userOID primitive.ObjectID, eventType col
 			log.Println("collecting: cannot get logs of user", err)
 			return collecting.GenericEvent{}, err
 		}
-		if logs == nil || len(logs) == 0 {
+		if len(logs) == 0 {
 			log.Println("collecting: translate log of user not found", logs)
 			return collecting.GenericEvent{}, fmt.Errorf("translate log of user not found")
 		}
@@ -158,7 +158,7 @@ func (s Service) HandleGetGenericEvent(userOID primitive.ObjectID, eventType col
 			log.Println("collecting: cannot get logs of user", err)
 			return collecting.GenericEvent{}, err
 		}
-		if logs == nil || len(logs) == 0 {
+		if len(logs) == 0 {
 			log.Println("collecting: suggest practice unit log of user not found", logs)
 			return collecting.GenericEvent{}, fmt.Errorf("suggest practice unit log of user not found")
 		}

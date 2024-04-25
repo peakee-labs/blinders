@@ -139,14 +139,14 @@ func (l EventCollector) GetExplainLogByID(logID primitive.ObjectID) (*ExplainEve
 	return translateLog, err
 }
 
-func (l EventCollector) GetExplainLogByUserID(userID primitive.ObjectID) ([]ExplainEventLog, error) {
+func (l EventCollector) GetExplainLogByUserID(_ primitive.ObjectID) ([]ExplainEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	// filter := bson.M{"userId": userID}
+	// cur, err := l.ExplainCol.Find(ctx, filter)
 
-	// cur, err := l.Col.Find(ctx, filter)
-
-	// currently mock this
+	// currently mock this, since we haven't implement python jwt check
+	// this method could be called by pysuggest
 	cur, err := l.ExplainCol.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err

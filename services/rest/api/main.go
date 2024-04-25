@@ -39,7 +39,6 @@ func NewManager(
 }
 
 func (m Manager) InitRoute() error {
-
 	rootRoute := m.App.Group("/")
 	rootRoute.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("hello from Peakee Rest API")
