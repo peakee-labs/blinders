@@ -187,7 +187,6 @@ output "rest_api" {
   value = "https://${aws_apigatewayv2_api_mapping.http_api_v1.domain_name}/${aws_apigatewayv2_api_mapping.http_api_v1.api_mapping_key}/<users|...>"
 }
 
-
 # explore api
 resource "aws_apigatewayv2_integration" "explore" {
   api_id                 = aws_apigatewayv2_api.http_api.id
@@ -210,10 +209,48 @@ resource "aws_apigatewayv2_route" "explore" {
   target    = "integrations/${aws_apigatewayv2_integration.explore.id}"
 }
 
-resource "aws_lambda_permission" "collecting" {
+# explore api
+resource "aws_apigatewayv2_integration" "practice" {
+  api_id                 = aws_apigatewayv2_api.http_api.id
+  integration_uri        = aws_lambda_function.practice.invoke_arn
+  integration_type       = "AWS_PROXY"
+  payload_format_version = "2.0"
+}
+
+resource "aws_lambda_permission" "practice" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.collecting.function_name
+  function_name = aws_lambda_function.practice.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
+}
+
+resource "aws_apigatewayv2_route" "practice" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "ANY /practice/{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.practice.id}"
+}
+
+resource "aws_apigatewayv2_integration" "collecting-get" {
+  api_id           = aws_apigatewayv2_api.http_api.id
+  integration_uri  = aws_lambda_function.collecting-get.invoke_arn
+  integration_type = "AWS_PROXY"
+}
+
+resource "aws_apigatewayv2_route" "get_collecting-get" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /collecting/get"
+  target    = "integrations/${aws_apigatewayv2_integration.collecting-get.id}"
+}
+
+resource "aws_lambda_permission" "collecting-get" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.collecting-get.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
+}
+
+output "get_collecting_api" {
+  value = "https://${aws_apigatewayv2_api_mapping.http_api_v1.domain_name}/${aws_apigatewayv2_api_mapping.http_api_v1.api_mapping_key}/collecting/get"
 }
