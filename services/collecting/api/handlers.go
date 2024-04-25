@@ -49,7 +49,11 @@ func (s Service) HandleGetEvent(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err})
 	}
-	return ctx.Status(fiber.StatusOK).JSON(event.Payload)
+	rspPayload := transport.GetEventResponse{
+		Data: []collecting.GenericEvent{event},
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(rspPayload)
 }
 
 // HandleGeneric will check the generic event types and then add event to correspond storage,
@@ -122,13 +126,12 @@ type GetEventOptions struct {
 func (s Service) HandleGetGenericEvent(userOID primitive.ObjectID, eventType collecting.EventType, opt ...GetEventOptions) (collecting.GenericEvent, error) {
 	switch eventType {
 	case collecting.EventTypeExplain:
-		// TODO: optimized this
 		logs, err := s.Collector.GetExplainLogByUserID(userOID)
 		if err != nil {
 			log.Println("collecting: cannot get logs of user", err)
 			return collecting.GenericEvent{}, err
 		}
-		return collecting.NewGenericEvent(eventType, logs[0]), nil
+		return collecting.NewGenericEvent(eventType, logs[0].ExplainEvent), nil
 
 	case collecting.EventTypeTranslate:
 		logs, err := s.Collector.GetTranslateLogByUserID(userOID)
@@ -137,7 +140,7 @@ func (s Service) HandleGetGenericEvent(userOID primitive.ObjectID, eventType col
 			return collecting.GenericEvent{}, err
 		}
 
-		return collecting.NewGenericEvent(eventType, logs[0]), nil
+		return collecting.NewGenericEvent(eventType, logs[0].TranslateEvent), nil
 
 	case collecting.EventTypeSuggestPracticeUnit:
 		logs, err := s.Collector.GetSuggestPracticeUnitLogByUserID(userOID)
@@ -146,7 +149,7 @@ func (s Service) HandleGetGenericEvent(userOID primitive.ObjectID, eventType col
 			return collecting.GenericEvent{}, err
 		}
 
-		return collecting.NewGenericEvent(eventType, logs[0]), nil
+		return collecting.NewGenericEvent(eventType, logs[0].SuggestPracticeUnitEvent), nil
 
 	default:
 		log.Printf("collecting: received undefined event type (%v)\n", eventType)
