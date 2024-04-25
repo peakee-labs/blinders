@@ -40,5 +40,5 @@ func (s *Service) InitRoute() {
 	practiceRoute.Get("/unit/random", s.HandleGetRandomLanguageUnit)
 
 	authorized := practiceRoute.Group("/", auth.FiberAuthMiddleware(s.Auth, s.Db.Users))
-	authorized.Get("/unit", s.HandleSuggestLanguageUnit)
+	authorized.Get("/unit", s.HandleGetLanguageUnit)
 }
