@@ -52,7 +52,7 @@ func init() {
 			transport.Explore:      "explore_service_id",
 		})
 	apiManager.App.Use(logger.New())
-	_ = apiManager.InitRoute(restapi.InitOptions{})
+	_ = apiManager.InitRoute()
 }
 
 func main() {
