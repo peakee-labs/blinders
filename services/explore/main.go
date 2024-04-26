@@ -14,6 +14,7 @@ import (
 	exploreapi "blinders/services/explore/api"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
@@ -73,10 +74,11 @@ func init() {
 	service = exploreapi.NewService(core, redisClient, embedderEndpoint)
 
 	manager = exploreapi.NewManager(app, authManager, mongoManager, service)
-	manager.App.Use(logger.New())
+	manager.App.Use(logger.New(), cors.New())
+
 	// Expose for local development
 	manager.App.Post("/explore", manager.Service.HandleAddUserMatch)
-	manager.InitRoute(exploreapi.InitOptions{Prefix: "/explore"})
+	manager.InitRoute()
 }
 
 func main() {

@@ -23,19 +23,12 @@ func NewManager(app *fiber.App, auth auth.Manager, db *db.MongoManager, service 
 	}
 }
 
-type InitOptions struct {
-	Prefix string
-}
-
-func (m *Manager) InitRoute(options InitOptions) {
-	if options.Prefix == "" {
-		options.Prefix = "/"
-	}
-
-	m.App.Get(options.Prefix+"/ping", func(c *fiber.Ctx) error {
+func (m *Manager) InitRoute() {
+	exploreRoute := m.App.Group("/explore")
+	exploreRoute.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("pong")
 	})
 
-	routes := m.App.Group(options.Prefix, auth.FiberAuthMiddleware(m.Auth, m.DB.Users))
-	routes.Get("/suggest", m.Service.HandleGetMatches)
+	authorizedRoute := exploreRoute.Group("/", auth.FiberAuthMiddleware(m.Auth, m.DB.Users))
+	authorizedRoute.Get("/suggest", m.Service.HandleGetMatches)
 }
