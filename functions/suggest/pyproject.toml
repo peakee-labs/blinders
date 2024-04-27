@@ -7,10 +7,11 @@ readme = "README.md"
 packages = [{ include = "blinders" }]
 
 [tool.poetry.dependencies]
+orjson = "^3.10.0"
 python = "^3.10"
 blinders-pysuggest-core = { path = "../../packages/pysuggest", develop = true }
-orjson = "^3.10.0"
 blinders-pytransport-core = { path = "../../packages/pytransport", develop = true }
+blinders-pyauth-core = { path = "../../packages/pyauth", develop = true }
 
 [build-system]
 requires = ["poetry-core"]

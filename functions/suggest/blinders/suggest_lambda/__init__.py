@@ -7,6 +7,10 @@ import botocore.session
 from blinders.pysuggest import explain_text_in_sentence_by_gpt_v2
 from blinders.pytransport.aws import LambdaTransport
 from blinders.pytransport.requests import TransportRequest, type_collect_event
+from blinders.pyauth import AuthUser, AuthManager
+from blinders.pyauth.aws import auth
+from blinders.pydb import MongoManager
+from blinders.pydb.utils.mongo import init_mongo_client
 
 request_types = ["explain-text-in-sentence"]
 models = ["gpt"]
@@ -23,8 +27,30 @@ collect = "COLLECT"
 consumeMap = {collect: os.getenv("COLLECTING_PUSH_FUNCTION_NAME", "")}
 
 
-def lambda_handler(event: Dict[str, Any], context):
+auth_cert: Dict[str, Any] = {}
+with open("firebase.admin.json") as file:
+    auth_cert = json.load(file)
+
+auth_manager = AuthManager(auth_cert)
+
+db_url = "mongodb://{}:{}@{}:{}/{}".format(
+    os.getenv("MONGO_USERNAME"),
+    os.getenv("MONGO_PASSWORD"),
+    os.getenv("MONGO_HOST"),
+    os.getenv("MONGO_PORT"),
+    os.getenv("MONGO_DATABASE"),
+)
+
+mongo_manager = MongoManager(
+    client=init_mongo_client(db_url),
+    name=os.getenv("MONGO_DATABASE", ""),
+)
+
+
+@auth(auth_manager=auth_manager, repo=mongo_manager.UsersRepo)
+def lambda_handler(event: Dict[str, Any], context, auth_user: AuthUser):
     """Example of calling a function from another module."""
+
     queries: Dict[str, str] = event["queryStringParameters"]
     print("handle suggest with payload", queries)
 
@@ -60,6 +86,7 @@ def lambda_handler(event: Dict[str, Any], context):
 
             # TODO: make struct
             suggest_event = {
+                "userId": auth_user.get("ID"),
                 "request": {
                     "text": text,
                     "sentence": sentence,
