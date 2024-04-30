@@ -2,13 +2,12 @@ from typing import Dict, Any
 
 from pymongo import MongoClient
 
-from blinders.pydb.types import User
-from blinders.pydb import MongoManager
-
+import blinders.pydb.types as pydb_types
+import blinders.pydb as pydb
 
 mongo_test_url = "mongodb://localhost:27017/blinders"
 mongo_test_db = "blinders-test"
-manager: MongoManager | None = None
+manager: pydb.MongoManager | None = None
 
 
 def test_insert_new_user():
@@ -18,7 +17,7 @@ def test_insert_new_user():
     user_repo.Col.drop()
 
     firebase_UID = "firebaseUID"
-    user = User(
+    user = pydb_types.User(
         name="name",
         firebaseUID=firebase_UID,
         email="email",
@@ -39,10 +38,10 @@ def test_insert_new_user():
     assert find_with_firebaseuid == added_user
 
 
-def get_manager() -> MongoManager:
+def get_manager() -> pydb.MongoManager:
     global manager
     if manager is None:
         client: MongoClient[Dict[str, Any]] = MongoClient(host=mongo_test_url)
-        manager = MongoManager(client=client, name=mongo_test_db)
+        manager = pydb.MongoManager(client=client, name=mongo_test_db)
 
     return manager

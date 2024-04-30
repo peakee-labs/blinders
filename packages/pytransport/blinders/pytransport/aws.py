@@ -1,4 +1,7 @@
 from blinders.pytransport import ITransport
+from typing import Dict, Any
+
+import json
 
 
 class LambdaTransport(ITransport):
@@ -7,16 +10,14 @@ class LambdaTransport(ITransport):
 
     def request(self, id: str, payload: bytes) -> bytes:
         print("lambda transport: request to", id)
-        response = self.client.invoke(
+        response: Dict[str, Any] = self.client.invoke(
             FunctionName=id,
             Payload=payload,
             InvocationType="RequestResponse",
         )
-        if response["FunctionError"] != "":
-            raise Exception(
-                "lambda transport: cannot invoke, err",
-                response["FunctionError"],
-            )
+        if response.get("FunctionError"):
+            res = json.loads(response["Payload"].read().decode("utf-8"))
+            raise Exception(json.dumps(res))
 
         return response["Payload"].read()
 
