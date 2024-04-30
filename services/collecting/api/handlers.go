@@ -137,7 +137,7 @@ func (s Service) HandleGetGenericEvent(userOID primitive.ObjectID, eventType col
 			log.Println("collecting: explain log of user not found", logs)
 			return collecting.GenericEvent{}, fmt.Errorf("explain log of user not found")
 		}
-		return collecting.NewGenericEvent(eventType, logs[0].ExplainEvent), nil
+		return collecting.NewGenericEvent(eventType, logs[len(logs)-1].ExplainEvent), nil
 
 	case collecting.EventTypeTranslate:
 		logs, err := s.Collector.GetTranslateLogByUserID(userOID)
