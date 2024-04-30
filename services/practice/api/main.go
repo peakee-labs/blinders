@@ -37,7 +37,7 @@ func (s *Service) InitRoute() {
 	practiceRoute.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("hello from practice service")
 	})
-	practiceRoute.Get("/unit/random", s.HandleGetRandomLanguageUnit)
+	practiceRoute.Get("/public/unit", s.HandleGetRandomLanguageUnit)
 
 	authorized := practiceRoute.Group("/", auth.FiberAuthMiddleware(s.Auth, s.Db.Users))
 	authorized.Get("/unit", s.HandleGetLanguageUnit)
