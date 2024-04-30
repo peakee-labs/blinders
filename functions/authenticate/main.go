@@ -69,7 +69,7 @@ func handler(
 	userAuth, err := authManager.Verify(jwt)
 	if err != nil {
 		log.Println("failed to verify jwt", err)
-		return auth.UserAuth{}, fmt.Errorf("failed to verify jwt")
+		return auth.UserAuth{}, fmt.Errorf("failed to verify jwt, err: %v", err)
 	}
 
 	// currently, user.AuthID is firebaseUID
