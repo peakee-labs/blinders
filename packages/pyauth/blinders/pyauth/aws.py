@@ -9,14 +9,23 @@ default_headers = {
 }
 
 
-# auth middleware try to parse and verify the incomming apigateway event header field and get user\
-# information
-# authUser then will pass to the lambda handler with param auth_user
-# in order to use auth middleware, wrap this decorater to the lambda handler, and get the authUser \
-# insided the lambda via auth_user param.
-
-
 def auth(auth_manager: AuthManager, repo: UsersRespo):
+    """
+    middleware try to parse and verify the incomming apigateway event header field and get user
+    information
+
+    authenticate's information then will pass to the lambda handler with param auth_user
+
+    In order to use auth middleware, wrap this decorater to the lambda handler, and get the authUser
+    inside the lambda via auth_user param.
+
+    [DEPRECATED] This function is deprecated due to its dependencies significantly increasing
+    the size of the bundle.
+
+    Lambda need to authenticate the request with bearer token now should invoke authenticate
+    function with pytransport package
+    """
+
     def aws_auth(handler):
         # this method try to authorized event from api gateway using
         # event.header.Authorization will be used
