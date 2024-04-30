@@ -32,6 +32,7 @@ resource "aws_lambda_function" "pysuggest" {
   environment {
     variables = merge(local.envs,{
       COLLECTING_PUSH_FUNCTION_NAME : aws_lambda_function.collecting-push.function_name
+      AUTHENTICATE_FUNCTION_NAME : aws_lambda_function.authenticate.function_name
     })
   }
 
@@ -265,6 +266,25 @@ resource "aws_lambda_function" "practice" {
       COLLECTING_GET_FUNCTION_NAME : aws_lambda_function.collecting-get.function_name
       COLLECTING_PUSH_FUNCTION_NAME : aws_lambda_function.collecting-push.function_name
     })
+  }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
+  }
+}
+
+resource "aws_lambda_function" "authenticate" {
+  function_name    = "${var.project.name}-authenticate-${var.project.environment}"
+  filename         = "../../dist/authenticate-${var.project.environment}.zip"
+  handler          = "bootstrap"
+  role             = aws_iam_role.lambda_role.arn
+  runtime          = "provided.al2"
+  architectures    = ["arm64"]
+  source_code_hash = filebase64sha256("../../dist/authenticate-${var.project.environment}.zip")
+
+  environment {
+    variables = local.envs
   }
 
   tags = {
