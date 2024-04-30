@@ -31,10 +31,10 @@ type (
 		Sentence string `json:"sentence" bson:"sentence"`
 	}
 	ExplainResponse struct {
-		Translate       string         `json:"translate" bson:"translate"`
-		GrammarAnalysis map[string]any `json:"grammarAnalysis" bson:"grammarAnalysis"`
-		ExpandWords     []string       `json:"expandWords" bson:"expandWords"`
-		KeyWords        []string       `json:"keyWords" bson:"keyWords"`
+		Translate       string         `json:"translate" bson:"translate,omiempty"`
+		GrammarAnalysis map[string]any `json:"grammarAnalysis" bson:"grammarAnalysis,omiempty"`
+		ExpandWords     []string       `json:"expandWords" bson:"expandWords,omiempty"`
+		KeyWords        []string       `json:"keyWords" bson:"keyWords,omiempty"`
 	}
 	ExplainEvent struct {
 		UserID   primitive.ObjectID `json:"userId" bson:"userId"`
