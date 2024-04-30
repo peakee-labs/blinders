@@ -11,7 +11,7 @@ orjson = "^3.10.0"
 python = "^3.10"
 blinders-pysuggest-core = { path = "../../packages/pysuggest", develop = true }
 blinders-pytransport-core = { path = "../../packages/pytransport", develop = true }
-blinders-pyauth-core = { path = "../../packages/pyauth", develop = true }
+blinders-pydb-core = { path = "../../packages/pydb", develop = true }
 
 [build-system]
 requires = ["poetry-core"]
