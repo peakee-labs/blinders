@@ -1,9 +1,9 @@
-from typing import Dict, Any
+from typing import Any, Dict
 
 from pymongo import MongoClient
 
-import blinders.pydb.types as pydb_types
 import blinders.pydb as pydb
+import blinders.pydb.types as pydb_types
 
 mongo_test_url = "mongodb://localhost:27017/blinders"
 mongo_test_db = "blinders-test"

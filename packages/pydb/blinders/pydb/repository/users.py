@@ -1,10 +1,10 @@
 import datetime
 from typing import Any, Dict
 
-from blinders.pydb.types import User, user_from_dict
-
-from pymongo.collection import Collection
 from bson.objectid import ObjectId
+from pymongo.collection import Collection
+
+from blinders.pydb.types import User, user_from_dict
 
 
 class UsersRespo:

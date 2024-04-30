@@ -1,7 +1,7 @@
+from typing import Any, Dict
+
 from blinders.pyauth import AuthManager
 from blinders.pydb.repository.users import UsersRespo
-from typing import Dict, Any
-
 
 default_headers = {
     "Access-Control-Allow-Origin": "*",

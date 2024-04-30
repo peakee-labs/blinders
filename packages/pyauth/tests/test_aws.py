@@ -1,13 +1,11 @@
 import json
-from typing import Dict, Any
+from typing import Any, Dict
 
-from blinders.pyauth import AuthManager
-from blinders.pydb import MongoManager
-from blinders.pydb.utils.mongo import init_mongo_client
-from blinders.pydb.types import User
-from blinders.pyauth import AuthUser
+from blinders.pyauth import AuthManager, AuthUser
 from blinders.pyauth.aws import auth
-
+from blinders.pydb import MongoManager
+from blinders.pydb.types import User
+from blinders.pydb.utils.mongo import init_mongo_client
 
 testURL = "mongodb://localhost:27017"
 testDB = "blinders-test"

@@ -2,14 +2,13 @@ import json
 import os
 from typing import Any, Dict
 
-
 import botocore.session
 
+from blinders.pydb import MongoManager
+from blinders.pydb.utils.mongo import init_mongo_client
 from blinders.pysuggest import explain_text_in_sentence_by_gpt_v2
 from blinders.pytransport.aws import LambdaTransport
 from blinders.pytransport.requests import TransportRequest, type_collect_event
-from blinders.pydb import MongoManager
-from blinders.pydb.utils.mongo import init_mongo_client
 
 request_types = ["explain-text-in-sentence"]
 models = ["gpt"]

@@ -1,10 +1,10 @@
-from typing import TypedDict, List, Any, Dict
+import datetime
+from typing import Any, Dict, List, TypedDict
+
+from bson import ObjectId
 
 # with python version > 3.11, NotRequired is in typing package
 from typing_extensions import NotRequired
-
-from bson import ObjectId
-import datetime
 
 
 class User(TypedDict):

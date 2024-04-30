@@ -1,7 +1,7 @@
-from blinders.pytransport import ITransport
-from typing import Dict, Any
-
 import json
+from typing import Any, Dict
+
+from blinders.pytransport import ITransport
 
 
 class LambdaTransport(ITransport):

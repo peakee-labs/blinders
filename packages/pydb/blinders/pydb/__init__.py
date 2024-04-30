@@ -1,7 +1,7 @@
+from typing import Any, Dict
+
 import pymongo
 import pymongo.database
-from typing import Dict, Any
-
 
 from blinders.pydb.repository.users import UsersRespo
 

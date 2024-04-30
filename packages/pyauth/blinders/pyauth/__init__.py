@@ -1,7 +1,8 @@
-from typing import TypedDict, Dict, Any
-from typing_extensions import NotRequired
-from firebase_admin import auth
+from typing import Any, Dict, TypedDict
+
 import firebase_admin
+from firebase_admin import auth
+from typing_extensions import NotRequired
 
 
 class AuthUser(TypedDict):

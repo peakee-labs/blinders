@@ -53,7 +53,7 @@ type authRequest struct {
 }
 
 func handler(
-	ctx context.Context,
+	_ context.Context,
 	event authRequest,
 ) (
 	auth.UserAuth, error,

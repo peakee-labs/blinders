@@ -1,5 +1,6 @@
+from typing import Any, Dict
+
 from pymongo import MongoClient
-from typing import Dict, Any
 
 
 def init_mongo_client(url: str) -> MongoClient[Dict[str, Any]]:
