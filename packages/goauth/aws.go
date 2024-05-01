@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"blinders/packages/db/repo"
+	"blinders/packages/db/usersdb"
 
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -26,7 +26,7 @@ func LambdaLoggingMiddleware() LambdaMiddleware {
 
 func LambdaAuthMiddleware(
 	m Manager,
-	userRepo *repo.UsersRepo,
+	userRepo *usersdb.UsersRepo,
 	options ...MiddlewareOptions,
 ) LambdaMiddleware {
 	return func(next LambdaHandler) LambdaHandler {

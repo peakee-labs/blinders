@@ -19,7 +19,7 @@ func init() {
 	env := os.Getenv("ENVIRONMENT")
 	log.Println("collecting api running on environment:", env)
 
-	mongoInfo := dbutils.GetMongoInfoFromEnv()
+	mongoInfo := dbutils.GetMongoInfoFromEnv("COLLECTING")
 	client, err := dbutils.InitMongoClient(mongoInfo.URL)
 	if err != nil {
 		log.Fatal(err)

@@ -11,7 +11,8 @@ import (
 
 	wschat "blinders/functions/websocket/chat/core"
 	"blinders/packages/apigateway"
-	"blinders/packages/db"
+	"blinders/packages/db/chatdb"
+	dbutils "blinders/packages/db/utils"
 	"blinders/packages/session"
 	"blinders/packages/utils"
 
@@ -32,21 +33,13 @@ func init() {
 		Password: os.Getenv("REDIS_PASSWORD"),
 	}))
 
-	url := fmt.Sprintf(
-		db.MongoURLTemplate,
-		os.Getenv("MONGO_USERNAME"),
-		os.Getenv("MONGO_PASSWORD"),
-		os.Getenv("MONGO_HOST"),
-		os.Getenv("MONGO_PORT"),
-		os.Getenv("MONGO_DATABASE"),
-	)
-
-	database := db.NewMongoManager(url, os.Getenv("MONGO_DATABASE"))
-	if database == nil {
-		log.Fatal("cannot create database manager")
+	mongoInfo := dbutils.GetMongoInfoFromEnv()
+	client, err := dbutils.InitMongoClient(mongoInfo.URL)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	wschat.InitApp(sessionManager, database)
+	wschat.InitChatApp(sessionManager, chatdb.NewChatDB(client.Database(mongoInfo.DBName)))
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {

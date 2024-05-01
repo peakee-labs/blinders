@@ -4,17 +4,17 @@ import (
 	"log"
 	"net/http"
 
-	"blinders/packages/db/repo"
+	"blinders/packages/db/chatdb"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type MessagesService struct {
-	Repo *repo.MessagesRepo
+	Repo *chatdb.MessagesRepo
 }
 
-func NewMessagesService(repo *repo.MessagesRepo) *MessagesService {
+func NewMessagesService(repo *chatdb.MessagesRepo) *MessagesService {
 	return &MessagesService{
 		Repo: repo,
 	}

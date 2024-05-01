@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"blinders/packages/auth"
-	"blinders/packages/db"
-	"blinders/packages/db/repo"
+	"blinders/packages/db/usersdb"
+	dbutils "blinders/packages/db/utils"
 	"blinders/packages/utils"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -17,26 +17,19 @@ import (
 
 var (
 	authManager *auth.FirebaseManager
-	userRepo    *repo.UsersRepo
+	usersRepo   *usersdb.UsersRepo
 )
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
 	log.Printf("Authentication api running on %s environment\n", env)
 
-	url := fmt.Sprintf(
-		db.MongoURLTemplate,
-		os.Getenv("MONGO_USERNAME"),
-		os.Getenv("MONGO_PASSWORD"),
-		os.Getenv("MONGO_HOST"),
-		os.Getenv("MONGO_PORT"),
-		os.Getenv("MONGO_DATABASE"),
-	)
-
-	database := db.NewMongoManager(url, os.Getenv("MONGO_DATABASE"))
-	if database == nil {
-		log.Fatal("cannot create database manager")
+	usersDB, err := dbutils.InitMongoDatabaseFromEnv("USERS")
+	if err != nil {
+		log.Fatal(err)
 	}
+	usersRepo = usersdb.NewUsersRepo(usersDB)
+
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {
 		log.Fatal(err)
@@ -45,21 +38,15 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	userRepo = database.Users
 }
 
 type authRequest struct {
 	Token string `json:"token"` // bearer token
 }
 
-func handler(
-	_ context.Context,
-	event authRequest,
-) (
-	auth.UserAuth, error,
-) {
-	authToken := event.Token
-	fmt.Println("received", event)
+func handler(_ context.Context, req authRequest) (auth.UserAuth, error) {
+	authToken := req.Token
+	fmt.Println("received", req)
 	if !strings.HasPrefix(authToken, "Bearer ") {
 		log.Println("invalid jwt, missing bearer token")
 		return auth.UserAuth{}, fmt.Errorf("missing bearer token")
@@ -73,7 +60,7 @@ func handler(
 	}
 
 	// currently, user.AuthID is firebaseUID
-	user, err := userRepo.GetUserByFirebaseUID(userAuth.AuthID)
+	user, err := usersRepo.GetUserByFirebaseUID(userAuth.AuthID)
 	if err != nil {
 		log.Println("failed to get user", err)
 		return auth.UserAuth{}, fmt.Errorf("failed to get user")

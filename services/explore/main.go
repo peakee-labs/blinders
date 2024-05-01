@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"blinders/packages/auth"
-	"blinders/packages/db"
+	"blinders/packages/db/matchingdb"
+	"blinders/packages/db/usersdb"
+	dbutils "blinders/packages/db/utils"
 	"blinders/packages/explore"
 	"blinders/packages/utils"
 	exploreapi "blinders/services/explore/api"
@@ -48,9 +50,10 @@ func init() {
 	dbName := os.Getenv("MONGO_DATABASE")
 	url := os.Getenv("MONGO_DATABASE_URL")
 
-	mongoManager := db.NewMongoManager(url, dbName)
-
-	fmt.Println("Connected to mongo url", url)
+	client, err := dbutils.InitMongoClient(url)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: os.Getenv("REDIS_URL"),
@@ -65,7 +68,14 @@ func init() {
 		panic(err)
 	}
 
-	core := explore.NewMongoExplorer(mongoManager, redisClient)
+	// matchingDB := matchingdb.
+	usersRepo := usersdb.NewUsersRepo(client.Database(dbName))
+	matchingRepo := matchingdb.NewMatchingRepo(client.Database(dbName))
+	core := explore.NewExplorer(
+		matchingRepo,
+		usersRepo,
+		redisClient,
+	)
 
 	embedderEndpoint := fmt.Sprintf(
 		"http://localhost:%s/embed",
@@ -73,7 +83,7 @@ func init() {
 	)
 	service = exploreapi.NewService(core, redisClient, embedderEndpoint)
 
-	manager = exploreapi.NewManager(app, authManager, mongoManager, service)
+	manager = exploreapi.NewManager(app, authManager, usersRepo, service)
 	manager.App.Use(logger.New(), cors.New())
 
 	// Expose for local development

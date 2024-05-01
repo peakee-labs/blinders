@@ -6,13 +6,18 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"blinders/packages/auth"
-	"blinders/packages/db"
+	"blinders/packages/db/matchingdb"
+	"blinders/packages/db/usersdb"
 	"blinders/packages/explore"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
+
+	dbutils "blinders/packages/db/utils"
+
 	exploreapi "blinders/services/explore/api"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -21,63 +26,61 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
 	api         *exploreapi.Manager
 	fiberLambda *fiberadapter.FiberLambda
+	err         error
 )
 
 func init() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	url := fmt.Sprintf(
-		db.MongoURLTemplate,
-		os.Getenv("MONGO_USERNAME"),
-		os.Getenv("MONGO_PASSWORD"),
-		os.Getenv("MONGO_HOST"),
-		os.Getenv("MONGO_PORT"),
-		os.Getenv("MONGO_DATABASE"),
-	)
-	database := db.NewMongoManager(url, os.Getenv("MONGO_DATABASE"))
-	if database == nil {
-		panic("cannot create mongo manager")
-	}
-	log.Println("database connected")
+	redisClient := utils.NewRedisClientFromEnv(ctx)
 
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
-		Username: os.Getenv("REDIS_USERNAME"),
-		Password: os.Getenv("REDIS_PASSWORD"),
-	})
-	if err := redisClient.Ping(ctx).Err(); err != nil {
-		panic(err)
-	}
+	var usersDB *mongo.Database
+	var matchingDB *mongo.Database
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		usersDB, err = dbutils.InitMongoDatabaseFromEnv("USERS")
+		if err != nil {
+			log.Fatal("failed to init users db", err)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		matchingDB, err = dbutils.InitMongoDatabaseFromEnv("MATCHING")
+		if err != nil {
+			log.Fatal("failed to init matching db", err)
+		}
+	}()
+	wg.Wait()
 
-	core := explore.NewMongoExplorer(database, redisClient)
+	matchingRepo := matchingdb.NewMatchingRepo(matchingDB)
+	usersRepo := usersdb.NewUsersRepo(usersDB)
+
+	core := explore.NewExplorer(matchingRepo, usersRepo, redisClient)
 	service := exploreapi.NewService(core, redisClient, os.Getenv("EMBEDDER_ENDPOINT"))
-	app := fiber.New()
 
 	adminJSON, _ := utils.GetFile("firebase.admin.json")
-	authManager, err := auth.NewFirebaseManager(adminJSON)
+	auth, err := auth.NewFirebaseManager(adminJSON)
 	if err != nil {
 		panic(err)
 	}
 
-	api = exploreapi.NewManager(app, authManager, database, service)
-
-	api.App.Use(logger.New(logger.Config{
-		Format: "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n",
-	}))
-
+	app := fiber.New()
+	api = exploreapi.NewManager(app, auth, usersRepo, service)
+	api.App.Use(logger.New(logger.Config{Format: utils.DefaultGinLoggerFormat}))
 	api.App.Use(cors.New(cors.Config{
-		AllowOrigins: "https://app.peakee.co, http://localhost:3000",
+		AllowOrigins: utils.GetOriginsFromEnv(),
 		AllowMethods: "GET,OPTIONS",
 		AllowHeaders: "*",
 	}))
-
 	api.InitRoute()
 
 	fiberLambda = fiberadapter.New(api.App)

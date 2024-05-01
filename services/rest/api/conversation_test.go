@@ -2,14 +2,13 @@ package restapi_test
 
 import (
 	"log"
-	"os"
 	"testing"
 
-	"blinders/packages/db"
-	"blinders/packages/db/models"
+	"blinders/packages/db/chatdb"
+	"blinders/packages/db/usersdb"
+	dbutils "blinders/packages/db/utils"
 	restapi "blinders/services/rest/api"
 
-	"github.com/joho/godotenv"
 	"github.com/test-go/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -17,16 +16,14 @@ import (
 var convService restapi.ConversationsService
 
 func init() {
-	_ = godotenv.Load("../../../.env")
-	dbName := os.Getenv("MONGO_DATABASE")
-	url := os.Getenv("MONGO_DATABASE_URL")
-	log.Println("database url: ", url)
-	dbManager := db.NewMongoManager(url, dbName)
-	convService = *restapi.NewConversationsService(dbManager.Conversations, dbManager.Users, nil)
+	client, _ := dbutils.InitMongoClient("mongodb://localhost:27017")
+	chatDB := chatdb.NewChatDB(client.Database("blinders"))
+	usersDB := usersdb.NewUsersDB(client.Database("blinders"))
+	convService = *restapi.NewConversationsService(chatDB.ConversationsRepo, chatDB.MessagesRepo, usersDB.UsersRepo)
 }
 
 func TestCheckFriendshipFailedWithNoFriendship(t *testing.T) {
-	user1, _ := convService.UserRepo.InsertNewRawUser(models.User{
+	user1, _ := convService.UsersRepo.InsertNewRawUser(usersdb.User{
 		FirebaseUID: primitive.NewObjectID().Hex(),
 	})
 
@@ -36,7 +33,7 @@ func TestCheckFriendshipFailedWithNoFriendship(t *testing.T) {
 
 func TestCheckFriendshipFailedWithFriendNotFound(t *testing.T) {
 	friendID := primitive.NewObjectID()
-	user1, _ := convService.UserRepo.InsertNewRawUser(models.User{
+	user1, _ := convService.UsersRepo.InsertNewRawUser(usersdb.User{
 		FriendIDs:   []primitive.ObjectID{friendID},
 		FirebaseUID: primitive.NewObjectID().Hex(),
 	})
@@ -48,12 +45,12 @@ func TestCheckFriendshipSuccess(t *testing.T) {
 	user1ID := primitive.NewObjectID()
 	user2ID := primitive.NewObjectID()
 	log.Println(user1ID, user2ID)
-	user1, _ := convService.UserRepo.InsertNewUser(models.User{
+	user1, _ := convService.UsersRepo.InsertNewUser(usersdb.User{
 		ID:          user1ID,
 		FriendIDs:   []primitive.ObjectID{user2ID},
 		FirebaseUID: primitive.NewObjectID().Hex(),
 	})
-	user2, _ := convService.UserRepo.InsertNewUser(models.User{
+	user2, _ := convService.UsersRepo.InsertNewUser(usersdb.User{
 		ID:          user2ID,
 		FriendIDs:   []primitive.ObjectID{user1ID},
 		FirebaseUID: primitive.NewObjectID().Hex(),

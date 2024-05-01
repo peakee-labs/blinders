@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"blinders/packages/db/models"
+	"blinders/packages/db/chatdb"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -45,7 +45,7 @@ func HandleSendMessage(
 		}
 	}
 
-	message := app.DB.Messages.ConstructNewMessage(
+	message := app.ChatDB.MessagesRepo.ConstructNewMessage(
 		userID,
 		conversationID,
 		replyTo,
@@ -73,7 +73,7 @@ func HandleSendMessage(
 	wg.Add(1)
 	go func() {
 		// do we need to wait for inserting success to distribute message to users?
-		_, err := app.DB.Messages.InsertNewMessage(message)
+		_, err := app.ChatDB.MessagesRepo.InsertNewMessage(message)
 		if err != nil {
 			log.Fatalln("[dangerous] failed to insert message", err)
 		}
@@ -93,8 +93,8 @@ func HandleSendMessage(
 func queryConversationOfUser(
 	conversationID primitive.ObjectID,
 	userID primitive.ObjectID,
-) (*models.Conversation, error) {
-	conversation, err := app.DB.Conversations.GetConversationByID(conversationID)
+) (*chatdb.Conversation, error) {
+	conversation, err := app.ChatDB.ConversationsRepo.GetConversationByID(conversationID)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func queryConversationOfUser(
 }
 
 func checkValidReplyTo(replyTo primitive.ObjectID, conversationID primitive.ObjectID) error {
-	repliedMessage, err := app.DB.Messages.GetMessageByID(replyTo)
+	repliedMessage, err := app.ChatDB.MessagesRepo.GetMessageByID(replyTo)
 	if err != nil {
 		return err
 	} else if repliedMessage.ConversationID != conversationID {
@@ -124,7 +124,7 @@ func checkValidReplyTo(replyTo primitive.ObjectID, conversationID primitive.Obje
 }
 
 func distributeAckMessage(
-	message models.Message,
+	message chatdb.Message,
 	connectionID string,
 	resolveID string,
 	dCh chan *DistributeEvent,
@@ -140,8 +140,8 @@ func distributeAckMessage(
 }
 
 func distributeMessageToRecipients(
-	message models.Message,
-	conversation models.Conversation,
+	message chatdb.Message,
+	conversation chatdb.Conversation,
 	dCh chan *DistributeEvent,
 ) {
 	wg := sync.WaitGroup{}
@@ -151,7 +151,7 @@ func distributeMessageToRecipients(
 		}
 		wg.Add(1)
 		// TODO: use go 1.22 to resolve loop with goroutine
-		go func(m models.Member) {
+		go func(m chatdb.Member) {
 			sessions, err := app.Session.GetSessions(m.UserID.Hex())
 			if err != nil {
 				log.Println("failed to query sessions for user", m.UserID.Hex())
@@ -178,7 +178,7 @@ func distributeMessageToRecipients(
 }
 
 func distributeMessageToAnotherSenderSessions(
-	message models.Message,
+	message chatdb.Message,
 	userID string,
 	curConnID string,
 	dCh chan *DistributeEvent,
