@@ -1,27 +1,4 @@
 {
   "flake8.args": ["--config=pyproject.toml"],
-  "python.analysis.typeCheckingMode": "basic",
-  "cSpell.words": [
-    "botocore",
-    "cclient",
-    "chatdb",
-    "collectingapi",
-    "collectingdb",
-    "dbutils",
-    "eclient",
-    "elog",
-    "golambda",
-    "Langchain",
-    "matchingdb",
-    "practiceapi",
-    "pydb",
-    "pylambda",
-    "pytransport",
-    "rediscore",
-    "tlog",
-    "trydev",
-    "uclient",
-    "usersdb"
-  ],
-  "ansible.python.interpreterPath": "/Users/thomasle/zenonian/blinders/.venv/bin/python"
+  "python.analysis.typeCheckingMode": "basic"
 }
