@@ -6,16 +6,15 @@ import (
 	"os"
 	"strings"
 
-	"blinders/packages/collecting"
-	"blinders/packages/db"
-	collectingapi "blinders/services/collecting/api"
+	"blinders/packages/db/collectingdb"
+	dbutils "blinders/packages/db/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 )
 
-var service collectingapi.Manager
+var m *Manager
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
@@ -32,13 +31,18 @@ func init() {
 	url := os.Getenv("MONGO_DATABASE_URL")
 	dbName := os.Getenv("MONGO_DATABASE")
 
-	mongoManager := db.NewMongoManager(url, dbName)
+	client, err := dbutils.InitMongoClient(url)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	service = *collectingapi.NewManager(
+	m = NewManager(
 		app,
-		collecting.NewEventCollector(mongoManager.Client.Database(dbName)))
-	service.App.Use(cors.New())
-	_ = service.InitRoute()
+		collectingdb.NewCollectingDB(client.Database(dbName)),
+	)
+
+	m.App.Use(cors.New())
+	_ = m.InitRoute()
 }
 
 func main() {

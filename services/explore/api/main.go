@@ -2,24 +2,29 @@ package exploreapi
 
 import (
 	"blinders/packages/auth"
-	"blinders/packages/db"
+	"blinders/packages/db/usersdb"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type Manager struct {
-	App     *fiber.App
-	Auth    auth.Manager
-	DB      *db.MongoManager
-	Service *Service
+	App       *fiber.App
+	Auth      auth.Manager
+	UsersRepo *usersdb.UsersRepo
+	Service   *Service
 }
 
-func NewManager(app *fiber.App, auth auth.Manager, db *db.MongoManager, service *Service) *Manager {
+func NewManager(
+	app *fiber.App,
+	auth auth.Manager,
+	usersRepo *usersdb.UsersRepo,
+	service *Service,
+) *Manager {
 	return &Manager{
-		App:     app,
-		Auth:    auth,
-		DB:      db,
-		Service: service,
+		App:       app,
+		Auth:      auth,
+		UsersRepo: usersRepo,
+		Service:   service,
 	}
 }
 
@@ -29,6 +34,6 @@ func (m *Manager) InitRoute() {
 		return c.SendString("pong")
 	})
 
-	authorizedRoute := exploreRoute.Group("/", auth.FiberAuthMiddleware(m.Auth, m.DB.Users))
+	authorizedRoute := exploreRoute.Group("/", auth.FiberAuthMiddleware(m.Auth, m.UsersRepo))
 	authorizedRoute.Get("/suggest", m.Service.HandleGetMatches)
 }

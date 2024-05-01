@@ -4,7 +4,7 @@ import (
 	"log"
 	"strings"
 
-	"blinders/packages/db/repo"
+	"blinders/packages/db/usersdb"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -20,7 +20,7 @@ type MiddlewareOptions struct {
 
 func FiberAuthMiddleware(
 	m Manager,
-	userRepo *repo.UsersRepo,
+	userRepo *usersdb.UsersRepo,
 	options ...MiddlewareOptions,
 ) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
@@ -38,7 +38,7 @@ func FiberAuthMiddleware(
 		jwt := strings.Split(auth, " ")[1]
 		userAuth, err := m.Verify(jwt)
 		if err != nil {
-			log.Println("failed to verify jwt", err)
+			log.Println("failed to verify jwt:", err)
 			return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"message": "failed to verify jwt",
 			})
@@ -48,7 +48,7 @@ func FiberAuthMiddleware(
 			// currently, user.AuthID is firebaseUID
 			user, err := userRepo.GetUserByFirebaseUID(userAuth.AuthID)
 			if err != nil {
-				log.Println("failed to get user", err)
+				log.Println("failed to get user:", err)
 				return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 					"message": "failed to get user",
 				})

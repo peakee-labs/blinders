@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,46 +10,32 @@ import (
 
 	wschat "blinders/functions/websocket/chat/core"
 	"blinders/packages/apigateway"
-	"blinders/packages/db"
+	"blinders/packages/db/chatdb"
+	dbutils "blinders/packages/db/utils"
 	"blinders/packages/session"
 	"blinders/packages/utils"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
-
-	"github.com/redis/go-redis/v9"
 )
 
 var APIGatewayClient *apigateway.Client
 
 func init() {
-	// TODO: need to store these secrets to aws secret manager instead of pass in env
-	sessionManager := session.NewManager(redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
-		Username: os.Getenv("REDIS_USERNAME"),
-		Password: os.Getenv("REDIS_PASSWORD"),
-	}))
+	redisClient := utils.NewRedisClientFromEnv(context.Background())
+	sessionManager := session.NewManager(redisClient)
 
-	url := fmt.Sprintf(
-		db.MongoURLTemplate,
-		os.Getenv("MONGO_USERNAME"),
-		os.Getenv("MONGO_PASSWORD"),
-		os.Getenv("MONGO_HOST"),
-		os.Getenv("MONGO_PORT"),
-		os.Getenv("MONGO_DATABASE"),
-	)
-
-	database := db.NewMongoManager(url, os.Getenv("MONGO_DATABASE"))
-	if database == nil {
-		log.Fatal("cannot create database manager")
+	chatDB, err := dbutils.InitMongoDatabaseFromEnv("CHAT")
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	wschat.InitApp(sessionManager, database)
+	wschat.InitChatApp(sessionManager, chatdb.NewChatDB(chatDB))
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
-		log.Fatal("failed to load aws config", err)
+		log.Fatal("failed to load aws config:", err)
 	}
 	cer := apigateway.CustomEndpointResolve{
 		Domain:     os.Getenv("API_GATEWAY_DOMAIN"),
@@ -68,7 +53,7 @@ func HandleRequest(
 
 	genericEvent, err := utils.ParseJSON[wschat.ChatEvent]([]byte(req.Body))
 	if err != nil {
-		log.Println("can not parse request payload, require type in payload", err)
+		log.Println("can not parse request payload, require type in payload:", err)
 	}
 
 	switch genericEvent.Type {
@@ -76,19 +61,19 @@ func HandleRequest(
 		data := []byte("pong")
 		err = APIGatewayClient.Publish(ctx, req.RequestContext.ConnectionID, data)
 		if err != nil {
-			log.Println("can not publish message", err)
+			log.Println("can not publish message:", err)
 		}
 	case wschat.UserSendMessage:
 		payload, err := utils.ParseJSON[wschat.UserSendMessagePayload]([]byte(req.Body))
 		if err != nil {
-			log.Println("invalid send message event", err)
+			log.Println("invalid send message event:", err)
 			_ = APIGatewayClient.Publish(ctx, connectionID, []byte("invalid send message event"))
 			break
 		}
 
 		dCh, err := wschat.HandleSendMessage(userID, connectionID, *payload)
 		if err != nil {
-			log.Println("failed to send message", err)
+			log.Println("failed to send message:", err)
 			_ = APIGatewayClient.Publish(
 				ctx,
 				connectionID,
@@ -110,13 +95,13 @@ func HandleRequest(
 				defer wg.Done()
 				data, err := json.Marshal(d.Payload)
 				if err != nil {
-					log.Println("can not marshal data", err)
+					log.Println("can not marshal data:", err)
 					return
 				}
 
 				err = APIGatewayClient.Publish(ctx, d.ConnectionID, data)
 				if err != nil {
-					log.Println("can not publish message", err)
+					log.Println("can not publish message:", err)
 				}
 			}()
 		}
@@ -124,7 +109,7 @@ func HandleRequest(
 		wg.Wait()
 		log.Println("message sent")
 	default:
-		log.Println("not support this event", req.Body)
+		log.Println("not support this event:", req.Body)
 		_ = APIGatewayClient.Publish(ctx, connectionID, []byte("not support this event"))
 	}
 

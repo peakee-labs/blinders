@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"blinders/packages/auth"
-	"blinders/packages/db/models"
+	"blinders/packages/db/matchingdb"
 	"blinders/packages/explore"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
@@ -55,7 +55,7 @@ func (s *Service) HandleGetMatches(ctx *fiber.Ctx) error {
 
 // HandleAddUserMatch will add match-related information to match db
 func (s *Service) HandleAddUserMatch(ctx *fiber.Ctx) error {
-	userMatch := new(models.MatchInfo)
+	userMatch := new(matchingdb.MatchInfo)
 	if err := json.Unmarshal(ctx.Body(), userMatch); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "service: match information required in body",
@@ -74,7 +74,7 @@ func (s *Service) HandleAddUserMatch(ctx *fiber.Ctx) error {
 
 const UserEmbedFormat = "[BEGIN]gender: %s[SEP]age: %v[SEP]job: %s[SEP]native language: %s[SEP]learning language: %s[SEP]country: %s[SEP]interests: %s[END]"
 
-func (s *Service) AddUserMatch(info models.MatchInfo) error {
+func (s *Service) AddUserMatch(info matchingdb.MatchInfo) error {
 	requestPayload := transport.EmbeddingRequest{
 		Request: transport.Request{Type: transport.Embedding},
 		Data: fmt.Sprintf(

@@ -7,8 +7,8 @@ import (
 	"log"
 	"time"
 
-	"blinders/packages/db"
-	"blinders/packages/db/models"
+	"blinders/packages/db/matchingdb"
+	"blinders/packages/db/usersdb"
 
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,22 +16,28 @@ import (
 
 type Explorer interface {
 	// Suggest returns list of users that maybe match with given user
-	Suggest(userID string) ([]models.MatchInfo, error)
+	Suggest(userID string) ([]matchingdb.MatchInfo, error)
 	// AddUserMatchInformation adds user match information to the database.
-	AddUserMatchInformation(info models.MatchInfo) (models.MatchInfo, error)
+	AddUserMatchInformation(info matchingdb.MatchInfo) (matchingdb.MatchInfo, error)
 	// AddEmbedding adds user embed vector to the vector database.
 	AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error
 }
 
 type MongoExplorer struct {
-	Db          *db.MongoManager
-	RedisClient *redis.Client
+	MatchingRepo *matchingdb.MatchingRepo
+	UsersRepo    *usersdb.UsersRepo
+	RedisClient  *redis.Client
 }
 
-func NewMongoExplorer(Db *db.MongoManager, RedisClient *redis.Client) *MongoExplorer {
+func NewExplorer(
+	matchingRepo *matchingdb.MatchingRepo,
+	usersRepo *usersdb.UsersRepo,
+	redisClient *redis.Client,
+) *MongoExplorer {
 	return &MongoExplorer{
-		Db:          Db,
-		RedisClient: RedisClient,
+		MatchingRepo: matchingRepo,
+		UsersRepo:    usersRepo,
+		RedisClient:  redisClient,
 	}
 }
 
@@ -45,7 +51,7 @@ or users who are currently learning the same language as the current user.
 
 We will then use KNN-search in the filtered space to identify 5 users that may match with the current user.
 */
-func (m *MongoExplorer) Suggest(userID string) ([]models.MatchInfo, error) {
+func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -59,9 +65,9 @@ func (m *MongoExplorer) Suggest(userID string) ([]models.MatchInfo, error) {
 		return nil, err
 	}
 
-	user, err := m.Db.Users.GetUserByID(oid)
+	user, err := m.UsersRepo.GetUserByID(oid)
 	if err != nil {
-		log.Println("explore: cannot get user by id, err", err)
+		log.Println("explore: cannot get user by id, err:", err)
 		return nil, err
 	}
 
@@ -69,16 +75,16 @@ func (m *MongoExplorer) Suggest(userID string) ([]models.MatchInfo, error) {
 	// at here, if there aren't entries in redis, the jsonStr will be empty, we could check it here then return
 	jsonStr, err := m.RedisClient.JSONGet(ctx, CreateMatchKeyWithUserID(userID), "$.embed").Result()
 	if err != nil || jsonStr == "" {
-		log.Println("explore: cannot get explore entry in redis, err", err)
-		return []models.MatchInfo{}, fmt.Errorf(
+		log.Println("explore: cannot get explore entry in redis, err:", err)
+		return []matchingdb.MatchInfo{}, fmt.Errorf(
 			"explore profile not found, might need to check onboarding status",
 		)
 	}
 
 	var embedArr []EmbeddingVector
 	if err := json.Unmarshal([]byte(jsonStr), &embedArr); err != nil {
-		log.Println("explore: cannot unmarshall embed vector, err", err)
-		return []models.MatchInfo{}, fmt.Errorf("something went wrong")
+		log.Println("explore: cannot unmarshall embed vector, err:", err)
+		return []matchingdb.MatchInfo{}, fmt.Errorf("something went wrong")
 	}
 	embed := embedArr[0]
 
@@ -89,9 +95,9 @@ func (m *MongoExplorer) Suggest(userID string) ([]models.MatchInfo, error) {
 	}
 	excludeFilter = fmt.Sprintf("-@id:(%s)", excludeFilter)
 
-	candidates, err := m.Db.Matches.GetUsersByLanguage(user.ID, 1000)
+	candidates, err := m.MatchingRepo.GetUsersByLanguage(user.ID, 1000)
 	if err != nil {
-		log.Println("explore: cannot explore candidates, err", err)
+		log.Println("explore: cannot explore candidates, err:", err)
 		return nil, err
 	}
 
@@ -117,18 +123,18 @@ func (m *MongoExplorer) Suggest(userID string) ([]models.MatchInfo, error) {
 		"RETURN", "1", "id",
 	)
 	if err := cmd.Err(); err != nil {
-		log.Println("explore: cannot perform knn search in vector database, err", err)
+		log.Println("explore: cannot perform knn search in vector database, err:", err)
 		return nil, err
 	}
 
-	var res []models.MatchInfo
+	var res []matchingdb.MatchInfo
 	for _, doc := range cmd.Val().(map[any]any)["results"].([]any) {
 		userID := doc.(map[any]any)["extra_attributes"].(map[any]any)["id"].(string)
 		oid, err := primitive.ObjectIDFromHex(userID)
 		if err != nil {
 			return nil, err
 		}
-		user, err := m.Db.Matches.GetMatchInfoByUserID(oid)
+		user, err := m.MatchingRepo.GetMatchInfoByUserID(oid)
 		if err != nil {
 			return nil, err
 		}
@@ -148,22 +154,24 @@ Currently, embedding will be handled by another service. The caller of this meth
 to notify that a new user has been created. This allows the embedding service to update the embedding vector
 in the vector database.
 */
-func (m *MongoExplorer) AddUserMatchInformation(info models.MatchInfo) (models.MatchInfo, error) {
-	_, err := m.Db.Users.GetUserByID(info.UserID)
+func (m *MongoExplorer) AddUserMatchInformation(
+	info matchingdb.MatchInfo,
+) (matchingdb.MatchInfo, error) {
+	_, err := m.UsersRepo.GetUserByID(info.UserID)
 	if err != nil {
-		return models.MatchInfo{}, err
+		return matchingdb.MatchInfo{}, err
 	}
 
 	// duplicated match information will be handled by the repository since we have already indexed the collection with firebaseUID.
-	matchInfo, err := m.Db.Matches.InsertNewRawMatchInfo(info)
+	matchInfo, err := m.MatchingRepo.InsertNewRawMatchInfo(info)
 	if err != nil {
-		return models.MatchInfo{}, err
+		return matchingdb.MatchInfo{}, err
 	}
 	return matchInfo, nil
 }
 
 func (m *MongoExplorer) AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error {
-	_, err := m.Db.Matches.GetMatchInfoByUserID(userID)
+	_, err := m.MatchingRepo.GetMatchInfoByUserID(userID)
 	if err != nil {
 		return err
 	}

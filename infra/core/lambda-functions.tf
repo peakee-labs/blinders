@@ -16,6 +16,12 @@ resource "aws_lambda_function" "dictionary" {
     project     = var.project.name
     environment = var.project.environment
   }
+
+  environment {
+    variables = {
+      ENVIRONMENT : var.project.environment
+    }
+  }
 }
 
 resource "aws_lambda_function" "pysuggest" {
@@ -30,10 +36,13 @@ resource "aws_lambda_function" "pysuggest" {
   depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
 
   environment {
-    variables = merge(local.envs,{
+    variables = {
+      ENVIRONMENT : var.project.environment
+      OPENAI_API_KEY : local.envs.OPENAI_API_KEY
+
       COLLECTING_PUSH_FUNCTION_NAME : aws_lambda_function.collecting-push.function_name
       AUTHENTICATE_FUNCTION_NAME : aws_lambda_function.authenticate.function_name
-    })
+    }
   }
 
   tags = {
@@ -53,9 +62,12 @@ resource "aws_lambda_function" "translate" {
   source_code_hash = filebase64sha256("../../dist/translate-${var.project.environment}.zip")
 
   environment {
-    variables = merge(local.envs,{
+    variables = {
+      ENVIRONMENT : var.project.environment
+      YANDEX_API_KEY : local.envs.YANDEX_API_KEY
+
       COLLECTING_PUSH_FUNCTION_NAME : aws_lambda_function.collecting-push.function_name
-    })
+    }
   }
 
   tags = {
@@ -75,7 +87,14 @@ resource "aws_lambda_function" "ws_connect" {
   source_code_hash = filebase64sha256("../../dist/connect-${var.project.environment}.zip")
 
   environment {
-    variables = local.envs
+    variables = {
+      ENVIRONMENT : var.project.environment
+
+      REDIS_HOST : local.envs.REDIS_HOST
+      REDIS_PORT : local.envs.REDIS_PORT
+      REDIS_USERNAME : local.envs.REDIS_USERNAME
+      REDIS_PASSWORD : local.envs.REDIS_PASSWORD
+    }
   }
 
   tags = {
@@ -95,7 +114,12 @@ resource "aws_lambda_function" "ws_authorizer" {
   source_code_hash = filebase64sha256("../../dist/ws_authorizer-${var.project.environment}.zip")
 
   environment {
-    variables = local.envs
+    variables = {
+      ENVIRONMENT : var.project.environment
+
+      USERS_MONGO_DATABASE : local.envs.USERS_MONGO_DATABASE
+      USERS_MONGO_DATABASE_URL : local.envs.USERS_MONGO_DATABASE_URL
+    }
   }
 
   tags = {
@@ -115,7 +139,14 @@ resource "aws_lambda_function" "ws_disconnect" {
   source_code_hash = filebase64sha256("../../dist/disconnect-${var.project.environment}.zip")
 
   environment {
-    variables = local.envs
+    variables = {
+      ENVIRONMENT : var.project.environment
+
+      REDIS_HOST : local.envs.REDIS_HOST
+      REDIS_PORT : local.envs.REDIS_PORT
+      REDIS_USERNAME : local.envs.REDIS_USERNAME
+      REDIS_PASSWORD : local.envs.REDIS_PASSWORD
+    }
   }
 
   tags = {
@@ -135,7 +166,20 @@ resource "aws_lambda_function" "ws_chat" {
   source_code_hash = filebase64sha256("../../dist/wschat-${var.project.environment}.zip")
 
   environment {
-    variables = local.envs
+    variables = {
+      ENVIRONMENT : var.project.environment
+
+      REDIS_HOST : local.envs.REDIS_HOST
+      REDIS_PORT : local.envs.REDIS_PORT
+      REDIS_USERNAME : local.envs.REDIS_USERNAME
+      REDIS_PASSWORD : local.envs.REDIS_PASSWORD
+
+      API_GATEWAY_DOMAIN : local.envs.API_GATEWAY_DOMAIN
+      API_GATEWAY_PATH_PREFIX : local.envs.API_GATEWAY_PATH_PREFIX
+
+      CHAT_MONGO_DATABASE : local.envs.CHAT_MONGO_DATABASE
+      CHAT_MONGO_DATABASE_URL : local.envs.CHAT_MONGO_DATABASE_URL
+    }
   }
 
   tags = {
@@ -155,10 +199,21 @@ resource "aws_lambda_function" "rest" {
   source_code_hash = filebase64sha256("../../dist/rest-${var.project.environment}.zip")
 
   environment {
-    variables = merge(local.envs, {
+    variables = {
+      ENVIRONMENT : var.project.environment
+
+      USERS_MONGO_DATABASE : local.envs.USERS_MONGO_DATABASE
+      USERS_MONGO_DATABASE_URL : local.envs.USERS_MONGO_DATABASE_URL
+
+      CHAT_MONGO_DATABASE : local.envs.CHAT_MONGO_DATABASE
+      CHAT_MONGO_DATABASE_URL : local.envs.CHAT_MONGO_DATABASE_URL
+
+      MATCHING_MONGO_DATABASE : local.envs.MATCHING_MONGO_DATABASE
+      MATCHING_MONGO_DATABASE_URL : local.envs.MATCHING_MONGO_DATABASE_URL
+
       NOTIFICATION_FUNCTION_NAME : aws_lambda_function.notification.function_name,
       EXPLORE_FUNCTION_NAME : aws_lambda_function.explore.function_name
-    })
+    }
   }
 
   tags = {
@@ -179,7 +234,17 @@ resource "aws_lambda_function" "notification" {
   source_code_hash = filebase64sha256("../../dist/notification-${var.project.environment}.zip")
 
   environment {
-    variables = local.envs
+    variables = {
+      ENVIRONMENT : var.project.environment
+
+      REDIS_HOST : local.envs.REDIS_HOST
+      REDIS_PORT : local.envs.REDIS_PORT
+      REDIS_USERNAME : local.envs.REDIS_USERNAME
+      REDIS_PASSWORD : local.envs.REDIS_PASSWORD
+
+      API_GATEWAY_DOMAIN : local.envs.API_GATEWAY_DOMAIN
+      API_GATEWAY_PATH_PREFIX : local.envs.API_GATEWAY_PATH_PREFIX
+    }
   }
 
   tags = {
@@ -200,7 +265,15 @@ resource "aws_lambda_function" "explore" {
   source_code_hash = filebase64sha256("../../dist/explore-${var.project.environment}.zip")
 
   environment {
-    variables = local.envs
+    variables = {
+      ENVIRONMENT : var.project.environment
+
+      USERS_MONGO_DATABASE : local.envs.USERS_MONGO_DATABASE
+      USERS_MONGO_DATABASE_URL : local.envs.USERS_MONGO_DATABASE_URL
+
+      MATCHING_MONGO_DATABASE : local.envs.MATCHING_MONGO_DATABASE
+      MATCHING_MONGO_DATABASE_URL : local.envs.MATCHING_MONGO_DATABASE_URL
+    }
   }
 
   tags = {
@@ -211,17 +284,22 @@ resource "aws_lambda_function" "explore" {
 
 
 resource "aws_lambda_function" "collecting-push" {
-  function_name    = "${var.project.name}-collecting-push-${var.project.environment}"
-  filename         = "../../dist/collecting-push-${var.project.environment}.zip"
-  handler          = "bootstrap"
-  role             = aws_iam_role.lambda_role.arn
-  runtime          = "provided.al2"
-  architectures    = ["arm64"]
+  function_name = "${var.project.name}-collecting-push-${var.project.environment}"
+  filename      = "../../dist/collecting-push-${var.project.environment}.zip"
+  handler       = "bootstrap"
+  role          = aws_iam_role.lambda_role.arn
+  runtime       = "provided.al2"
+  architectures = ["arm64"]
   # depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
   source_code_hash = filebase64sha256("../../dist/collecting-push-${var.project.environment}.zip")
 
   environment {
-    variables = local.envs
+    variables = {
+      ENVIRONMENT : var.project.environment
+
+      COLLECTING_MONGO_DATABASE : local.envs.COLLECTING_MONGO_DATABASE
+      COLLECTING_MONGO_DATABASE_URL : local.envs.COLLECTING_MONGO_DATABASE_URL
+    }
   }
 
   tags = {
@@ -231,17 +309,22 @@ resource "aws_lambda_function" "collecting-push" {
 }
 
 resource "aws_lambda_function" "collecting-get" {
-  function_name    = "${var.project.name}-collecting-get-${var.project.environment}"
-  filename         = "../../dist/collecting-get-${var.project.environment}.zip"
-  handler          = "bootstrap"
-  role             = aws_iam_role.lambda_role.arn
-  runtime          = "provided.al2"
-  architectures    = ["arm64"]
+  function_name = "${var.project.name}-collecting-get-${var.project.environment}"
+  filename      = "../../dist/collecting-get-${var.project.environment}.zip"
+  handler       = "bootstrap"
+  role          = aws_iam_role.lambda_role.arn
+  runtime       = "provided.al2"
+  architectures = ["arm64"]
   # depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
   source_code_hash = filebase64sha256("../../dist/collecting-get-${var.project.environment}.zip")
 
   environment {
-    variables = local.envs
+    variables = {
+      ENVIRONMENT : var.project.environment
+
+      COLLECTING_MONGO_DATABASE : local.envs.COLLECTING_MONGO_DATABASE
+      COLLECTING_MONGO_DATABASE_URL : local.envs.COLLECTING_MONGO_DATABASE_URL
+    }
   }
 
   tags = {
@@ -262,10 +345,15 @@ resource "aws_lambda_function" "practice" {
   source_code_hash = filebase64sha256("../../dist/practice-${var.project.environment}.zip")
 
   environment {
-    variables = merge(local.envs,{
+    variables = {
+      ENVIRONMENT : var.project.environment
+
+      USERS_MONGO_DATABASE : local.envs.USERS_MONGO_DATABASE
+      USERS_MONGO_DATABASE_URL : local.envs.USERS_MONGO_DATABASE_URL
+
       COLLECTING_GET_FUNCTION_NAME : aws_lambda_function.collecting-get.function_name
       COLLECTING_PUSH_FUNCTION_NAME : aws_lambda_function.collecting-push.function_name
-    })
+    }
   }
 
   tags = {
@@ -284,7 +372,12 @@ resource "aws_lambda_function" "authenticate" {
   source_code_hash = filebase64sha256("../../dist/authenticate-${var.project.environment}.zip")
 
   environment {
-    variables = local.envs
+    variables = {
+      ENVIRONMENT : var.project.environment
+
+      USERS_MONGO_DATABASE : local.envs.USERS_MONGO_DATABASE
+      USERS_MONGO_DATABASE_URL : local.envs.USERS_MONGO_DATABASE_URL
+    }
   }
 
   tags = {

@@ -21,7 +21,7 @@ if [ -f "$suggest_bundle_zip" ]; then
     rm functions/suggest/lambda_bundle.zip
 fi
 
-DOCKER_BUILDKIT=1 docker build -t blinders-pysuggest-lambda . -f Dockerfile.build-pylambda -o ./functions/suggest/lambda_bundle
+DOCKER_BUILDKIT=1 docker build --build-arg="FUNCTION_NAME=suggest" -t blinders-pysuggest-lambda . -f Dockerfile.build-pylambda -o ./functions/suggest/lambda_bundle
 
 if [ -d "$suggest_bundle" ]; then
     echo "Suggest bundle exists"

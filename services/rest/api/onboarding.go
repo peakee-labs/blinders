@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"blinders/packages/auth"
-	"blinders/packages/db/models"
-	"blinders/packages/db/repo"
+	"blinders/packages/db/matchingdb"
+	"blinders/packages/db/usersdb"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
 
@@ -18,10 +18,10 @@ import (
 
 type (
 	OnboardingService struct {
-		UserRepo    *repo.UsersRepo
-		ExploreRepo *repo.MatchesRepo
-		Transport   transport.Transport
-		ConsumerMap transport.ConsumerMap
+		UserRepo     *usersdb.UsersRepo
+		MatchingRepo *matchingdb.MatchingRepo
+		Transport    transport.Transport
+		ConsumerMap  transport.ConsumerMap
 	}
 	OnboardingForm struct {
 		Name      string   `json:"name"      form:"name"`
@@ -36,16 +36,16 @@ type (
 )
 
 func NewOnboardingService(
-	userRepo *repo.UsersRepo,
-	matchRepo *repo.MatchesRepo,
+	userRepo *usersdb.UsersRepo,
+	matchingRepo *matchingdb.MatchingRepo,
 	transporter transport.Transport,
 	consumerMap transport.ConsumerMap,
 ) *OnboardingService {
 	return &OnboardingService{
-		UserRepo:    userRepo,
-		ExploreRepo: matchRepo,
-		Transport:   transporter,
-		ConsumerMap: consumerMap,
+		UserRepo:     userRepo,
+		MatchingRepo: matchingRepo,
+		Transport:    transporter,
+		ConsumerMap:  consumerMap,
 	}
 }
 
@@ -66,7 +66,7 @@ func (s *OnboardingService) PostOnboardingForm() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).
 				JSON(fiber.Map{"error": "cannot get objectID from userID " + err.Error()})
 		}
-		matchInfo, err := utils.JSONConvert[models.MatchInfo](formValue)
+		matchInfo, err := utils.JSONConvert[matchingdb.MatchInfo](formValue)
 		if err != nil {
 			return ctx.Status(fiber.StatusBadRequest).
 				JSON(fiber.Map{"error": "cannot unmarshal match info from form value" + err.Error()})

@@ -4,11 +4,8 @@ from typing import Any, Dict
 
 import botocore.session
 
-from blinders.pydb import MongoManager
-from blinders.pydb.utils.mongo import init_mongo_client
 from blinders.pysuggest import explain_text_in_sentence_by_gpt_v2
 from blinders.pytransport.aws import LambdaTransport
-from blinders.pytransport.requests import TransportRequest, type_collect_event
 
 request_types = ["explain-text-in-sentence"]
 models = ["gpt"]
@@ -28,25 +25,12 @@ consumeMap = {
     authenticate: os.getenv("AUTHENTICATE_FUNCTION_NAME"),
 }
 
-db_url = "mongodb://{}:{}@{}:{}/{}".format(
-    os.getenv("MONGO_USERNAME"),
-    os.getenv("MONGO_PASSWORD"),
-    os.getenv("MONGO_HOST"),
-    os.getenv("MONGO_PORT"),
-    os.getenv("MONGO_DATABASE"),
-)
-
-mongo_manager = MongoManager(
-    client=init_mongo_client(db_url),
-    name=os.getenv("MONGO_DATABASE", ""),
-)
-
 
 def lambda_handler(event: Dict[str, Any], context):
     """Example of calling a function from another module."""
     headers: Dict[str, Any] = event.get("headers", None)
     if headers is None:
-        raise Exception("headers field not exsisted in event")
+        raise Exception("headers field not existed in event")
 
     auth: str = headers.get("authorization", None)
     if auth is None or auth == "":
@@ -113,33 +97,32 @@ def lambda_handler(event: Dict[str, Any], context):
                     "headers": default_headers,
                     "body": "text and sentence are required for gpt",
                 }
-            suggest = explain_text_in_sentence_by_gpt_v2(text, sentence)
+            explanation = explain_text_in_sentence_by_gpt_v2(text, sentence)
 
-            # TODO: make struct
-            suggest_event = {
-                "userId": auth_user.get("ID"),
-                "request": {
-                    "text": text,
-                    "sentence": sentence,
-                },
-                "response": {
-                    "translate": suggest.get("translate", ""),
-                    "grammarAnalysis": suggest.get("grammar_analysis", ""),
-                    "expandWords": suggest.get("expand_words", ""),
-                    "keyWords": suggest.get("key_words", ""),
+            explain_log_event = {
+                "type": "ADD_EXPLAIN_LOG",
+                "log": {
+                    "userId": auth_user.get("ID"),
+                    "request": {
+                        "text": text,
+                        "sentence": sentence,
+                    },
+                    "response": {
+                        "translate": explanation.get("translate"),
+                        "IPA": explanation.get("IPA"),
+                        "grammarAnalysis": explanation.get("grammar_analysis"),
+                        "expandWords": explanation.get("expand_words"),
+                        "keyWords": explanation.get("key_words"),
+                        "durationInSeconds": explanation.get("duration_in_seconds"),
+                    },
                 },
             }
-            generic_event = {
-                "type": "EXPLAIN",
-                "event": suggest_event,
-            }
-            transport_event = TransportRequest(type=type_collect_event, data=generic_event)
 
             try:
-                payload = json.dumps(transport_event.json()).encode("utf-8")
+                payload = json.dumps(explain_log_event).encode("utf-8")
                 transport.push(consumeMap[collect], payload)
 
             except Exception as e:
                 print("pysuggest: cannot push to collecting", e)
 
-            return {"statusCode": 200, "headers": default_headers, "body": json.dumps(suggest)}
+            return {"statusCode": 200, "headers": default_headers, "body": json.dumps(explanation)}

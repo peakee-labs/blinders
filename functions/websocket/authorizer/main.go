@@ -3,12 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
-	"os"
 
 	"blinders/packages/auth"
-	"blinders/packages/db"
+	"blinders/packages/db/usersdb"
+	dbutils "blinders/packages/db/utils"
 	"blinders/packages/utils"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -22,23 +21,16 @@ type APIGatewayWebsocketProxyRequest struct {
 
 var (
 	authManager auth.Manager
-	database    *db.MongoManager
+	userRepo    *usersdb.UsersRepo
 )
 
 func init() {
-	url := fmt.Sprintf(
-		db.MongoURLTemplate,
-		os.Getenv("MONGO_USERNAME"),
-		os.Getenv("MONGO_PASSWORD"),
-		os.Getenv("MONGO_HOST"),
-		os.Getenv("MONGO_PORT"),
-		os.Getenv("MONGO_DATABASE"),
-	)
-
-	database = db.NewMongoManager(url, os.Getenv("MONGO_DATABASE"))
-	if database == nil {
-		log.Fatal("cannot create database manager")
+	usersDB, err := dbutils.InitMongoDatabaseFromEnv("USERS")
+	if err != nil {
+		log.Fatal(err)
 	}
+	userRepo = usersdb.NewUsersRepo(usersDB)
+
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {
 		log.Fatal(err)
@@ -60,7 +52,7 @@ func HandleRequest(
 		return events.APIGatewayCustomAuthorizerResponse{}, err
 	}
 
-	user, err := database.Users.GetUserByFirebaseUID(authUser.AuthID)
+	user, err := userRepo.GetUserByFirebaseUID(authUser.AuthID)
 	if err != nil {
 		return events.APIGatewayCustomAuthorizerResponse{}, err
 	}

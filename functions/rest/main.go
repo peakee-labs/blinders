@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"blinders/packages/auth"
-	"blinders/packages/db"
+	"blinders/packages/db/chatdb"
+	"blinders/packages/db/matchingdb"
+	"blinders/packages/db/usersdb"
+	dbutils "blinders/packages/db/utils"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
 	restapi "blinders/services/rest/api"
@@ -19,27 +22,44 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var fiberLambda *fiberadapter.FiberLambda
+var (
+	fiberLambda *fiberadapter.FiberLambda
+	err         error
+)
 
 func init() {
 	log.Println("rest api running on environment:", os.Getenv("ENVIRONMENT"))
-	app := fiber.New()
 
-	url := fmt.Sprintf(
-		db.MongoURLTemplate,
-		os.Getenv("MONGO_USERNAME"),
-		os.Getenv("MONGO_PASSWORD"),
-		os.Getenv("MONGO_HOST"),
-		os.Getenv("MONGO_PORT"),
-		os.Getenv("MONGO_DATABASE"),
-	)
-
-	database := db.NewMongoManager(url, os.Getenv("MONGO_DATABASE"))
-	if database == nil {
-		log.Fatal("cannot create database manager")
-	}
+	var usersDB *mongo.Database
+	var chatDB *mongo.Database
+	var matchingDB *mongo.Database
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		usersDB, err = dbutils.InitMongoDatabaseFromEnv("USERS")
+		if err != nil {
+			log.Fatal("failed to init users db:", err)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		chatDB, err = dbutils.InitMongoDatabaseFromEnv("CHAT")
+		if err != nil {
+			log.Fatal("failed to init chat db:", err)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		matchingDB, err = dbutils.InitMongoDatabaseFromEnv("MATCHING")
+		if err != nil {
+			log.Fatal("failed to init matching db:", err)
+		}
+	}()
+	wg.Wait()
 
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {
@@ -52,21 +72,25 @@ func init() {
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
-		log.Fatal("failed to load aws config", err)
+		log.Fatal("failed to load aws config:", err)
 	}
+
+	app := fiber.New()
 	api := restapi.NewManager(
-		app, authManager, database,
+		app, authManager,
+		usersdb.NewUsersDB(usersDB),
+		chatdb.NewChatDB(chatDB),
+		matchingdb.NewMatchingRepo(matchingDB),
 		transport.NewLambdaTransport(cfg),
 		transport.ConsumerMap{
 			transport.Notification: os.Getenv("NOTIFICATION_FUNCTION_NAME"),
 			transport.Explore:      os.Getenv("EXPLORE_FUNCTION_NAME"),
 		},
 	)
-	api.App.Use(logger.New(logger.Config{
-		Format: "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n",
-	}))
+
+	api.App.Use(logger.New(logger.Config{Format: utils.DefaultGinLoggerFormat}))
 	api.App.Use(cors.New(cors.Config{
-		AllowOrigins: "https://app.peakee.co, http://localhost:3000",
+		AllowOrigins: utils.GetOriginsFromEnv(),
 		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 		AllowHeaders: "*",
 	}))

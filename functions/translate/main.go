@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
 	"blinders/packages/auth"
-	"blinders/packages/collecting"
-	"blinders/packages/db"
+	"blinders/packages/db/collectingdb"
+	"blinders/packages/db/usersdb"
+	dbutils "blinders/packages/db/utils"
 	"blinders/packages/translate"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
@@ -37,32 +39,26 @@ var (
 func init() {
 	env := os.Getenv("ENVIRONMENT")
 	log.Printf("Translate api running on %s environment\n", env)
+
+	translator = translate.YandexTranslator{APIKey: os.Getenv("YANDEX_API_KEY")}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	translator = translate.YandexTranslator{APIKey: os.Getenv("YANDEX_API_KEY")}
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		log.Fatal("failed too load aws config", cfg)
 	}
-
 	transporter = transport.NewLambdaTransport(cfg)
 	consumerMap = transport.ConsumerMap{
 		transport.CollectingPush: os.Getenv("COLLECTING_PUSH_FUNCTION_NAME"),
 	}
 
-	url := fmt.Sprintf(
-		db.MongoURLTemplate,
-		os.Getenv("MONGO_USERNAME"),
-		os.Getenv("MONGO_PASSWORD"),
-		os.Getenv("MONGO_HOST"),
-		os.Getenv("MONGO_PORT"),
-		os.Getenv("MONGO_DATABASE"),
-	)
-
-	database := db.NewMongoManager(url, os.Getenv("MONGO_DATABASE"))
-	if database == nil {
-		log.Fatal("cannot create database manager")
+	mongoInfo := dbutils.GetMongoInfoFromEnv()
+	client, err := dbutils.InitMongoClient(mongoInfo.URL)
+	if err != nil {
+		log.Fatal(err)
 	}
+
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {
 		log.Fatal(err)
@@ -72,7 +68,10 @@ func init() {
 		log.Fatal(err)
 	}
 
-	authMiddleware = auth.LambdaAuthMiddleware(authManager, database.Users)
+	authMiddleware = auth.LambdaAuthMiddleware(
+		authManager,
+		usersdb.NewUsersRepo(client.Database(mongoInfo.DBName)),
+	)
 }
 
 func HandleRequest(
@@ -87,7 +86,7 @@ func HandleRequest(
 	text, ok := req.QueryStringParameters["text"]
 	if !ok {
 		return events.APIGatewayV2HTTPResponse{
-			StatusCode: 400,
+			StatusCode: http.StatusBadRequest,
 			Body:       "required text param",
 			Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
 		}, nil
@@ -102,7 +101,7 @@ func HandleRequest(
 	if err != nil {
 		log.Println("error translating: ", err)
 		return events.APIGatewayV2HTTPResponse{
-			StatusCode: 400,
+			StatusCode: http.StatusBadRequest,
 			Body:       fmt.Sprintf("cannot translate \"%s\"", text),
 			Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
 		}, nil
@@ -116,39 +115,27 @@ func HandleRequest(
 
 	userOID, _ := primitive.ObjectIDFromHex(authUser.ID)
 
-	//  push event to collecting service
-	translateEvent := collecting.TranslateEvent{
-		UserID: userOID,
-		Request: collecting.TranslateRequest{
-			Text: text,
-		},
-		Response: collecting.TranslateResponse{
-			Translate: translated,
+	event := transport.AddTranslateLogEvent{
+		Event: transport.Event{Type: transport.AddTranslateLog},
+		Log: collectingdb.TranslateLog{
+			UserID:   userOID,
+			Request:  collectingdb.TranslateRequest{Text: text},
+			Response: collectingdb.TranslateResponse{Translate: translated},
 		},
 	}
 
-	event := transport.CollectEventRequest{
-		Request: transport.Request{Type: transport.CollectEvent},
-		Data:    collecting.NewGenericEvent(collecting.EventTypeTranslate, translateEvent),
+	eventPayload, _ := json.Marshal(event)
+	if err := transporter.Push(
+		ctx,
+		consumerMap[transport.CollectingPush],
+		eventPayload,
+	); err != nil {
+		log.Printf("cannot push event to collecting service, err: %v\n", err)
 	}
 
-	eventPayload, err := json.Marshal(event)
-	if err != nil {
-		log.Printf("cannot marshal collect event request, err: %v\n", err)
-	} else {
-		if err := transporter.Push(
-			ctx,
-			consumerMap[transport.CollectingPush],
-			eventPayload,
-		); err != nil {
-			log.Printf("cannot push event to collecting service, err: %v\n", err)
-		}
-	}
-
-	// respond result to user
 	resInBytes, _ := json.Marshal(res)
 	return events.APIGatewayV2HTTPResponse{
-		StatusCode: 200,
+		StatusCode: http.StatusOK,
 		Body:       string(resInBytes),
 		Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
 	}, nil

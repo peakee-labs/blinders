@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"blinders/packages/auth"
-	"blinders/packages/db/models"
-	"blinders/packages/db/repo"
+	"blinders/packages/db/chatdb"
+	"blinders/packages/db/usersdb"
 	"blinders/packages/utils"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,20 +19,20 @@ import (
 )
 
 type ConversationsService struct {
-	Repo        *repo.ConversationsRepo
-	UserRepo    *repo.UsersRepo
-	MessageRepo *repo.MessagesRepo
+	ConversationsRepo *chatdb.ConversationsRepo
+	MessagesRepo      *chatdb.MessagesRepo
+	UsersRepo         *usersdb.UsersRepo
 }
 
 func NewConversationsService(
-	repo *repo.ConversationsRepo,
-	userRepo *repo.UsersRepo,
-	messageRepo *repo.MessagesRepo,
+	convRepo *chatdb.ConversationsRepo,
+	messagesRepo *chatdb.MessagesRepo,
+	usersRepo *usersdb.UsersRepo,
 ) *ConversationsService {
 	return &ConversationsService{
-		Repo:        repo,
-		UserRepo:    userRepo,
-		MessageRepo: messageRepo,
+		ConversationsRepo: convRepo,
+		MessagesRepo:      messagesRepo,
+		UsersRepo:         usersRepo,
 	}
 }
 
@@ -46,7 +46,7 @@ func (s ConversationsService) GetConversationByID(ctx *fiber.Ctx) error {
 		})
 	}
 
-	conversation, err := s.Repo.GetConversationByID(oid)
+	conversation, err := s.ConversationsRepo.GetConversationByID(oid)
 	if err != nil {
 		log.Println("can not get conversation:", err)
 		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
@@ -68,7 +68,7 @@ func (s ConversationsService) GetConversationsOfUser(ctx *fiber.Ctx) error {
 	queryType := ctx.Query("type", "all")
 	switch queryType {
 	case "all":
-		conversations, err := s.Repo.GetConversationByMembers(
+		conversations, err := s.ConversationsRepo.GetConversationByMembers(
 			[]primitive.ObjectID{userID})
 		if err != nil {
 			log.Println("can not get conversations:", err)
@@ -85,9 +85,9 @@ func (s ConversationsService) GetConversationsOfUser(ctx *fiber.Ctx) error {
 				"error": "friend id is required",
 			})
 		}
-		conversations, err := s.Repo.GetConversationByMembers(
+		conversations, err := s.ConversationsRepo.GetConversationByMembers(
 			[]primitive.ObjectID{userID, friendID},
-			models.IndividualConversation)
+			chatdb.IndividualConversation)
 		if err != nil {
 			log.Println("can not get conversations:", err)
 			return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
@@ -96,8 +96,8 @@ func (s ConversationsService) GetConversationsOfUser(ctx *fiber.Ctx) error {
 		}
 		return ctx.Status(http.StatusOK).JSON(conversations)
 	case "group":
-		conversations, err := s.Repo.GetConversationByMembers(
-			[]primitive.ObjectID{userID}, models.GroupConversation)
+		conversations, err := s.ConversationsRepo.GetConversationByMembers(
+			[]primitive.ObjectID{userID}, chatdb.GroupConversation)
 		if err != nil {
 			log.Println("can not get conversations:", err)
 			return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
@@ -113,7 +113,7 @@ func (s ConversationsService) GetConversationsOfUser(ctx *fiber.Ctx) error {
 }
 
 type CreateConversationDTO struct {
-	Type models.ConversationType `json:"type"`
+	Type chatdb.ConversationType `json:"type"`
 }
 
 type CreateGroupConvDTO struct {
@@ -134,7 +134,7 @@ func (s ConversationsService) CreateNewIndividualConversation(ctx *fiber.Ctx) er
 	}
 
 	switch convDTO.Type {
-	case models.IndividualConversation:
+	case chatdb.IndividualConversation:
 		{
 			convDTO, err := utils.ParseJSON[CreateIndividualConvDTO](ctx.Body())
 			if err != nil {
@@ -160,7 +160,7 @@ func (s ConversationsService) CreateNewIndividualConversation(ctx *fiber.Ctx) er
 				})
 			}
 
-			conv, err := s.Repo.InsertIndividualConversation(userID, friendID)
+			conv, err := s.ConversationsRepo.InsertIndividualConversation(userID, friendID)
 			if err != nil {
 				return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
 					"error": err.Error(),
@@ -179,8 +179,8 @@ func (s ConversationsService) CheckFriendRelationship(
 	userID primitive.ObjectID,
 	friendID primitive.ObjectID,
 ) error {
-	var user models.User
-	err := s.UserRepo.Col.FindOne(context.Background(), bson.M{
+	var user usersdb.User
+	err := s.UsersRepo.FindOne(context.Background(), bson.M{
 		"_id":     userID,
 		"friends": bson.M{"$all": []primitive.ObjectID{friendID}},
 	}).Decode(&user)
@@ -188,8 +188,8 @@ func (s ConversationsService) CheckFriendRelationship(
 		return fmt.Errorf("do not have friend relationship with this user")
 	}
 
-	var friend models.User
-	err = s.UserRepo.Col.FindOne(context.Background(), bson.M{
+	var friend usersdb.User
+	err = s.UsersRepo.FindOne(context.Background(), bson.M{
 		"_id": friendID,
 	}).Decode(&friend)
 	if err == mongo.ErrNoDocuments {
@@ -215,7 +215,7 @@ func (s ConversationsService) GetMessagesOfConversation(ctx *fiber.Ctx) error {
 			"error": "invalid limit",
 		})
 	}
-	messages, err := s.MessageRepo.GetMessagesOfConversation(oid, int64(limit))
+	messages, err := s.MessagesRepo.GetMessagesOfConversation(oid, int64(limit))
 	if err != nil {
 		log.Println("can not get messages:", err)
 		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{

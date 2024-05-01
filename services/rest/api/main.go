@@ -2,7 +2,9 @@ package restapi
 
 import (
 	"blinders/packages/auth"
-	"blinders/packages/db"
+	"blinders/packages/db/chatdb"
+	"blinders/packages/db/matchingdb"
+	"blinders/packages/db/usersdb"
 	"blinders/packages/transport"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,7 +13,7 @@ import (
 type Manager struct {
 	App           *fiber.App
 	Auth          auth.Manager
-	DB            *db.MongoManager
+	UsersRepo     *usersdb.UsersRepo
 	Users         *UsersService
 	Conversations *ConversationsService
 	Messages      *MessagesService
@@ -22,19 +24,35 @@ type Manager struct {
 func NewManager(
 	app *fiber.App,
 	auth auth.Manager,
-	db *db.MongoManager,
+	usersDB *usersdb.UsersDB,
+	chatDB *chatdb.ChatDB,
+	matchingRepo *matchingdb.MatchingRepo,
 	transporter transport.Transport,
 	consumerMap transport.ConsumerMap,
 ) *Manager {
 	return &Manager{
-		App:           app,
-		Auth:          auth,
-		DB:            db,
-		Users:         NewUsersService(db.Users, db.FriendRequests, transporter, consumerMap),
-		Conversations: NewConversationsService(db.Conversations, db.Users, db.Messages),
-		Messages:      NewMessagesService(db.Messages),
-		Onboardings:   NewOnboardingService(db.Users, db.Matches, transporter, consumerMap),
-		Feedbacks:     NewFeedbacksService(db.Feedbacks),
+		App:       app,
+		Auth:      auth,
+		UsersRepo: usersDB.UsersRepo,
+		Users: NewUsersService(
+			usersDB.UsersRepo,
+			usersDB.FriendRequestsRepo,
+			transporter,
+			consumerMap,
+		),
+		Conversations: NewConversationsService(
+			chatDB.ConversationsRepo,
+			chatDB.MessagesRepo,
+			usersDB.UsersRepo,
+		),
+		Messages: NewMessagesService(chatDB.MessagesRepo),
+		Onboardings: NewOnboardingService(
+			usersDB.UsersRepo,
+			matchingRepo,
+			transporter,
+			consumerMap,
+		),
+		Feedbacks: NewFeedbacksService(usersDB.FeedbackRepo),
 	}
 }
 
@@ -47,7 +65,7 @@ func (m Manager) InitRoute() error {
 	authorizedWithoutUser := rootRoute.Group(
 		"/users/self",
 
-		auth.FiberAuthMiddleware(m.Auth, m.DB.Users,
+		auth.FiberAuthMiddleware(m.Auth, m.UsersRepo,
 			auth.MiddlewareOptions{
 				CheckUser: false,
 			}),
@@ -55,7 +73,7 @@ func (m Manager) InitRoute() error {
 	authorizedWithoutUser.Get("/", m.Users.GetSelfFromAuth)
 	authorizedWithoutUser.Post("/", m.Users.CreateNewUserBySelf)
 
-	authorized := rootRoute.Group("/", auth.FiberAuthMiddleware(m.Auth, m.DB.Users))
+	authorized := rootRoute.Group("/", auth.FiberAuthMiddleware(m.Auth, m.UsersRepo))
 
 	users := authorized.Group("/users")
 	users.Get("/", m.Users.GetUsers)

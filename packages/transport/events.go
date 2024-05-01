@@ -1,9 +1,17 @@
+// Event represents an async event
 package transport
 
-import "time"
+import (
+	"time"
+
+	"blinders/packages/db/collectingdb"
+)
 
 type EventType string
 
+/*
+ * Transport interface of user/friends service
+ */
 const (
 	AddFriend EventType = "ADD_FRIEND"
 )
@@ -16,23 +24,32 @@ type Event struct {
 type AddFriendAction string
 
 const (
-	InitFriendRequest   AddFriendAction = "INIT"
-	AcceptFriendRequest AddFriendAction = "ACCEPT"
-	DenyFriendRequest   AddFriendAction = "DENY"
+	InitFriendRequest   AddFriendAction = "INIT_FRIEND_REQUEST"
+	AcceptFriendRequest AddFriendAction = "ACCEPT_FRIEND_REQUEST"
+	DenyFriendRequest   AddFriendAction = "DENY_FRIEND_REQUEST"
 )
 
 type AddFriendEvent struct {
-	Event              `json:",inline"`
+	Event              `                json:",inline"`
+	Action             AddFriendAction
 	UserID             string `json:"userId"`
 	AddFriendRequestID string `json:"addFriendRequestId"`
-	Action             AddFriendAction
 }
 
-// GenericEvent could be used to embed specific event as payload.
-//
-// The event producer and consumer could identify payload type by checking
-// Event.Type value of GenericEvent.Event field
-type GenericEvent struct {
-	Event   `json:",inline"`
-	Payload any `json:",inline"`
+/*
+ * Transport interface of collecting service
+ */
+const (
+	AddTranslateLog EventType = "ADD_TRANSLATE_LOG"
+	AddExplainLog   EventType = "ADD_EXPLAIN_LOG"
+)
+
+type AddTranslateLogEvent struct {
+	Event `json:",inline"`
+	Log   collectingdb.TranslateLog `json:"log"     bson:"log"`
+}
+
+type AddExplainLogEvent struct {
+	Event `json:",inline"`
+	Log   collectingdb.ExplainLog `json:"log"     bson:"log"`
 }

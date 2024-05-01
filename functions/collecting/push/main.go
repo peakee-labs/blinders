@@ -2,71 +2,34 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 
-	"blinders/packages/collecting"
-	"blinders/packages/db"
-	"blinders/packages/transport"
-	collectingapi "blinders/services/collecting/api"
+	"blinders/packages/db/collectingdb"
+	dbutils "blinders/packages/db/utils"
+	collecting "blinders/services/collecting/core"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-var service *collectingapi.Service
+var service *collecting.Service
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
 	log.Println("collecting api running on environment:", env)
-	url := fmt.Sprintf(
-		db.MongoURLTemplate,
-		os.Getenv("MONGO_USERNAME"),
-		os.Getenv("MONGO_PASSWORD"),
-		os.Getenv("MONGO_HOST"),
-		os.Getenv("MONGO_PORT"),
-		os.Getenv("MONGO_DATABASE"),
-	)
-	dbName := os.Getenv("MONGO_DATABASE")
-	client, err := db.InitMongoClient(url)
+
+	mongoInfo := dbutils.GetMongoInfoFromEnv("COLLECTING")
+	client, err := dbutils.InitMongoClient(mongoInfo.URL)
 	if err != nil {
-		log.Fatalf("cannot init mongo client, err: %v", err)
+		log.Fatal(err)
 	}
 
-	collector := collecting.NewEventCollector(client.Database(dbName))
-	service = &collectingapi.Service{Collector: collector}
+	collectingDB := collectingdb.NewCollectingDB(client.Database(mongoInfo.DBName))
+	service = collecting.NewService(collectingDB.ExplainLogsRepo, collectingDB.TranslateLogsRepo)
 }
 
-func LambdaHandler(
-	_ context.Context,
-	eventRequest transport.CollectEventRequest,
-) (
-	events.APIGatewayV2HTTPResponse,
-	error,
-) {
-	fmt.Println("received", eventRequest)
-	if eventRequest.Request.Type != transport.CollectEvent {
-		log.Printf("collecting: event type mismatch, type: %v\n", eventRequest.Request.Type)
-		return events.APIGatewayV2HTTPResponse{
-			StatusCode: 400,
-			Body:       "request type mismatch",
-		}, nil
-	}
-
-	eventID, err := service.HandleAddGenericEvent(eventRequest.Data)
-	if err != nil {
-		log.Printf("collecting: cannot process generic event, err: %v\n", err)
-		return events.APIGatewayV2HTTPResponse{
-			StatusCode: 400,
-			Body:       fmt.Sprintf("failed to process event, err: %v", err),
-		}, nil
-	}
-
-	return events.APIGatewayV2HTTPResponse{
-		StatusCode: 200,
-		Body:       eventID,
-	}, nil
+func LambdaHandler(_ context.Context, event any) error {
+	return service.HandlePushEvent(event)
 }
 
 func main() {

@@ -2,26 +2,20 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"os"
 
 	"blinders/packages/session"
+	"blinders/packages/utils"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/redis/go-redis/v9"
 )
 
 var sessionManager *session.Manager
 
 func init() {
-	// TODO: need to store these secrets to aws secret manager instead of pass in env
-	sessionManager = session.NewManager(redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
-		Username: os.Getenv("REDIS_USERNAME"),
-		Password: os.Getenv("REDIS_PASSWORD"),
-	}))
+	redisClient := utils.NewRedisClientFromEnv(context.Background())
+	sessionManager = session.NewManager(redisClient)
 }
 
 func HandleRequest(

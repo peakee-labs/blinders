@@ -7,7 +7,10 @@ import (
 	"strings"
 
 	"blinders/packages/auth"
-	"blinders/packages/db"
+	"blinders/packages/db/chatdb"
+	"blinders/packages/db/matchingdb"
+	"blinders/packages/db/usersdb"
+	dbutils "blinders/packages/db/utils"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
 	restapi "blinders/services/rest/api"
@@ -36,21 +39,33 @@ func init() {
 
 	dbName := os.Getenv("MONGO_DATABASE")
 	url := os.Getenv("MONGO_DATABASE_URL")
-	database := db.NewMongoManager(url, dbName)
-	if database == nil {
-		log.Fatal("cannot create database manager")
+	client, err := dbutils.InitMongoClient(url)
+	if err != nil {
+		log.Fatal(err)
 	}
+	usersDB := usersdb.NewUsersDB(client.Database(dbName))
+	chatDB := chatdb.NewChatDB(client.Database(dbName))
+	matchingRepo := matchingdb.NewMatchingRepo(client.Database(dbName))
 
 	adminJSON, _ := utils.GetFile("firebase.admin.json")
-	authManager, _ := auth.NewFirebaseManager(adminJSON)
+	auth, _ := auth.NewFirebaseManager(adminJSON)
+
+	transporter := transport.NewLocalTransport()
+	consumerMap := transport.ConsumerMap{
+		transport.Notification: "notification_service_id",
+		transport.Explore:      "explore_service_id",
+	}
 
 	apiManager = *restapi.NewManager(
-		app, authManager, database,
-		transport.NewLocalTransport(),
-		transport.ConsumerMap{
-			transport.Notification: "notification_service_id",
-			transport.Explore:      "explore_service_id",
-		})
+		app,
+		auth,
+		usersDB,
+		chatDB,
+		matchingRepo,
+		transporter,
+		consumerMap,
+	)
+
 	apiManager.App.Use(logger.New())
 	_ = apiManager.InitRoute()
 }

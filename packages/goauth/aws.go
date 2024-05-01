@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"blinders/packages/db/repo"
+	"blinders/packages/db/usersdb"
 
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -26,7 +26,7 @@ func LambdaLoggingMiddleware() LambdaMiddleware {
 
 func LambdaAuthMiddleware(
 	m Manager,
-	userRepo *repo.UsersRepo,
+	userRepo *usersdb.UsersRepo,
 	options ...MiddlewareOptions,
 ) LambdaMiddleware {
 	return func(next LambdaHandler) LambdaHandler {
@@ -51,7 +51,7 @@ func LambdaAuthMiddleware(
 			jwt := strings.Split(auth, " ")[1]
 			userAuth, err := m.Verify(jwt)
 			if err != nil {
-				log.Println("failed to verify jwt", err)
+				log.Println("failed to verify jwt:", err)
 				return events.APIGatewayV2HTTPResponse{
 					StatusCode: 400,
 					Body:       "failed to verify jwt",
@@ -63,7 +63,7 @@ func LambdaAuthMiddleware(
 				// currently, user.AuthID is firebaseUID
 				user, err := userRepo.GetUserByFirebaseUID(userAuth.AuthID)
 				if err != nil {
-					log.Println("failed to get user", err)
+					log.Println("failed to get user:", err)
 					return events.APIGatewayV2HTTPResponse{
 						StatusCode: 400,
 						Body:       "failed to get user",

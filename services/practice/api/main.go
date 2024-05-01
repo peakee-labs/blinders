@@ -2,7 +2,7 @@ package practiceapi
 
 import (
 	"blinders/packages/auth"
-	"blinders/packages/db"
+	"blinders/packages/db/usersdb"
 	"blinders/packages/transport"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,7 +11,7 @@ import (
 type Service struct {
 	App         *fiber.App
 	Auth        auth.Manager
-	Db          *db.MongoManager
+	UserRepo    *usersdb.UsersRepo
 	Transport   transport.Transport
 	ConsumerMap transport.ConsumerMap
 }
@@ -19,14 +19,14 @@ type Service struct {
 func NewService(
 	app *fiber.App,
 	auth auth.Manager,
-	db *db.MongoManager,
+	usersRepo *usersdb.UsersRepo,
 	transport transport.Transport,
 	consumerMap transport.ConsumerMap,
 ) *Service {
 	return &Service{
 		App:         app,
 		Auth:        auth,
-		Db:          db,
+		UserRepo:    usersRepo,
 		Transport:   transport,
 		ConsumerMap: consumerMap,
 	}
@@ -38,7 +38,6 @@ func (s *Service) InitRoute() {
 		return c.SendString("hello from practice service")
 	})
 	practiceRoute.Get("/public/unit", s.HandleGetRandomLanguageUnit)
-
-	authorized := practiceRoute.Group("/", auth.FiberAuthMiddleware(s.Auth, s.Db.Users))
-	authorized.Get("/unit", s.HandleGetLanguageUnit)
+	authorized := practiceRoute.Group("/", auth.FiberAuthMiddleware(s.Auth, s.UserRepo))
+	authorized.Get("/unit", s.HandleGetPracticeUnitFromAnalyzeExplainLog)
 }
