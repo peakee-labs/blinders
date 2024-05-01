@@ -27,6 +27,9 @@ func init() {
 	log.Println("practice api running on environment:", os.Getenv("ENVIRONMENT"))
 
 	usersDB, err := dbutils.InitMongoDatabaseFromEnv("USERS")
+	if err != nil {
+		log.Fatal(err)
+	}
 	usersRepo := usersdb.NewUsersRepo(usersDB)
 
 	adminConfig, err := utils.GetFile("firebase.admin.json")
