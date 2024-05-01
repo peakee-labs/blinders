@@ -7,14 +7,14 @@ var (
 	MessagesCollection      = "messages"
 )
 
-type UsersDB struct {
+type ChatDB struct {
 	mongo.Database
 	ConversationsRepo *ConversationsRepo
 	MessagesRepo      *MessagesRepo
 }
 
-func NewUsersDB(db *mongo.Database) *UsersDB {
-	return &UsersDB{
+func NewChatDB(db *mongo.Database) *ChatDB {
+	return &ChatDB{
 		Database:          *db,
 		ConversationsRepo: NewConversationsRepo(db),
 		MessagesRepo:      NewMessagesRepo(db),
