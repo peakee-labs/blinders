@@ -103,3 +103,11 @@ echo "copied firebase.admin.json to practice"
 cd ./dist/practice-$1
 zip -r ../practice-$1.zip .
 cd ../..
+
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/authenticate-$1/bootstrap ./functions/authenticate
+echo "build authenticate lambda function completed"
+cp ./firebase.admin.$1.json ./dist/authenticate-$1/firebase.admin.json
+echo "copied firebase.admin.json to authenticate"
+cd ./dist/authenticate-$1
+zip -r ../authenticate-$1.zip .
+cd ../..
