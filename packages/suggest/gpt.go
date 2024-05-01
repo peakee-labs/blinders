@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"blinders/packages/db"
-
 	openai "github.com/sashabaranov/go-openai"
 )
 
@@ -34,7 +32,7 @@ type GPTSuggester struct {
 
 func (s *GPTSuggester) ChatCompletion(
 	ctx context.Context,
-	userData db.UserData,
+	userData UserData,
 	msgs []Message,
 	prompter ...Prompter,
 ) ([]string, error) {
@@ -86,7 +84,11 @@ func (s *GPTSuggester) ChatCompletion(
 	return suggestions, nil
 }
 
-func (s *GPTSuggester) TextCompletion(ctx context.Context, _ db.UserData, prompt string) ([]string, error) {
+func (s *GPTSuggester) TextCompletion(
+	ctx context.Context,
+	_ UserData,
+	prompt string,
+) ([]string, error) {
 	req := openai.CompletionRequest{
 		Model:       s.textModel,
 		Prompt:      prompt,

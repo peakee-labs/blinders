@@ -4,13 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"blinders/packages/db"
 )
 
 type MessageSuggestionPrompter struct {
 	embed    string // embed string that could be use to embed user's context and messages to make complete prompt
-	userData db.UserData
+	userData UserData
 	messages []Message
 }
 
@@ -19,13 +17,18 @@ func (p MessageSuggestionPrompter) Build() (string, error) {
 	for _, msg := range p.messages {
 		msgs = append(msgs, fmt.Sprintf("%s: %s", msg.Sender, msg.Content))
 	}
-	return fmt.Sprintf(p.embed, p.userData.Learning.Lang, p.userData.Learning.Level, strings.Join(msgs, "\n")), nil
+	return fmt.Sprintf(
+		p.embed,
+		p.userData.Learning.Lang,
+		p.userData.Learning.Level,
+		strings.Join(msgs, "\n"),
+	), nil
 }
 
 func (p *MessageSuggestionPrompter) Update(objs ...any) error {
 	for _, obj := range objs {
 		switch doc := obj.(type) {
-		case db.UserData:
+		case UserData:
 			p.userData = doc
 		case []Message:
 			p.messages = doc

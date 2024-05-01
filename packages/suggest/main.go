@@ -2,8 +2,6 @@ package suggest
 
 import (
 	"context"
-
-	"blinders/packages/db"
 )
 
 type Prompter interface {
@@ -12,6 +10,6 @@ type Prompter interface {
 }
 
 type Suggester interface {
-	ChatCompletion(context.Context, db.UserData, []Message, ...Prompter) ([]string, error)
-	TextCompletion(context.Context, db.UserData, string) ([]string, error)
+	ChatCompletion(context.Context, UserData, []Message, ...Prompter) ([]string, error)
+	TextCompletion(context.Context, UserData, string) ([]string, error)
 }

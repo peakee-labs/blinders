@@ -7,9 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"blinders/packages/common"
-	"blinders/packages/db"
-
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,7 +19,7 @@ func TestTextCompletion(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	prompt := "Just reply 'hello, world!'"
-	suggestions, err := suggester.TextCompletion(ctx, db.UserData{}, prompt)
+	suggestions, err := suggester.TextCompletion(ctx, UserData{}, prompt)
 	assert.Nil(t, err)
 	assert.Equal(t, suggester.nText, len(suggestions))
 
@@ -37,13 +34,13 @@ func TestSuggest(t *testing.T) {
 	receiver := "User2"
 	userContext := newUserContext(
 		sender,
-		common.Language{
-			Lang:  common.LangVi,
-			Level: common.Advanced,
+		Language{
+			Lang:  LangVi,
+			Level: Advanced,
 		},
-		common.Language{
-			Lang:  common.LangEn,
-			Level: common.Beginner,
+		Language{
+			Lang:  LangEn,
+			Level: Beginner,
 		},
 	)
 	msgs := []Message{
@@ -64,8 +61,8 @@ func TestSuggest(t *testing.T) {
 	}
 }
 
-func newUserContext(ID string, native common.Language, language common.Language) db.UserData {
-	return db.UserData{
+func newUserContext(ID string, native Language, language Language) UserData {
+	return UserData{
 		UserID:   ID,
 		Native:   native,
 		Learning: language,
