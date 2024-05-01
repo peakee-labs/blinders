@@ -107,7 +107,14 @@ def lambda_handler(event: Dict[str, Any], context):
                         "text": text,
                         "sentence": sentence,
                     },
-                    "response": explanation,
+                    "response": {
+                        "translate": explanation.get("translate"),
+                        "IPA": explanation.get("IPA"),
+                        "grammarAnalysis": explanation.get("grammar_analysis"),
+                        "expandWords": explanation.get("expand_words"),
+                        "keyWords": explanation.get("key_words"),
+                        "durationInSeconds": explanation.get("duration_in_seconds"),
+                    },
                 },
             }
 
