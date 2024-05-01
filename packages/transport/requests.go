@@ -1,8 +1,9 @@
+// Request represents a sync request
 package transport
 
 import (
-	"blinders/packages/collecting"
-	"blinders/packages/db/models"
+	"blinders/packages/db/collectingdb"
+	"blinders/packages/db/matchingdb"
 )
 
 type RequestType string
@@ -10,44 +11,48 @@ type RequestType string
 const (
 	Embedding        RequestType = "EMBEDDING"
 	AddUserMatchInfo RequestType = "ADD_USER_MATCH_INFO"
-	CollectEvent     RequestType = "COLLECT_EVENT"
-	GetEvent         RequestType = "GET_EVENT"
+	GetTranslateLog  RequestType = "GET_TRANSLATE_LOG"
+	GetExplainLog    RequestType = "GET_EXPLAIN_LOG"
 )
 
 type Request struct {
 	Type RequestType `json:"type"`
 }
 
+/*
+ * For vector embedding
+ */
 type EmbeddingRequest struct {
-	Request `json:",inline"`
+	Request `       json:",inline"`
 	Data    string
 }
-
 type EmbeddingResponse struct {
 	Embedded []float32
 }
 
+/*
+ * Transport interface of explore service
+ */
 type AddUserMatchInfoRequest struct {
 	Request `json:",inline"`
-	Data    models.MatchInfo `json:"data"`
+	Data    matchingdb.MatchInfo `json:"data"`
 }
-
 type AddUserMatchInfoResponse struct {
 	Error *string `json:"error,omitempty"`
 }
 
-type CollectEventRequest struct {
-	Request `json:",inline"`
-	Data    collecting.GenericEvent `json:"data"`
+/*
+ * Transport interface of collecting service
+ */
+type GetCollectingLogRequest struct {
+	Request `       json:",inline"`
+	UserID  string `json:"userId"`
 }
 
-type GetEventRequest struct {
-	Request   `json:",inline"`
-	UserID    string               `json:"userId"`
-	Type      collecting.EventType `json:"eventType"`
-	NumReturn int                  `json:"numReturn"`
+type GetTranslateLogResponse struct {
+	collectingdb.TranslateLog
 }
 
-type GetEventResponse struct {
-	Data []collecting.GenericEvent `json:"data"`
+type GetExplainLogResponse struct {
+	collectingdb.ExplainLog
 }
