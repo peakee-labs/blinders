@@ -6,12 +6,12 @@ import (
 )
 
 func GetOriginsFromEnv() string {
-	deploymentStage := os.Getenv("DEPLOYMENT_STAGE")
-	if deploymentStage == "prod" {
+	environment := os.Getenv("ENVIRONMENT")
+	if environment == "prod" {
 		return "https://app.peakee.co"
-	} else if deploymentStage == "staging" {
-		return fmt.Sprintf("https://%s.app.peakee.co", deploymentStage)
-	} else if deploymentStage == "dev" {
+	} else if environment == "staging" {
+		return fmt.Sprintf("https://%s.app.peakee.co", environment)
+	} else if environment == "dev" {
 		return "*"
 	}
 
