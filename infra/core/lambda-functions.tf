@@ -174,7 +174,7 @@ resource "aws_lambda_function" "ws_chat" {
       REDIS_USERNAME : local.envs.REDIS_USERNAME
       REDIS_PASSWORD : local.envs.REDIS_PASSWORD
 
-      API_GATEWAY_URL : local.envs.API_GATEWAY_URL
+      API_GATEWAY_DOMAIN : local.envs.API_GATEWAY_DOMAIN
       API_GATEWAY_PATH_PREFIX : local.envs.API_GATEWAY_PATH_PREFIX
 
       CHAT_MONGO_DATABASE : local.envs.CHAT_MONGO_DATABASE
@@ -242,7 +242,7 @@ resource "aws_lambda_function" "notification" {
       REDIS_USERNAME : local.envs.REDIS_USERNAME
       REDIS_PASSWORD : local.envs.REDIS_PASSWORD
 
-      API_GATEWAY_URL : local.envs.API_GATEWAY_URL
+      API_GATEWAY_DOMAIN : local.envs.API_GATEWAY_DOMAIN
       API_GATEWAY_PATH_PREFIX : local.envs.API_GATEWAY_PATH_PREFIX
     }
   }
