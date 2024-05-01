@@ -26,10 +26,12 @@ type (
 		Sentence string `json:"sentence" bson:"sentence"`
 	}
 	ExplainResponse struct {
-		Translate       string         `json:"translate"       bson:"translate"`
-		GrammarAnalysis map[string]any `json:"grammarAnalysis" bson:"grammarAnalysis"`
-		ExpandWords     []string       `json:"expandWords"     bson:"expandWords"`
-		KeyWords        []string       `json:"keyWords"        bson:"keyWords"`
+		Translate         string         `json:"translate"         bson:"translate"`
+		IPA               string         `json:"IPA"               bson:"IPA"`
+		GrammarAnalysis   map[string]any `json:"grammarAnalysis"   bson:"grammarAnalysis"`
+		ExpandWords       []string       `json:"expandWords"       bson:"expandWords"`
+		KeyWords          []string       `json:"keyWords"          bson:"keyWords"`
+		DurationInSeconds int            `json:"durationInSeconds" bson:"durationInSeconds"`
 	}
 	ExplainLog struct {
 		dbutils.RawModel `json:",inline" bson:",inline"`
