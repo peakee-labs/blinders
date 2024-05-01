@@ -17,7 +17,9 @@ WORKDIR /var/dependencies
 COPY functions ./functions
 COPY packages ./packages
 
-RUN cd functions/suggest \
+ARG FUNCTION_NAME="*"
+
+RUN cd functions/${FUNCTION_NAME} \
     && poetry install --no-root \
     && poetry build \
     && poetry run pip install --upgrade -t bundle dist/*.whl
@@ -27,4 +29,5 @@ RUN cd functions/suggest \
     # && pip install -r requirements.txt -t .
 
 FROM scratch
-COPY --from=builder-stage /var/dependencies/functions/suggest/bundle /
+ARG FUNCTION_NAME
+COPY --from=builder-stage /var/dependencies/functions/${FUNCTION_NAME}/bundle /

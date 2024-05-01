@@ -13,10 +13,11 @@ type Transport interface {
 type Key string
 
 const (
-	Notification Key = "notification"
-	Explore      Key = "explore"
-	Collecting   Key = "collecting"
-	Suggest      Key = "suggest"
+	Notification   Key = "notification"
+	Explore        Key = "explore"
+	CollectingPush Key = "collecting-push"
+	CollectingGet  Key = "collecting-get"
+	Suggest        Key = "suggest"
 )
 
 type ConsumerMap map[Key]string

@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "blinders-pyauth-core"
+version = "0.1.0"
+description = ""
+authors = ["Dat Nguyen <minhdat15012002@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "blinders" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+firebase-admin = "^6.5.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

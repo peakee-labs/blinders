@@ -13,24 +13,30 @@ var (
 	EventTypeSuggestPracticeUnit EventType = "SUGGEST_LANGUAGE_UNIT"
 	EventTypeTranslate           EventType = "TRANSLATE"
 	EventTypeExplain             EventType = "EXPLAIN"
-	LogCollection                          = "logs"
+	SuggestPracticeCollection              = "suggest_practice"
+	ExplainCollection                      = "explain"
+	TranslateCollection                    = "translate"
 )
 
 type EventCollector struct {
 	// TODO: maybe use another db
-	Col *mongo.Collection // Log collection
+	ExplainCol             *mongo.Collection
+	SuggestPracticeUnitCol *mongo.Collection
+	TranslateCol           *mongo.Collection
 }
 
 func NewEventCollector(db *mongo.Database) *EventCollector {
 	return &EventCollector{
-		Col: db.Collection(LogCollection),
+		ExplainCol:             db.Collection(ExplainCollection),
+		SuggestPracticeUnitCol: db.Collection(SuggestPracticeCollection),
+		TranslateCol:           db.Collection(TranslateCollection),
 	}
 }
 
 func (l EventCollector) AddTranslateLog(log *TranslateEventLog) (*TranslateEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	_, err := l.Col.InsertOne(ctx, log)
+	_, err := l.TranslateCol.InsertOne(ctx, log)
 	return log, err
 }
 
@@ -46,7 +52,7 @@ func (l EventCollector) GetTranslateLogByID(logID primitive.ObjectID) (*Translat
 
 	filter := bson.M{"_id": logID}
 	translateLog := new(TranslateEventLog)
-	err := l.Col.FindOne(ctx, filter).Decode(translateLog)
+	err := l.TranslateCol.FindOne(ctx, filter).Decode(translateLog)
 
 	return translateLog, err
 }
@@ -54,15 +60,15 @@ func (l EventCollector) GetTranslateLogByID(logID primitive.ObjectID) (*Translat
 func (l EventCollector) GetTranslateLogByUserID(userID primitive.ObjectID) ([]TranslateEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	filter := bson.M{"userID": userID}
+	filter := bson.M{"userId": userID}
 
-	cur, err := l.Col.Find(ctx, filter)
+	cur, err := l.TranslateCol.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
 
-	var res []TranslateEventLog
-	if err := cur.All(ctx, res); err != nil {
+	res := make([]TranslateEventLog, 0)
+	if err := cur.All(ctx, &res); err != nil {
 		return nil, err
 	}
 	return res, nil
@@ -71,7 +77,7 @@ func (l EventCollector) GetTranslateLogByUserID(userID primitive.ObjectID) ([]Tr
 func (l EventCollector) AddSuggestPracticeLog(log *SuggestPracticeUnitEventLog) (*SuggestPracticeUnitEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	_, err := l.Col.InsertOne(ctx, log)
+	_, err := l.SuggestPracticeUnitCol.InsertOne(ctx, log)
 	return log, err
 }
 
@@ -87,7 +93,7 @@ func (l EventCollector) GetSuggestPracticeUnitLogByID(logID primitive.ObjectID) 
 
 	filter := bson.M{"_id": logID}
 	translateLog := new(SuggestPracticeUnitEventLog)
-	err := l.Col.FindOne(ctx, filter).Decode(translateLog)
+	err := l.SuggestPracticeUnitCol.FindOne(ctx, filter).Decode(translateLog)
 
 	return translateLog, err
 }
@@ -97,7 +103,7 @@ func (l EventCollector) GetSuggestPracticeUnitLogByUserID(userID primitive.Objec
 	defer cancel()
 	filter := bson.M{"userId": userID}
 
-	cur, err := l.Col.Find(ctx, filter)
+	cur, err := l.SuggestPracticeUnitCol.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +118,7 @@ func (l EventCollector) GetSuggestPracticeUnitLogByUserID(userID primitive.Objec
 func (l EventCollector) AddExplainLog(log *ExplainEventLog) (*ExplainEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	_, err := l.Col.InsertOne(ctx, log)
+	_, err := l.ExplainCol.InsertOne(ctx, log)
 	return log, err
 }
 
@@ -128,23 +134,26 @@ func (l EventCollector) GetExplainLogByID(logID primitive.ObjectID) (*ExplainEve
 
 	filter := bson.M{"_id": logID}
 	translateLog := new(ExplainEventLog)
-	err := l.Col.FindOne(ctx, filter).Decode(translateLog)
+	err := l.ExplainCol.FindOne(ctx, filter).Decode(translateLog)
 
 	return translateLog, err
 }
 
-func (l EventCollector) GetExplainLogByUserID(userID primitive.ObjectID) ([]ExplainEventLog, error) {
+func (l EventCollector) GetExplainLogByUserID(_ primitive.ObjectID) ([]ExplainEventLog, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	filter := bson.M{"userID": userID}
+	// filter := bson.M{"userId": userID}
+	// cur, err := l.ExplainCol.Find(ctx, filter)
 
-	cur, err := l.Col.Find(ctx, filter)
+	// currently mock this, since we haven't implement python jwt check
+	// this method could be called by pysuggest
+	cur, err := l.ExplainCol.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
 
-	var res []ExplainEventLog
-	if err := cur.All(ctx, res); err != nil {
+	res := make([]ExplainEventLog, 0)
+	if err := cur.All(ctx, &res); err != nil {
 		return nil, err
 	}
 	return res, nil

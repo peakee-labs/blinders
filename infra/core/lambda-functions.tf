@@ -31,7 +31,8 @@ resource "aws_lambda_function" "pysuggest" {
 
   environment {
     variables = merge(local.envs,{
-      COLLECTING_FUNCTION_NAME : aws_lambda_function.collecting.function_name
+      COLLECTING_PUSH_FUNCTION_NAME : aws_lambda_function.collecting-push.function_name
+      AUTHENTICATE_FUNCTION_NAME : aws_lambda_function.authenticate.function_name
     })
   }
 
@@ -53,7 +54,7 @@ resource "aws_lambda_function" "translate" {
 
   environment {
     variables = merge(local.envs,{
-      COLLECTING_FUNCTION_NAME : aws_lambda_function.collecting.function_name
+      COLLECTING_PUSH_FUNCTION_NAME : aws_lambda_function.collecting-push.function_name
     })
   }
 
@@ -209,15 +210,78 @@ resource "aws_lambda_function" "explore" {
 }
 
 
-resource "aws_lambda_function" "collecting" {
-  function_name    = "${var.project.name}-collecting-${var.project.environment}"
-  filename         = "../../dist/collecting-${var.project.environment}.zip"
+resource "aws_lambda_function" "collecting-push" {
+  function_name    = "${var.project.name}-collecting-push-${var.project.environment}"
+  filename         = "../../dist/collecting-push-${var.project.environment}.zip"
   handler          = "bootstrap"
   role             = aws_iam_role.lambda_role.arn
   runtime          = "provided.al2"
   architectures    = ["arm64"]
   # depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
-  source_code_hash = filebase64sha256("../../dist/collecting-${var.project.environment}.zip")
+  source_code_hash = filebase64sha256("../../dist/collecting-push-${var.project.environment}.zip")
+
+  environment {
+    variables = local.envs
+  }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
+  }
+}
+
+resource "aws_lambda_function" "collecting-get" {
+  function_name    = "${var.project.name}-collecting-get-${var.project.environment}"
+  filename         = "../../dist/collecting-get-${var.project.environment}.zip"
+  handler          = "bootstrap"
+  role             = aws_iam_role.lambda_role.arn
+  runtime          = "provided.al2"
+  architectures    = ["arm64"]
+  # depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+  source_code_hash = filebase64sha256("../../dist/collecting-get-${var.project.environment}.zip")
+
+  environment {
+    variables = local.envs
+  }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
+  }
+}
+
+
+resource "aws_lambda_function" "practice" {
+  function_name    = "${var.project.name}-practice-${var.project.environment}"
+  filename         = "../../dist/practice-${var.project.environment}.zip"
+  handler          = "bootstrap"
+  role             = aws_iam_role.lambda_role.arn
+  runtime          = "provided.al2"
+  architectures    = ["arm64"]
+  depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+  source_code_hash = filebase64sha256("../../dist/practice-${var.project.environment}.zip")
+
+  environment {
+    variables = merge(local.envs,{
+      COLLECTING_GET_FUNCTION_NAME : aws_lambda_function.collecting-get.function_name
+      COLLECTING_PUSH_FUNCTION_NAME : aws_lambda_function.collecting-push.function_name
+    })
+  }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
+  }
+}
+
+resource "aws_lambda_function" "authenticate" {
+  function_name    = "${var.project.name}-authenticate-${var.project.environment}"
+  filename         = "../../dist/authenticate-${var.project.environment}.zip"
+  handler          = "bootstrap"
+  role             = aws_iam_role.lambda_role.arn
+  runtime          = "provided.al2"
+  architectures    = ["arm64"]
+  source_code_hash = filebase64sha256("../../dist/authenticate-${var.project.environment}.zip")
 
   environment {
     variables = local.envs

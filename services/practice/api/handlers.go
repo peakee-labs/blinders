@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strings"
 
 	"blinders/packages/auth"
 	"blinders/packages/collecting"
@@ -15,18 +16,19 @@ import (
 
 var DefaultLanguageLocale = "en"
 
-func (s Service) HandleSuggestLanguageUnit(ctx *fiber.Ctx) error {
+func (s Service) HandleGetLanguageUnit(ctx *fiber.Ctx) error {
 	authUser := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
 	if authUser == nil {
 		return fmt.Errorf("cannot get user auth information")
 	}
 
 	var (
-		req = transport.GetEventRequest{
+		numReturn = 1
+		req       = transport.GetEventRequest{
 			Request:   transport.Request{Type: transport.GetEvent},
 			UserID:    authUser.ID,
-			NumReturn: 1,
-			Type:      collecting.EventTypeSuggestPracticeUnit,
+			NumReturn: numReturn,
+			Type:      collecting.EventTypeExplain,
 		}
 		rsp = new(transport.GetEventResponse)
 	)
@@ -35,7 +37,7 @@ func (s Service) HandleSuggestLanguageUnit(ctx *fiber.Ctx) error {
 
 	response, err := s.Transport.Request(
 		ctx.Context(),
-		s.ConsumerMap[transport.Collecting],
+		s.ConsumerMap[transport.CollectingGet],
 		transportBytes,
 	)
 	if err != nil {
@@ -46,14 +48,15 @@ func (s Service) HandleSuggestLanguageUnit(ctx *fiber.Ctx) error {
 	if err := json.Unmarshal(response, &rsp); err != nil {
 		log.Printf("practice: cannot parse result from collecting service, err: %v\n", err)
 	}
-	if len(rsp.Data) == 0 {
-		log.Printf("practice: response includes no event: \n")
+
+	if len(rsp.Data) != numReturn {
+		log.Printf("practice: expected return %v event, got %v\n", numReturn, rsp)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get practice unit"})
 	}
 
 	event := rsp.Data[0]
 	switch event.Type {
-	case collecting.EventTypeSuggestPracticeUnit:
+	case collecting.EventTypeExplain:
 		return ctx.Status(fiber.StatusOK).JSON(event.Payload)
 
 	default:
@@ -64,12 +67,29 @@ func (s Service) HandleSuggestLanguageUnit(ctx *fiber.Ctx) error {
 
 func (s Service) HandleGetRandomLanguageUnit(ctx *fiber.Ctx) error {
 	localeCode := ctx.Query("lang")
-	unit, err := s.GetRandomPracticeUnitWithLangCode(localeCode)
-	if err != nil {
-		// use pre-defined language tag as default language tag
-		unit, _ = s.GetRandomPracticeUnitWithLangCode(DefaultLanguageLocale)
+	unitType := ctx.Query("type", string(collecting.EventTypeExplain))
+
+	// event type currently is capitialized
+	switch collecting.EventType(strings.ToUpper(unitType)) {
+	case collecting.EventTypeExplain:
+		unit, err := s.GetRandomExplainWithLangCode(localeCode)
+		if err != nil {
+			// use pre-defined language tag as default language tag
+			unit, _ = s.GetRandomExplainWithLangCode(DefaultLanguageLocale)
+		}
+		return ctx.Status(fiber.StatusOK).JSON(unit)
+
+	case collecting.EventTypeSuggestPracticeUnit:
+		unit, err := s.GetRandomPracticeUnitWithLangCode(localeCode)
+		if err != nil {
+			// use pre-defined language tag as default language tag
+			unit, _ = s.GetRandomPracticeUnitWithLangCode(DefaultLanguageLocale)
+		}
+		return ctx.Status(fiber.StatusOK).JSON(unit)
+
+	default:
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid unit type"})
 	}
-	return ctx.Status(fiber.StatusOK).JSON(unit)
 }
 
 // GetRandomPracticeUnitWithLangCode returns random practice-unit with given langCode
@@ -82,4 +102,16 @@ func (s Service) GetRandomPracticeUnitWithLangCode(langCode string) (collecting.
 
 	idx := rand.Intn(len(units))
 	return units[idx], nil
+}
+
+// GetRandomExplainWithLangCode returns random practice-unit with given langCode
+func (s Service) GetRandomExplainWithLangCode(langCode string) (collecting.ExplainEvent, error) {
+	// user's learning language code with RFC-5646 format
+	explainUnit, ok := DefaultExplain[langCode]
+	if !ok {
+		return collecting.ExplainEvent{}, fmt.Errorf("invalid lang code")
+	}
+
+	idx := rand.Intn(len(explainUnit))
+	return explainUnit[idx], nil
 }

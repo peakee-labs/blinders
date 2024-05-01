@@ -25,6 +25,9 @@ func FiberAuthMiddleware(
 ) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		auth := ctx.Get("Authorization")
+		if auth == "" {
+			auth = ctx.Get("authorization")
+		}
 		if !strings.HasPrefix(auth, "Bearer ") {
 			log.Println("invalid jwt, missing bearer token")
 			return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{

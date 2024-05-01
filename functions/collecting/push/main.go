@@ -54,7 +54,7 @@ func LambdaHandler(
 		}, nil
 	}
 
-	eventID, err := service.HandleGenericEvent(eventRequest.Data)
+	eventID, err := service.HandleAddGenericEvent(eventRequest.Data)
 	if err != nil {
 		log.Printf("collecting: cannot process generic event, err: %v\n", err)
 		return events.APIGatewayV2HTTPResponse{

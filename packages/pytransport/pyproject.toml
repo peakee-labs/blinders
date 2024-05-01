@@ -9,10 +9,12 @@ packages = [{ include = "blinders" }]
 [tool.poetry.scripts]
 transport = "blinders.pytransport:main"
 
+
 [tool.poetry.dependencies]
 python = "^3.10"
-boto3 = "^1.34.88"
 
+[tool.poetry.group.dev.dependencies]
+boto3 = "^1.34.93"
 
 [build-system]
 requires = ["poetry-core"]

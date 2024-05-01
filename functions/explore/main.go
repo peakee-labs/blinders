@@ -78,7 +78,7 @@ func init() {
 		AllowHeaders: "*",
 	}))
 
-	api.InitRoute(exploreapi.InitOptions{Prefix: "/explore"})
+	api.InitRoute()
 
 	fiberLambda = fiberadapter.New(api.App)
 }

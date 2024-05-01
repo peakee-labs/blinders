@@ -38,17 +38,8 @@ func NewManager(
 	}
 }
 
-type InitOptions struct {
-	Prefix string
-}
-
-func (m Manager) InitRoute(options ...InitOptions) error {
-	prefix := "/"
-	if len(options) > 0 {
-		prefix = options[0].Prefix
-	}
-
-	rootRoute := m.App.Group(prefix)
+func (m Manager) InitRoute() error {
+	rootRoute := m.App.Group("/")
 	rootRoute.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("hello from Peakee Rest API")
 	})

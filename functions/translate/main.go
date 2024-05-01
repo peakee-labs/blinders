@@ -47,7 +47,7 @@ func init() {
 
 	transporter = transport.NewLambdaTransport(cfg)
 	consumerMap = transport.ConsumerMap{
-		transport.Collecting: os.Getenv("COLLECTING_FUNCTION_NAME"),
+		transport.CollectingPush: os.Getenv("COLLECTING_PUSH_FUNCTION_NAME"),
 	}
 
 	url := fmt.Sprintf(
@@ -72,8 +72,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	// mock this
-	authMiddleware = auth.LambdaAuthMiddleware(authManager, database.Users, auth.MiddlewareOptions{CheckUser: false})
+	authMiddleware = auth.LambdaAuthMiddleware(authManager, database.Users)
 }
 
 func HandleRequest(
@@ -139,7 +138,7 @@ func HandleRequest(
 	} else {
 		if err := transporter.Push(
 			ctx,
-			consumerMap[transport.Collecting],
+			consumerMap[transport.CollectingPush],
 			eventPayload,
 		); err != nil {
 			log.Printf("cannot push event to collecting service, err: %v\n", err)

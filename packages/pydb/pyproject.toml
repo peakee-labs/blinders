@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "blinders-pydb-core"
+version = "0.1.0"
+description = ""
+authors = ["Dat Nguyen <minhdat15012002@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "blinders" }]
+
+[tool.poetry.scripts]
+db = "blinders.pydb:main"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pymongo = "^4.7.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

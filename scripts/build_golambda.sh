@@ -19,7 +19,7 @@ fi
 rm -rf dist/connect*$1 dist/translate*$1 dist/authorizer*$1 \
     dist/explore*$1 dist/disconnect*$1 dist/wschat*$1$1 \
     dist/rest*$1 dist/notification*$1 dist/ws_authorizer*$1 \
-    dist/collecting*$1 
+    dist/collecting-get*$1  dist/collecting-push*$1 
 
 echo "cleaned previous build artifacts"
 
@@ -80,10 +80,26 @@ cd ./dist/explore-$1
 zip -r ../explore-$1.zip .
 cd ../..
 
-GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/collecting-$1/bootstrap ./functions/collecting
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/collecting-push-$1/bootstrap ./functions/collecting/push
 echo "build collecting lambda function completed"
-cp ./firebase.admin.$1.json ./dist/collecting-$1/firebase.admin.json
-echo "copied firebase.admin.json to collecting api"
-cd ./dist/collecting-$1
-zip -r ../collecting-$1.zip .
+cp ./firebase.admin.$1.json ./dist/collecting-push-$1/firebase.admin.json
+echo "copied firebase.admin.json to collecting push api"
+cd ./dist/collecting-push-$1
+zip -r ../collecting-push-$1.zip .
+cd ../..
+
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/collecting-get-$1/bootstrap ./functions/collecting/get
+echo "build collecting lambda function completed"
+cp ./firebase.admin.$1.json ./dist/collecting-get-$1/firebase.admin.json
+echo "copied firebase.admin.json to collecting get api"
+cd ./dist/collecting-get-$1
+zip -r ../collecting-get-$1.zip .
+cd ../..
+
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/practice-$1/bootstrap ./functions/practice
+echo "build practice lambda function completed"
+cp ./firebase.admin.$1.json ./dist/practice-$1/firebase.admin.json
+echo "copied firebase.admin.json to practice"
+cd ./dist/practice-$1
+zip -r ../practice-$1.zip .
 cd ../..
