@@ -31,7 +31,7 @@ type (
 		GrammarAnalysis   map[string]any `json:"grammarAnalysis"   bson:"grammarAnalysis"`
 		ExpandWords       []string       `json:"expandWords"       bson:"expandWords"`
 		KeyWords          []string       `json:"keyWords"          bson:"keyWords"`
-		DurationInSeconds int            `json:"durationInSeconds" bson:"durationInSeconds"`
+		DurationInSeconds float32        `json:"durationInSeconds" bson:"durationInSeconds"`
 	}
 	ExplainLog struct {
 		dbutils.RawModel `json:",inline" bson:",inline"`
