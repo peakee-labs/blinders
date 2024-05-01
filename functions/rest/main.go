@@ -42,21 +42,21 @@ func init() {
 		defer wg.Done()
 		usersDB, err = dbutils.InitMongoDatabaseFromEnv("USERS")
 		if err != nil {
-			log.Fatal("failed to init users db", err)
+			log.Fatal("failed to init users db:", err)
 		}
 	}()
 	go func() {
 		defer wg.Done()
 		chatDB, err = dbutils.InitMongoDatabaseFromEnv("CHAT")
 		if err != nil {
-			log.Fatal("failed to init chat db", err)
+			log.Fatal("failed to init chat db:", err)
 		}
 	}()
 	go func() {
 		defer wg.Done()
 		matchingDB, err = dbutils.InitMongoDatabaseFromEnv("MATCHING")
 		if err != nil {
-			log.Fatal("failed to init matching db", err)
+			log.Fatal("failed to init matching db:", err)
 		}
 	}()
 	wg.Wait()
@@ -72,7 +72,7 @@ func init() {
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
-		log.Fatal("failed to load aws config", err)
+		log.Fatal("failed to load aws config:", err)
 	}
 
 	app := fiber.New()

@@ -67,7 +67,7 @@ func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
 
 	user, err := m.UsersRepo.GetUserByID(oid)
 	if err != nil {
-		log.Println("explore: cannot get user by id, err", err)
+		log.Println("explore: cannot get user by id, err:", err)
 		return nil, err
 	}
 
@@ -75,7 +75,7 @@ func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
 	// at here, if there aren't entries in redis, the jsonStr will be empty, we could check it here then return
 	jsonStr, err := m.RedisClient.JSONGet(ctx, CreateMatchKeyWithUserID(userID), "$.embed").Result()
 	if err != nil || jsonStr == "" {
-		log.Println("explore: cannot get explore entry in redis, err", err)
+		log.Println("explore: cannot get explore entry in redis, err:", err)
 		return []matchingdb.MatchInfo{}, fmt.Errorf(
 			"explore profile not found, might need to check onboarding status",
 		)
@@ -83,7 +83,7 @@ func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
 
 	var embedArr []EmbeddingVector
 	if err := json.Unmarshal([]byte(jsonStr), &embedArr); err != nil {
-		log.Println("explore: cannot unmarshall embed vector, err", err)
+		log.Println("explore: cannot unmarshall embed vector, err:", err)
 		return []matchingdb.MatchInfo{}, fmt.Errorf("something went wrong")
 	}
 	embed := embedArr[0]
@@ -97,7 +97,7 @@ func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
 
 	candidates, err := m.MatchingRepo.GetUsersByLanguage(user.ID, 1000)
 	if err != nil {
-		log.Println("explore: cannot explore candidates, err", err)
+		log.Println("explore: cannot explore candidates, err:", err)
 		return nil, err
 	}
 
@@ -123,7 +123,7 @@ func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
 		"RETURN", "1", "id",
 	)
 	if err := cmd.Err(); err != nil {
-		log.Println("explore: cannot perform knn search in vector database, err", err)
+		log.Println("explore: cannot perform knn search in vector database, err:", err)
 		return nil, err
 	}
 

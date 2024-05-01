@@ -49,14 +49,14 @@ func init() {
 		defer wg.Done()
 		usersDB, err = dbutils.InitMongoDatabaseFromEnv("USERS")
 		if err != nil {
-			log.Fatal("failed to init users db", err)
+			log.Fatal("failed to init users db:", err)
 		}
 	}()
 	go func() {
 		defer wg.Done()
 		matchingDB, err = dbutils.InitMongoDatabaseFromEnv("MATCHING")
 		if err != nil {
-			log.Fatal("failed to init matching db", err)
+			log.Fatal("failed to init matching db:", err)
 		}
 	}()
 	wg.Wait()
@@ -95,7 +95,7 @@ func HandleRequest(ctx context.Context, payload any) (any, error) {
 
 	request, err := utils.ParseJSON[transport.AddUserMatchInfoRequest](bytes)
 	if err != nil || request.Type != transport.AddUserMatchInfo {
-		log.Println("might be http request from client app", err)
+		log.Println("might be http request from client app:", err)
 		req, err := utils.ParseJSON[events.APIGatewayV2HTTPRequest](bytes)
 		if err != nil {
 			log.Println("can not parse http proxy request:", err)

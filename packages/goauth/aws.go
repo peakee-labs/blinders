@@ -51,7 +51,7 @@ func LambdaAuthMiddleware(
 			jwt := strings.Split(auth, " ")[1]
 			userAuth, err := m.Verify(jwt)
 			if err != nil {
-				log.Println("failed to verify jwt", err)
+				log.Println("failed to verify jwt:", err)
 				return events.APIGatewayV2HTTPResponse{
 					StatusCode: 400,
 					Body:       "failed to verify jwt",
@@ -63,7 +63,7 @@ func LambdaAuthMiddleware(
 				// currently, user.AuthID is firebaseUID
 				user, err := userRepo.GetUserByFirebaseUID(userAuth.AuthID)
 				if err != nil {
-					log.Println("failed to get user", err)
+					log.Println("failed to get user:", err)
 					return events.APIGatewayV2HTTPResponse{
 						StatusCode: 400,
 						Body:       "failed to get user",

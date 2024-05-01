@@ -35,7 +35,7 @@ func init() {
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
-		log.Fatal("failed to load aws config", err)
+		log.Fatal("failed to load aws config:", err)
 	}
 	cer := apigateway.CustomEndpointResolve{
 		Domain:     os.Getenv("API_GATEWAY_DOMAIN"),
@@ -53,7 +53,7 @@ func HandleRequest(
 
 	genericEvent, err := utils.ParseJSON[wschat.ChatEvent]([]byte(req.Body))
 	if err != nil {
-		log.Println("can not parse request payload, require type in payload", err)
+		log.Println("can not parse request payload, require type in payload:", err)
 	}
 
 	switch genericEvent.Type {
@@ -61,19 +61,19 @@ func HandleRequest(
 		data := []byte("pong")
 		err = APIGatewayClient.Publish(ctx, req.RequestContext.ConnectionID, data)
 		if err != nil {
-			log.Println("can not publish message", err)
+			log.Println("can not publish message:", err)
 		}
 	case wschat.UserSendMessage:
 		payload, err := utils.ParseJSON[wschat.UserSendMessagePayload]([]byte(req.Body))
 		if err != nil {
-			log.Println("invalid send message event", err)
+			log.Println("invalid send message event:", err)
 			_ = APIGatewayClient.Publish(ctx, connectionID, []byte("invalid send message event"))
 			break
 		}
 
 		dCh, err := wschat.HandleSendMessage(userID, connectionID, *payload)
 		if err != nil {
-			log.Println("failed to send message", err)
+			log.Println("failed to send message:", err)
 			_ = APIGatewayClient.Publish(
 				ctx,
 				connectionID,
@@ -95,13 +95,13 @@ func HandleRequest(
 				defer wg.Done()
 				data, err := json.Marshal(d.Payload)
 				if err != nil {
-					log.Println("can not marshal data", err)
+					log.Println("can not marshal data:", err)
 					return
 				}
 
 				err = APIGatewayClient.Publish(ctx, d.ConnectionID, data)
 				if err != nil {
-					log.Println("can not publish message", err)
+					log.Println("can not publish message:", err)
 				}
 			}()
 		}
@@ -109,7 +109,7 @@ func HandleRequest(
 		wg.Wait()
 		log.Println("message sent")
 	default:
-		log.Println("not support this event", req.Body)
+		log.Println("not support this event:", req.Body)
 		_ = APIGatewayClient.Publish(ctx, connectionID, []byte("not support this event"))
 	}
 

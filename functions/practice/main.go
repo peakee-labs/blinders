@@ -44,7 +44,7 @@ func init() {
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
-		log.Fatal("failed to load aws config", err)
+		log.Fatal("failed to load aws config:", err)
 	}
 
 	app := fiber.New(fiber.Config{})
