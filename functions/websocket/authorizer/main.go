@@ -25,12 +25,11 @@ var (
 )
 
 func init() {
-	mongoInfo := dbutils.GetMongoInfoFromEnv()
-	client, err := dbutils.InitMongoClient(mongoInfo.URL)
+	usersDB, err := dbutils.InitMongoDatabaseFromEnv("USERS")
 	if err != nil {
 		log.Fatal(err)
 	}
-	userRepo = usersdb.NewUsersRepo(client.Database(mongoInfo.DBName))
+	userRepo = usersdb.NewUsersRepo(usersDB)
 
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {

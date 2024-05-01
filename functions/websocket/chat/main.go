@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -19,27 +18,20 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
-
-	"github.com/redis/go-redis/v9"
 )
 
 var APIGatewayClient *apigateway.Client
 
 func init() {
-	// TODO: need to store these secrets to aws secret manager instead of pass in env
-	sessionManager := session.NewManager(redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
-		Username: os.Getenv("REDIS_USERNAME"),
-		Password: os.Getenv("REDIS_PASSWORD"),
-	}))
+	redisClient := utils.NewRedisClientFromEnv(context.Background())
+	sessionManager := session.NewManager(redisClient)
 
-	mongoInfo := dbutils.GetMongoInfoFromEnv()
-	client, err := dbutils.InitMongoClient(mongoInfo.URL)
+	chatDB, err := dbutils.InitMongoDatabaseFromEnv("CHAT")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	wschat.InitChatApp(sessionManager, chatdb.NewChatDB(client.Database(mongoInfo.DBName)))
+	wschat.InitChatApp(sessionManager, chatdb.NewChatDB(chatDB))
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {

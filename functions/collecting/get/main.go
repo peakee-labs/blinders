@@ -20,13 +20,12 @@ func init() {
 	env := os.Getenv("ENVIRONMENT")
 	log.Println("collecting api running on environment:", env)
 
-	mongoInfo := dbutils.GetMongoInfoFromEnv("COLLECTING")
-	client, err := dbutils.InitMongoClient(mongoInfo.URL)
+	mongoDB, err := dbutils.InitMongoDatabaseFromEnv("COLLECTING")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	collectingDB := collectingdb.NewCollectingDB(client.Database(mongoInfo.DBName))
+	collectingDB := collectingdb.NewCollectingDB(mongoDB)
 	service = collecting.NewService(collectingDB.ExplainLogsRepo, collectingDB.TranslateLogsRepo)
 }
 

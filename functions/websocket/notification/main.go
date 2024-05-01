@@ -6,7 +6,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -19,7 +18,6 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/redis/go-redis/v9"
 )
 
 var (
@@ -38,11 +36,8 @@ func init() {
 	}
 	APIGatewayClient = apigateway.NewClient(context.Background(), cfg, cer)
 
-	SessionManager = session.NewManager(redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
-		Username: os.Getenv("REDIS_USERNAME"),
-		Password: os.Getenv("REDIS_PASSWORD"),
-	}))
+	redisClient := utils.NewRedisClientFromEnv(context.Background())
+	SessionManager = session.NewManager(redisClient)
 }
 
 func HandleRequest(ctx context.Context, payload any) error {
