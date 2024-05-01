@@ -7,7 +7,6 @@ import (
 
 	"blinders/packages/db/collectingdb"
 	dbutils "blinders/packages/db/utils"
-	"blinders/packages/transport"
 	collecting "blinders/services/collecting/core"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -29,7 +28,7 @@ func init() {
 	service = collecting.NewService(collectingDB.ExplainLogsRepo, collectingDB.TranslateLogsRepo)
 }
 
-func LambdaHandler(_ context.Context, event transport.Event) error {
+func LambdaHandler(_ context.Context, event any) error {
 	return service.HandlePushEvent(event)
 }
 
