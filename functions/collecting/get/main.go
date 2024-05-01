@@ -6,66 +6,38 @@ import (
 	"log"
 	"os"
 
-	"blinders/packages/collecting"
-	"blinders/packages/db"
+	"blinders/packages/db/collectingdb"
+	dbutils "blinders/packages/db/utils"
 	"blinders/packages/transport"
-	collectingapi "blinders/services/collecting/api"
+	collecting "blinders/services/collecting/core"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var service *collectingapi.Service
+var service *collecting.Service
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
 	log.Println("collecting api running on environment:", env)
-	url := fmt.Sprintf(
-		db.MongoURLTemplate,
-		os.Getenv("MONGO_USERNAME"),
-		os.Getenv("MONGO_PASSWORD"),
-		os.Getenv("MONGO_HOST"),
-		os.Getenv("MONGO_PORT"),
-		os.Getenv("MONGO_DATABASE"),
-	)
-	dbName := os.Getenv("MONGO_DATABASE")
-	client, err := db.InitMongoClient(url)
+
+	mongoInfo := dbutils.GetMongoInfoFromEnv()
+	client, err := dbutils.InitMongoClient(mongoInfo.URL)
 	if err != nil {
-		log.Fatalf("cannot init mongo client, err: %v", err)
+		log.Fatal(err)
 	}
 
-	collector := collecting.NewEventCollector(client.Database(dbName))
-	service = &collectingapi.Service{Collector: collector}
+	collectingDB := collectingdb.NewCollectingDB(client.Database(mongoInfo.DBName))
+	service = collecting.NewService(collectingDB.ExplainLogsRepo, collectingDB.TranslateLogsRepo)
 }
 
-func LambdaHandler(
-	_ context.Context,
-	eventRequest transport.GetEventRequest,
-) (
-	transport.GetEventResponse,
-	error,
-) {
-	if eventRequest.Request.Type != transport.GetEvent {
-		log.Printf("collecting: event type mismatch, type: %v\n", eventRequest.Request.Type)
-		return transport.GetEventResponse{}, fmt.Errorf("event type mismatch")
-	}
-	userOID, err := primitive.ObjectIDFromHex(eventRequest.UserID)
+func LambdaHandler(_ context.Context, request transport.Request) (any, error) {
+	res, err := service.HandleGetRequest(request)
 	if err != nil {
-		log.Println("cannot get object id from event", err)
-		return transport.GetEventResponse{}, err
+		log.Println("can not handle request:", err)
+		return nil, fmt.Errorf("can not handle request")
 	}
 
-	event, err := service.HandleGetGenericEvent(userOID, eventRequest.Type)
-	if err != nil {
-		log.Println("collecting: failed to get event", event)
-		return transport.GetEventResponse{}, nil
-	}
-	response := transport.GetEventResponse{
-		Data: []collecting.GenericEvent{
-			event,
-		},
-	}
-	return response, nil
+	return res, nil
 }
 
 func main() {
