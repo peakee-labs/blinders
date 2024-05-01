@@ -7,7 +7,8 @@ import (
 	"strings"
 
 	"blinders/packages/auth"
-	"blinders/packages/db"
+	"blinders/packages/db/usersdb"
+	dbutils "blinders/packages/db/utils"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
 	practiceapi "blinders/services/practice/api"
@@ -31,16 +32,22 @@ func init() {
 	}
 
 	app := fiber.New()
-	adminJSON, _ := utils.GetFile("firebase.admin.json")
-	url := os.Getenv("MONGO_DATABASE_URL")
-	dbName := os.Getenv("MONGO_DATABASE")
 
-	mongoManager := db.NewMongoManager(url, dbName)
+	dbName := os.Getenv("MONGO_DATABASE")
+	url := os.Getenv("MONGO_DATABASE_URL")
+	client, err := dbutils.InitMongoClient(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	usersRepo := usersdb.NewUsersRepo(client.Database(dbName))
+
+	adminJSON, _ := utils.GetFile("firebase.admin.json")
 	authManager, _ := auth.NewFirebaseManager(adminJSON)
+
 	service = practiceapi.NewService(
 		app,
 		authManager,
-		mongoManager,
+		usersRepo,
 		transport.NewLocalTransport(),
 		transport.ConsumerMap{
 			transport.Suggest: fmt.Sprintf(
@@ -52,6 +59,7 @@ func init() {
 				os.Getenv("COLLECTING_SERVICE_PORT"),
 			),
 		})
+
 	service.App.Use(cors.New())
 	service.InitRoute()
 }
