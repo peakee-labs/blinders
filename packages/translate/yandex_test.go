@@ -1,6 +1,7 @@
 package translate
 
 import (
+	"blinders/packages/utils"
 	"fmt"
 	"os"
 	"strings"
@@ -9,7 +10,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var translator Translator
+var (
+	translator Translator
+	skipEnv    = "CI"
+)
 
 func init() {
 	err := godotenv.Load("../../.env")
@@ -21,6 +25,7 @@ func init() {
 }
 
 func TestTranslateWordEN_VI(t *testing.T) {
+	utils.SkipTestOnEvironment(t, skipEnv)
 	text := "absolutely"
 	expectedResult := "tuyệt đối"
 	fmt.Printf("translate \"%s\" to vietnamese, expect \"%s\"\n", text, expectedResult)
@@ -36,6 +41,7 @@ func TestTranslateWordEN_VI(t *testing.T) {
 }
 
 func TestTranslateSentenceEN_VI(t *testing.T) {
+	utils.SkipTestOnEvironment(t, skipEnv)
 	text := "hello, My name is Peakee"
 	expectedResult := "xin chào, tên tôi là Peakee"
 	fmt.Printf("translate \"%s\" to vietnamese, expect \"%s\"\n", text, expectedResult)
@@ -51,6 +57,7 @@ func TestTranslateSentenceEN_VI(t *testing.T) {
 }
 
 func TestTranslateWordVI_EN(t *testing.T) {
+	utils.SkipTestOnEvironment(t, skipEnv)
 	text := "tuyệt đối"
 	expectedResult := "absolutely"
 	fmt.Printf("translate \"%s\" to vietnamese, expect \"%s\"\n", text, expectedResult)
@@ -66,6 +73,7 @@ func TestTranslateWordVI_EN(t *testing.T) {
 }
 
 func TestTranslateSentenceVI_EN(t *testing.T) {
+	utils.SkipTestOnEvironment(t, skipEnv)
 	text := "xin chào, tên tôi là Peakee"
 	expectedResult := "hello, My name is Peakee"
 	fmt.Printf("translate \"%s\" to vietnamese, expect \"%s\"\n", text, expectedResult)

@@ -1,21 +1,34 @@
 package suggest
 
 import (
+	"blinders/packages/utils"
 	"context"
 	"fmt"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
 )
 
-var authToken = os.Getenv("OPENAI_API_KEY")
+var (
+	skipOnEnv = "CI"
+	suggester *GPTSuggester
+)
 
-var suggester, _ = NewGPTSuggester(openai.NewClient(authToken))
+func init() {
+	err := godotenv.Load("../../.env")
+	if err != nil {
+		fmt.Println("Error loading .env file:", err)
+	}
+	authToken := os.Getenv("OPENAI_API_KEY")
+	suggester, _ = NewGPTSuggester(openai.NewClient(authToken))
+}
 
 func TestTextCompletion(t *testing.T) {
+	utils.SkipTestOnEvironment(t, skipOnEnv)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	prompt := "Just reply 'hello, world!'"
@@ -27,6 +40,7 @@ func TestTextCompletion(t *testing.T) {
 }
 
 func TestSuggest(t *testing.T) {
+	utils.SkipTestOnEvironment(t, skipOnEnv)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
