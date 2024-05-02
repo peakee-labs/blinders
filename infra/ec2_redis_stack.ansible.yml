@@ -18,11 +18,6 @@
         dest: /etc/yum.repos.d/redis.repo
         mode: "0644"
 
-    - name: Install the Dependencies
-      ansible.builtin.yum:
-        name:
-          - mongodb-org
-
     - name: Install Redis install key
       ansible.builtin.uri:
         url: https://packages.redis.io/gpg
