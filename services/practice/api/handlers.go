@@ -20,11 +20,9 @@ func (s Service) HandleGetPracticeUnitFromAnalyzeExplainLog(ctx *fiber.Ctx) erro
 		return fmt.Errorf("cannot get user auth information")
 	}
 
-	req := transport.Request{
-		Type: transport.GetExplainLog,
-		Any: transport.GetCollectingLogRequest{
-			UserID: authUser.ID,
-		},
+	req := transport.GetCollectingLogRequest{
+		Request: transport.Request{Type: transport.GetExplainLog},
+		UserID:  authUser.ID,
 	}
 
 	reqBytes, _ := json.Marshal(req)
