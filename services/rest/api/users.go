@@ -204,10 +204,12 @@ func (s UsersService) CreateAddFriendRequest(ctx *fiber.Ctx) error {
 	}
 
 	event := transport.AddFriendEvent{
-		Event:              transport.Event{Type: transport.AddFriend},
-		UserID:             friendID.Hex(),
-		AddFriendRequestID: r.ID.Hex(),
-		Action:             transport.InitFriendRequest,
+		Event: transport.Event{Type: transport.AddFriend},
+		Payload: transport.AddFriendPayload{
+			UserID:             friendID.Hex(),
+			AddFriendRequestID: r.ID.Hex(),
+			Action:             transport.InitFriendRequest,
+		},
 	}
 	notiPayload, _ := json.Marshal(event)
 	err = s.Transporter.Push(
@@ -286,10 +288,12 @@ func (s UsersService) RespondFriendRequest(ctx *fiber.Ctx) error {
 	}
 
 	event := transport.AddFriendEvent{
-		Event:              transport.Event{Type: transport.AddFriend},
-		UserID:             request.From.Hex(),
-		AddFriendRequestID: requestID.Hex(),
-		Action:             action,
+		Event: transport.Event{Type: transport.AddFriend},
+		Payload: transport.AddFriendPayload{
+			UserID:             request.From.Hex(),
+			AddFriendRequestID: requestID.Hex(),
+			Action:             action,
+		},
 	}
 	notiPayload, _ := json.Marshal(event)
 	err = s.Transporter.Push(
