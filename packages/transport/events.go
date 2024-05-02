@@ -3,8 +3,6 @@ package transport
 
 import (
 	"time"
-
-	"blinders/packages/db/collectingdb"
 )
 
 type EventType string
@@ -19,6 +17,7 @@ const (
 type Event struct {
 	Type      EventType `json:"type"`
 	Timestamp time.Time `json:"timestamp"`
+	Payload   any       `json:"payload"`
 }
 
 type AddFriendAction string
@@ -43,13 +42,3 @@ const (
 	AddTranslateLog EventType = "ADD_TRANSLATE_LOG"
 	AddExplainLog   EventType = "ADD_EXPLAIN_LOG"
 )
-
-type AddTranslateLogEvent struct {
-	Event `json:",inline"`
-	Log   collectingdb.TranslateLog `json:"log"     bson:"log"`
-}
-
-type AddExplainLogEvent struct {
-	Event `json:",inline"`
-	Log   collectingdb.ExplainLog `json:"log"     bson:"log"`
-}

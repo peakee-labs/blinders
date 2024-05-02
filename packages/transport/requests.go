@@ -16,7 +16,8 @@ const (
 )
 
 type Request struct {
-	Type RequestType `json:"type"`
+	Type    RequestType `json:"type"`
+	Payload any         `json:"payload"`
 }
 
 /*
@@ -33,9 +34,8 @@ type EmbeddingResponse struct {
 /*
  * Transport interface of explore service
  */
-type AddUserMatchInfoRequest struct {
-	Request `json:",inline"`
-	Data    matchingdb.MatchInfo `json:"data"`
+type AddUserMatchInfoRequestPayload struct {
+	Data matchingdb.MatchInfo `json:"data"`
 }
 type AddUserMatchInfoResponse struct {
 	Error *string `json:"error,omitempty"`
@@ -44,9 +44,8 @@ type AddUserMatchInfoResponse struct {
 /*
  * Transport interface of collecting service
  */
-type GetCollectingLogRequest struct {
-	Request `       json:",inline"`
-	UserID  string `json:"userId"`
+type GetCollectingLogRequestPayload struct {
+	UserID string `json:"userId"`
 }
 
 type GetTranslateLogResponse struct {

@@ -93,7 +93,7 @@ func HandleRequest(ctx context.Context, payload any) (any, error) {
 		return nil, fmt.Errorf("can not marshal payload")
 	}
 
-	request, err := utils.ParseJSON[transport.AddUserMatchInfoRequest](bytes)
+	request, err := utils.ParseJSON[transport.Request](bytes)
 	if err != nil || request.Type != transport.AddUserMatchInfo {
 		log.Println("might be http request from client app:", err)
 		req, err := utils.ParseJSON[events.APIGatewayV2HTTPRequest](bytes)
@@ -107,7 +107,13 @@ func HandleRequest(ctx context.Context, payload any) (any, error) {
 		return nil, fmt.Errorf("nil request")
 	}
 
-	err = api.Service.AddUserMatch(request.Data)
+	requestPayload, err := utils.JSONConvert[transport.AddUserMatchInfoRequestPayload](request.Payload)
+	if err != nil {
+		log.Println("can't parse match info from request: ", err)
+		return nil, fmt.Errorf("can not parse match info: %v", err)
+	}
+
+	err = api.Service.AddUserMatch(requestPayload.Data)
 	if err != nil {
 		return nil, fmt.Errorf("can not add user match: %v", err)
 	}

@@ -101,7 +101,7 @@ def lambda_handler(event: Dict[str, Any], context):
 
             explain_log_event = {
                 "type": "ADD_EXPLAIN_LOG",
-                "log": {
+                "payload": {
                     "userId": auth_user.get("ID"),
                     "request": {
                         "text": text,

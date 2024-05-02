@@ -115,9 +115,9 @@ func HandleRequest(
 
 	userOID, _ := primitive.ObjectIDFromHex(authUser.ID)
 
-	event := transport.AddTranslateLogEvent{
-		Event: transport.Event{Type: transport.AddTranslateLog},
-		Log: collectingdb.TranslateLog{
+	event := transport.Event{
+		Type: transport.AddTranslateLog,
+		Payload: collectingdb.TranslateLog{
 			UserID:   userOID,
 			Request:  collectingdb.TranslateRequest{Text: text},
 			Response: collectingdb.TranslateResponse{Translate: translated},

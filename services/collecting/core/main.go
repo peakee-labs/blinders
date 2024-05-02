@@ -26,33 +26,27 @@ func NewService(
 	}
 }
 
-func (s Service) HandlePushEvent(event any) error {
-	genericEvent, err := utils.JSONConvert[transport.Event](event)
-	if err != nil {
-		log.Printf("invalid event, err: %v\n", err)
-		return fmt.Errorf("invalid event")
-	}
-
+func (s Service) HandlePushEvent(genericEvent transport.Event) error {
 	switch genericEvent.Type {
 	case transport.AddTranslateLog:
-		event, err := utils.JSONConvert[transport.AddTranslateLogEvent](event)
+		event, err := utils.JSONConvert[collectingdb.TranslateLog](genericEvent.Payload)
 		if err != nil {
 			log.Printf("invalid AddTranslateLogEvent, err: %v\n", err)
 			return fmt.Errorf("invalid AddTranslateLogEvent")
 		}
-		_, err = s.TranslateLogsRepo.InsertRaw(&event.Log)
+		_, err = s.TranslateLogsRepo.InsertRaw(event)
 		if err != nil {
 			log.Println("can not insert translate log", err)
 			return fmt.Errorf("can not insert translate log")
 		}
 
 	case transport.AddExplainLog:
-		event, err := utils.JSONConvert[transport.AddExplainLogEvent](event)
+		event, err := utils.JSONConvert[collectingdb.ExplainLog](genericEvent.Payload)
 		if err != nil {
 			log.Printf("invalid AddExplainLogEvent, err: %v\n", err)
 			return fmt.Errorf("invalid AddExplainLogEvent")
 		}
-		_, err = s.ExplainLogsRepo.InsertRaw(&event.Log)
+		_, err = s.ExplainLogsRepo.InsertRaw(event)
 		if err != nil {
 			log.Println("can not insert explain log", err)
 			return fmt.Errorf("can not insert explain log")
@@ -66,16 +60,10 @@ func (s Service) HandlePushEvent(event any) error {
 	return nil
 }
 
-func (s Service) HandleGetRequest(request any) (any, error) {
-	genericRequest, err := utils.JSONConvert[transport.Request](request)
-	if err != nil {
-		log.Printf("invalid request, err: %v\n", err)
-		return nil, fmt.Errorf("invalid request")
-	}
-
+func (s Service) HandleGetRequest(genericRequest transport.Request) (any, error) {
 	switch genericRequest.Type {
 	case transport.GetTranslateLog:
-		request, err := utils.JSONConvert[transport.GetCollectingLogRequest](request)
+		request, err := utils.JSONConvert[transport.GetCollectingLogRequestPayload](genericRequest.Payload)
 		if err != nil {
 			log.Printf("invalid GetCollectingLogRequest, err: %v\n", err)
 			return nil, fmt.Errorf("invalid GetCollectingLogRequest")
@@ -88,7 +76,7 @@ func (s Service) HandleGetRequest(request any) (any, error) {
 
 		return s.TranslateLogsRepo.GetLogWithSmallestGetCountByUserID(userID)
 	case transport.GetExplainLog:
-		request, err := utils.JSONConvert[transport.GetCollectingLogRequest](request)
+		request, err := utils.JSONConvert[transport.GetCollectingLogRequestPayload](genericRequest.Payload)
 		if err != nil {
 			log.Printf("invalid GetCollectingLogRequest, err: %v\n", err)
 			return nil, fmt.Errorf("invalid GetCollectingLogRequest")
