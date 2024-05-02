@@ -25,7 +25,7 @@ func (s Service) HandleGetPracticeUnitFromAnalyzeExplainLog(ctx *fiber.Ctx) erro
 		UserID:  authUser.ID,
 	}
 
-	reqBytes, _ := json.Marshal(&req)
+	reqBytes, _ := json.Marshal(req)
 	response, err := s.Transport.Request(
 		ctx.Context(),
 		s.ConsumerMap[transport.CollectingGet],
