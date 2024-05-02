@@ -3,9 +3,23 @@ package transport
 
 import (
 	"time"
+
+	"blinders/packages/db/collectingdb"
 )
 
-type EventType string
+type (
+	EventType string
+
+	// this Event struct is the base struct for all events
+	// do not use it directly
+	Event struct {
+		Type      EventType `json:"type"`
+		Timestamp time.Time `json:"timestamp"`
+		// this inline any keeps all the field of the original event,
+		// then converting to actual event by type
+		Any any `json:",inline"`
+	}
+)
 
 /*
  * Transport interface of user/friends service
@@ -13,12 +27,6 @@ type EventType string
 const (
 	AddFriend EventType = "ADD_FRIEND"
 )
-
-type Event struct {
-	Type      EventType `json:"type"`
-	Timestamp time.Time `json:"timestamp"`
-	Payload   any       `json:"payload"`
-}
 
 type AddFriendAction string
 
@@ -42,3 +50,13 @@ const (
 	AddTranslateLog EventType = "ADD_TRANSLATE_LOG"
 	AddExplainLog   EventType = "ADD_EXPLAIN_LOG"
 )
+
+type AddTranslateLogEvent struct {
+	Event   `json:",inline"`
+	Payload collectingdb.TranslateLog `json:"payload"`
+}
+
+type AddExplainLogEvent struct {
+	Event   `json:",inline"`
+	Payload collectingdb.ExplainLog `json:"payload"`
+}

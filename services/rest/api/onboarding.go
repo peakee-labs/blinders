@@ -75,7 +75,7 @@ func (s *OnboardingService) PostOnboardingForm() fiber.Handler {
 
 		payload, _ := json.Marshal(transport.Request{
 			Type: transport.AddUserMatchInfo,
-			Payload: transport.AddUserMatchInfoRequestPayload{
+			Any: transport.AddUserMatchInfoRequest{
 				Data: *matchInfo,
 			},
 		})

@@ -26,44 +26,46 @@ func NewService(
 	}
 }
 
-func (s Service) HandlePushEvent(genericEvent transport.Event) error {
-	switch genericEvent.Type {
+func (s Service) HandlePushEvent(event transport.Event) error {
+	switch event.Type {
 	case transport.AddTranslateLog:
-		event, err := utils.JSONConvert[collectingdb.TranslateLog](genericEvent.Payload)
+		event, err := utils.JSONConvert[transport.AddTranslateLogEvent](event)
 		if err != nil {
 			log.Printf("invalid AddTranslateLogEvent, err: %v\n", err)
 			return fmt.Errorf("invalid AddTranslateLogEvent")
 		}
-		_, err = s.TranslateLogsRepo.InsertRaw(event)
+		_, err = s.TranslateLogsRepo.InsertRaw(&event.Payload)
 		if err != nil {
 			log.Println("can not insert translate log", err)
 			return fmt.Errorf("can not insert translate log")
 		}
 
 	case transport.AddExplainLog:
-		event, err := utils.JSONConvert[collectingdb.ExplainLog](genericEvent.Payload)
+		event, err := utils.JSONConvert[transport.AddExplainLogEvent](event)
 		if err != nil {
 			log.Printf("invalid AddExplainLogEvent, err: %v\n", err)
 			return fmt.Errorf("invalid AddExplainLogEvent")
 		}
-		_, err = s.ExplainLogsRepo.InsertRaw(event)
+		_, err = s.ExplainLogsRepo.InsertRaw(&event.Payload)
 		if err != nil {
 			log.Println("can not insert explain log", err)
 			return fmt.Errorf("can not insert explain log")
 		}
 
 	default:
-		log.Printf("event type mismatch: %v\n", genericEvent.Type)
+		log.Printf("event type mismatch: %v\n", event.Type)
 		return fmt.Errorf("event type mismatch")
 	}
 
 	return nil
 }
 
-func (s Service) HandleGetRequest(genericRequest transport.Request) (any, error) {
-	switch genericRequest.Type {
+func (s Service) HandleGetRequest(request transport.Request) (any, error) {
+	switch request.Type {
 	case transport.GetTranslateLog:
-		request, err := utils.JSONConvert[transport.GetCollectingLogRequestPayload](genericRequest.Payload)
+		request, err := utils.JSONConvert[transport.GetCollectingLogRequest](
+			request,
+		)
 		if err != nil {
 			log.Printf("invalid GetCollectingLogRequest, err: %v\n", err)
 			return nil, fmt.Errorf("invalid GetCollectingLogRequest")
@@ -76,7 +78,9 @@ func (s Service) HandleGetRequest(genericRequest transport.Request) (any, error)
 
 		return s.TranslateLogsRepo.GetLogWithSmallestGetCountByUserID(userID)
 	case transport.GetExplainLog:
-		request, err := utils.JSONConvert[transport.GetCollectingLogRequestPayload](genericRequest.Payload)
+		request, err := utils.JSONConvert[transport.GetCollectingLogRequest](
+			request,
+		)
 		if err != nil {
 			log.Printf("invalid GetCollectingLogRequest, err: %v\n", err)
 			return nil, fmt.Errorf("invalid GetCollectingLogRequest")
@@ -89,7 +93,7 @@ func (s Service) HandleGetRequest(genericRequest transport.Request) (any, error)
 
 		return s.ExplainLogsRepo.GetLogWithSmallestGetCountByUserID(userID)
 	default:
-		log.Printf("request type mismatch: %v\n", genericRequest.Type)
+		log.Printf("request type mismatch: %v\n", request.Type)
 		return nil, fmt.Errorf("request type mismatch")
 	}
 }

@@ -22,7 +22,7 @@ func (s Service) HandleGetPracticeUnitFromAnalyzeExplainLog(ctx *fiber.Ctx) erro
 
 	req := transport.Request{
 		Type: transport.GetExplainLog,
-		Payload: transport.GetCollectingLogRequestPayload{
+		Any: transport.GetCollectingLogRequest{
 			UserID: authUser.ID,
 		},
 	}

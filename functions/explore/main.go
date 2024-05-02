@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -86,39 +85,31 @@ func init() {
 	fiberLambda = fiberadapter.New(api.App)
 }
 
-func HandleRequest(ctx context.Context, payload any) (any, error) {
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		log.Println("can not marshal payload:", err)
-		return nil, fmt.Errorf("can not marshal payload")
-	}
+func HandleRequest(ctx context.Context, req transport.Request) (any, error) {
+	switch req.Type {
+	case transport.AddUserMatchInfo:
+		req, err := utils.JSONConvert[transport.AddUserMatchInfoRequest](req)
+		if err != nil {
+			log.Println("can't parse match info from request: ", err)
+			return nil, fmt.Errorf("can not parse match info: %v", err)
+		}
 
-	request, err := utils.ParseJSON[transport.Request](bytes)
-	if err != nil || request.Type != transport.AddUserMatchInfo {
-		log.Println("might be http request from client app:", err)
-		req, err := utils.ParseJSON[events.APIGatewayV2HTTPRequest](bytes)
+		err = api.Service.AddUserMatch(req.Data)
+		if err != nil {
+			return nil, fmt.Errorf("can not add user match: %v", err)
+		}
+
+		return nil, nil
+
+	default:
+		req, err := utils.JSONConvert[events.APIGatewayV2HTTPRequest](req)
 		if err != nil {
 			log.Println("can not parse http proxy request:", err)
 			return nil, fmt.Errorf("can not parse http proxy request")
 		}
 
 		return fiberLambda.ProxyWithContextV2(ctx, *req)
-	} else if request == nil {
-		return nil, fmt.Errorf("nil request")
 	}
-
-	requestPayload, err := utils.JSONConvert[transport.AddUserMatchInfoRequestPayload](request.Payload)
-	if err != nil {
-		log.Println("can't parse match info from request: ", err)
-		return nil, fmt.Errorf("can not parse match info: %v", err)
-	}
-
-	err = api.Service.AddUserMatch(requestPayload.Data)
-	if err != nil {
-		return nil, fmt.Errorf("can not add user match: %v", err)
-	}
-
-	return nil, nil
 }
 
 func main() {
