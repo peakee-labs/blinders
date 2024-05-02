@@ -39,10 +39,13 @@
         state: file
 
     - name: Add Mongo source list with keyring
-      ansible.builtin.shell: |
-        echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] \
-          https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse"\
-          | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] \
+            https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse"\
+            | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+        executable: /bin/bash
       args:
         creates: /etc/apt/sources.list.d/mongodb-org-7.0.list
 

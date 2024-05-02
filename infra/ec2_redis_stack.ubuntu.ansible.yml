@@ -34,9 +34,12 @@
         state: file
 
     - name: Add to Redis source list with keyring
-      ansible.builtin.shell: |
-        echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] \
-          https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] \
+            https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
+        executable: /bin/bash
       args:
         creates: /etc/apt/sources.list.d/redis.list
 
