@@ -87,7 +87,7 @@
 
     - name: Config MongoDB authentication
       ansible.builtin.template:
-        src: ./templates/mongod.conf
+        src: ./templates/mongod.ubuntu.conf
         dest: /etc/mongod.conf
         mode: "0644"
 
