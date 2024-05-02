@@ -1,0 +1,97 @@
+- name: Setup MongoDB on EC2 (Ubuntu 22.04)
+  hosts: all
+  gather_facts: false
+  become: true
+  vars:
+    arm: false
+  #   - mongodb_admin_username
+  #   - mongodb_admin_password
+  tasks:
+    - name: Ping my hosts
+      ansible.builtin.ping:
+
+    - name: Print message
+      ansible.builtin.debug:
+        msg: Hello world
+
+    - name: Install gnupg curl to setup
+      ansible.builtin.apt:
+        name:
+          - gnupg
+          - curl
+
+    - name: Install MongoDB public GPG key
+      ansible.builtin.uri:
+        url: https://www.mongodb.org/static/pgp/server-7.0.asc
+        dest: /tmp/mongo.key
+        follow_redirects: safe
+        status_code: [200, 304]
+
+    - name: Extract MongoDB gpg key
+      ansible.builtin.command: gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg /tmp/mongo.key
+      args:
+        creates: /usr/share/keyrings/mongodb-server-7.0.gpg
+
+    - name: Enable Mongo gpg key
+      ansible.builtin.file:
+        path: /usr/share/keyrings/mongodb-server-7.0.gpg
+        mode: "644"
+        state: file
+
+    - name: Add Mongo source list with keyring
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] \
+            https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse"\
+            | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+        executable: /bin/bash
+      args:
+        creates: /etc/apt/sources.list.d/mongodb-org-7.0.list
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install MongoDB
+      ansible.builtin.apt:
+        name: mongodb-org
+        force_apt_get: true
+
+    - name: Start MongoDB server
+      ansible.builtin.systemd:
+        state: started
+        name: mongod
+
+    - name: Install pip
+      ansible.builtin.apt:
+        name: python3-pip
+
+    - name: Install pymongo
+      ansible.builtin.pip:
+        name:
+          - pymongo
+
+    - name: Configure Users
+      community.mongodb.mongodb_user:
+        database: admin
+        name: "{{ mongodb_admin_username }}"
+        password: "{{ mongodb_admin_password }}"
+        # login_user: "{{ mongodb_admin_username }}"
+        # login_password: "{{ mongodb_admin_password }}"
+        roles:
+          - role: userAdminAnyDatabase
+            db: admin
+          - role: readWriteAnyDatabase
+            db: admin
+
+    - name: Config MongoDB authentication
+      ansible.builtin.template:
+        src: ./templates/mongod.ubuntu.conf
+        dest: /etc/mongod.conf
+        mode: "0644"
+
+    - name: Start MongoDB server
+      ansible.builtin.systemd:
+        state: restarted
+        name: mongod

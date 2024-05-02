@@ -2,7 +2,8 @@
   hosts: all
   gather_facts: false
   become: true
-  # vars:
+  vars:
+    arm: false
   #   - mongodb_admin_username
   #   - mongodb_admin_password
   tasks:
@@ -15,7 +16,7 @@
 
     - name: Setup Yum repository for MongoDB
       ansible.builtin.template:
-        src: ./templates/yum-repos-mongodb-org-7.0.repo
+        src: "./templates/yum-repos-mongodb-org-7.0{{ '-arm' if arm else '' }}.repo"
         dest: /etc/yum.repos.d/mongodb-org-7.0.repo
         mode: "0644"
 
