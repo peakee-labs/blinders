@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -30,6 +31,10 @@ func (t LambdaTransport) Request(
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if res.FunctionError != nil {
+		return nil, fmt.Errorf(*res.FunctionError)
 	}
 
 	return res.Payload, nil

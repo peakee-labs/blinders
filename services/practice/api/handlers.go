@@ -36,7 +36,10 @@ func (s Service) HandleGetPracticeUnitFromAnalyzeExplainLog(ctx *fiber.Ctx) erro
 		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "cannot get explain log"})
 	}
 
-	return ctx.Status(http.StatusOK).JSON(string(response))
+	var jsonResponse map[string]any
+	_ = json.Unmarshal(response, &jsonResponse)
+
+	return ctx.Status(http.StatusOK).JSON(jsonResponse)
 }
 
 func (s Service) HandleGetRandomLanguageUnit(ctx *fiber.Ctx) error {
