@@ -73,11 +73,9 @@ func (s *OnboardingService) PostOnboardingForm() fiber.Handler {
 		}
 		matchInfo.UserID = uid
 
-		payload, _ := json.Marshal(transport.Request{
-			Type: transport.AddUserMatchInfo,
-			Payload: transport.AddUserMatchInfoRequestPayload{
-				Data: *matchInfo,
-			},
+		payload, _ := json.Marshal(transport.AddUserMatchInfoRequest{
+			Request: transport.Request{Type: transport.AddUserMatchInfo},
+			Payload: *matchInfo,
 		})
 		resBytes, err := s.Transport.Request(
 			context.Background(),
