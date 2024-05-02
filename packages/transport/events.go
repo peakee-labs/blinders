@@ -15,9 +15,9 @@ type (
 	Event struct {
 		Type      EventType `json:"type"`
 		Timestamp time.Time `json:"timestamp"`
-		// this inline any keeps all the field of the original event,
-		// then converting to actual event by type
-		Any any `json:",inline"`
+		// This payload field keeps the original payload,
+		// all the event must put their payload in this field to prevent missing fields
+		Payload any `json:"payload"`
 	}
 )
 
@@ -37,7 +37,11 @@ const (
 )
 
 type AddFriendEvent struct {
-	Event              `                json:",inline"`
+	Event   `json:",inline"`
+	Payload AddFriendPayload `json:"payload"`
+}
+
+type AddFriendPayload struct {
 	Action             AddFriendAction
 	UserID             string `json:"userId"`
 	AddFriendRequestID string `json:"addFriendRequestId"`

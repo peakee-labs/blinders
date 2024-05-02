@@ -77,7 +77,7 @@ const UserEmbedFormat = "[BEGIN]gender: %s[SEP]age: %v[SEP]job: %s[SEP]native la
 func (s *Service) AddUserMatch(info matchingdb.MatchInfo) error {
 	requestPayload := transport.EmbeddingRequest{
 		Request: transport.Request{Type: transport.Embedding},
-		Data: fmt.Sprintf(
+		Payload: fmt.Sprintf(
 			UserEmbedFormat,
 			info.Gender,
 			info.Age,

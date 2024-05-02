@@ -13,9 +13,9 @@ type (
 	// do not use it directly
 	Request struct {
 		Type RequestType `json:"type"`
-		// this inline any keeps all the fields of the original request,
-		// then converting to actual request by type
-		Any any `json:",inline"`
+		// This payload field keeps the original payload,
+		// all the event must put their payload in this field to prevent missing fields
+		Payload any `json:"payload"`
 	}
 )
 
@@ -30,8 +30,10 @@ const (
  * For vector embedding
  */
 type EmbeddingRequest struct {
-	Request `       json:",inline"`
-	Data    string
+	Request `json:",inline"`
+	// This payload field keeps the original payload,
+	// all the event must put their payload in this field to prevent missing fields
+	Payload string `json:"payload"`
 }
 type EmbeddingResponse struct {
 	Embedded []float32
@@ -42,7 +44,7 @@ type EmbeddingResponse struct {
  */
 type AddUserMatchInfoRequest struct {
 	Request `json:",inline"`
-	Data    matchingdb.MatchInfo `json:"data"`
+	Payload matchingdb.MatchInfo `json:"payload"`
 }
 type AddUserMatchInfoResponse struct {
 	Error *string `json:"error,omitempty"`
@@ -53,7 +55,11 @@ type AddUserMatchInfoResponse struct {
  */
 type GetCollectingLogRequest struct {
 	Request `json:",inline"`
-	UserID  string `json:"userId"`
+	Payload GetCollectingLogPayload `json:"payload"`
+}
+
+type GetCollectingLogPayload struct {
+	UserID string `json:"userId"`
 }
 
 type GetTranslateLogResponse struct {

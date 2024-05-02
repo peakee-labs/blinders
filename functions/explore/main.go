@@ -85,8 +85,13 @@ func init() {
 	fiberLambda = fiberadapter.New(api.App)
 }
 
-func HandleRequest(ctx context.Context, req transport.Request) (any, error) {
-	switch req.Type {
+func HandleRequest(ctx context.Context, req any) (any, error) {
+	internalReq, err := utils.JSONConvert[transport.Request](req)
+	if err != nil {
+		log.Fatal("can not parse http proxy request:", err)
+	}
+
+	switch internalReq.Type {
 	case transport.AddUserMatchInfo:
 		req, err := utils.JSONConvert[transport.AddUserMatchInfoRequest](req)
 		if err != nil {
@@ -94,7 +99,7 @@ func HandleRequest(ctx context.Context, req transport.Request) (any, error) {
 			return nil, fmt.Errorf("can not parse match info: %v", err)
 		}
 
-		err = api.Service.AddUserMatch(req.Data)
+		err = api.Service.AddUserMatch(req.Payload)
 		if err != nil {
 			return nil, fmt.Errorf("can not add user match: %v", err)
 		}

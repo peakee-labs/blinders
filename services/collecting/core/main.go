@@ -70,7 +70,7 @@ func (s Service) HandleGetRequest(request transport.Request) (any, error) {
 			log.Printf("invalid GetCollectingLogRequest, err: %v\n", err)
 			return nil, fmt.Errorf("invalid GetCollectingLogRequest")
 		}
-		userID, err := primitive.ObjectIDFromHex(request.UserID)
+		userID, err := primitive.ObjectIDFromHex(request.Payload.UserID)
 		if err != nil {
 			log.Printf("invalid user id, err: %v\n", err)
 			return nil, fmt.Errorf("invalid user id")
@@ -85,7 +85,7 @@ func (s Service) HandleGetRequest(request transport.Request) (any, error) {
 			log.Printf("invalid GetCollectingLogRequest, err: %v\n", err)
 			return nil, fmt.Errorf("invalid GetCollectingLogRequest")
 		}
-		userID, err := primitive.ObjectIDFromHex(request.UserID)
+		userID, err := primitive.ObjectIDFromHex(request.Payload.UserID)
 		if err != nil {
 			log.Printf("invalid user id, err: %v\n", err)
 			return nil, fmt.Errorf("invalid user id")
