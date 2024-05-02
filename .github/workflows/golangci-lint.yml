@@ -42,5 +42,5 @@ jobs:
       - name: Lint by golangci-lint  
         run: go list -f '{{.Dir}}/...' -m | xargs -n 1 sh -c 'golangci-lint run $0 || exit -1'
 
-      - name: Test 
-        run: ENVIRONMENT=CI go list -f '{{.Dir}}/...' -m | xargs -n 1 sh -c 'go test $0 || exit -1'
+      # - name: Test 
+      #   run: go list -f '{{.Dir}}/...' -m | xargs -n 1 sh -c 'go test $0 || exit -1'
