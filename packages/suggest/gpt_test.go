@@ -1,12 +1,13 @@
 package suggest
 
 import (
-	"blinders/packages/utils"
 	"context"
 	"fmt"
 	"os"
 	"testing"
 	"time"
+
+	"blinders/packages/utils"
 
 	"github.com/joho/godotenv"
 	"github.com/sashabaranov/go-openai"

@@ -1,11 +1,12 @@
 package translate
 
 import (
-	"blinders/packages/utils"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
+
+	"blinders/packages/utils"
 
 	"github.com/joho/godotenv"
 )
