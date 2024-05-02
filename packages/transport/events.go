@@ -7,7 +7,19 @@ import (
 	"blinders/packages/db/collectingdb"
 )
 
-type EventType string
+type (
+	EventType string
+
+	// this Event struct is the base struct for all events
+	// do not use it directly
+	Event struct {
+		Type      EventType `json:"type"`
+		Timestamp time.Time `json:"timestamp"`
+		// This payload field keeps the original payload,
+		// all the event must put their payload in this field to prevent missing fields
+		Payload any `json:"payload"`
+	}
+)
 
 /*
  * Transport interface of user/friends service
@@ -15,11 +27,6 @@ type EventType string
 const (
 	AddFriend EventType = "ADD_FRIEND"
 )
-
-type Event struct {
-	Type      EventType `json:"type"`
-	Timestamp time.Time `json:"timestamp"`
-}
 
 type AddFriendAction string
 
@@ -30,7 +37,11 @@ const (
 )
 
 type AddFriendEvent struct {
-	Event              `                json:",inline"`
+	Event   `json:",inline"`
+	Payload AddFriendPayload `json:"payload"`
+}
+
+type AddFriendPayload struct {
 	Action             AddFriendAction
 	UserID             string `json:"userId"`
 	AddFriendRequestID string `json:"addFriendRequestId"`
@@ -45,11 +56,11 @@ const (
 )
 
 type AddTranslateLogEvent struct {
-	Event `json:",inline"`
-	Log   collectingdb.TranslateLog `json:"log"     bson:"log"`
+	Event   `json:",inline"`
+	Payload collectingdb.TranslateLog `json:"payload"`
 }
 
 type AddExplainLogEvent struct {
-	Event `json:",inline"`
-	Log   collectingdb.ExplainLog `json:"log"     bson:"log"`
+	Event   `json:",inline"`
+	Payload collectingdb.ExplainLog `json:"payload"`
 }

@@ -22,7 +22,7 @@ func (s Service) HandleGetPracticeUnitFromAnalyzeExplainLog(ctx *fiber.Ctx) erro
 
 	req := transport.GetCollectingLogRequest{
 		Request: transport.Request{Type: transport.GetExplainLog},
-		UserID:  authUser.ID,
+		Payload: transport.GetCollectingLogPayload{UserID: authUser.ID},
 	}
 
 	reqBytes, _ := json.Marshal(req)

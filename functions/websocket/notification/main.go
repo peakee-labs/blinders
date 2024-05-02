@@ -40,44 +40,32 @@ func init() {
 	SessionManager = session.NewManager(redisClient)
 }
 
-func HandleRequest(ctx context.Context, payload any) error {
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		log.Println("can not marshal payload:", err)
-		return err
-	}
-	event, err := utils.ParseJSON[transport.Event](bytes)
-	if err != nil {
-		log.Println("can not parse request payload, require type in payload:", err)
-		return err
-	}
-
-	log.Println("handle event:", event.Type)
-
+func HandleRequest(ctx context.Context, event transport.Event) error {
 	switch event.Type {
 	case transport.AddFriend:
-		event, err := utils.ParseJSON[transport.AddFriendEvent](bytes)
+		event, err := utils.JSONConvert[transport.AddFriendEvent](event)
 		if err != nil {
 			log.Println("can not parse request payload:", err)
 			return err
 		}
-		userConIDs, err := SessionManager.GetSessions(event.UserID)
+		userConIDs, err := SessionManager.GetSessions(event.Payload.UserID)
 		if err != nil {
 			log.Println("can not get session:", err)
 			return err
 		}
 
+		eventBytes, _ := json.Marshal(event)
 		wg := sync.WaitGroup{}
 		for _, conID := range userConIDs {
 			wg.Add(1)
-			go func(conID string, payload []byte) {
+			go func(conID string, event []byte) {
 				conID = strings.Split(conID, ":")[1]
-				err = APIGatewayClient.Publish(ctx, conID, payload)
+				err = APIGatewayClient.Publish(ctx, conID, event)
 				if err != nil {
 					log.Println("failed to publish:", err)
 				}
 				wg.Done()
-			}(conID, bytes)
+			}(conID, eventBytes)
 		}
 		wg.Wait()
 	default:

@@ -6,7 +6,18 @@ import (
 	"blinders/packages/db/matchingdb"
 )
 
-type RequestType string
+type (
+	RequestType string
+
+	// this Request struct is the base struct for all requests
+	// do not use it directly
+	Request struct {
+		Type RequestType `json:"type"`
+		// This payload field keeps the original payload,
+		// all the event must put their payload in this field to prevent missing fields
+		Payload any `json:"payload"`
+	}
+)
 
 const (
 	Embedding        RequestType = "EMBEDDING"
@@ -15,16 +26,14 @@ const (
 	GetExplainLog    RequestType = "GET_EXPLAIN_LOG"
 )
 
-type Request struct {
-	Type RequestType `json:"type"`
-}
-
 /*
  * For vector embedding
  */
 type EmbeddingRequest struct {
-	Request `       json:",inline"`
-	Data    string
+	Request `json:",inline"`
+	// This payload field keeps the original payload,
+	// all the event must put their payload in this field to prevent missing fields
+	Payload string `json:"payload"`
 }
 type EmbeddingResponse struct {
 	Embedded []float32
@@ -35,7 +44,7 @@ type EmbeddingResponse struct {
  */
 type AddUserMatchInfoRequest struct {
 	Request `json:",inline"`
-	Data    matchingdb.MatchInfo `json:"data"`
+	Payload matchingdb.MatchInfo `json:"payload"`
 }
 type AddUserMatchInfoResponse struct {
 	Error *string `json:"error,omitempty"`
@@ -45,8 +54,12 @@ type AddUserMatchInfoResponse struct {
  * Transport interface of collecting service
  */
 type GetCollectingLogRequest struct {
-	Request `       json:",inline"`
-	UserID  string `json:"userId"`
+	Request `json:",inline"`
+	Payload GetCollectingLogPayload `json:"payload"`
+}
+
+type GetCollectingLogPayload struct {
+	UserID string `json:"userId"`
 }
 
 type GetTranslateLogResponse struct {
