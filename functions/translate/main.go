@@ -46,17 +46,16 @@ func init() {
 	defer cancel()
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		log.Fatal("failed too load aws config", cfg)
+		log.Fatal("failed too load aws config:", err)
 	}
 	transporter = transport.NewLambdaTransport(cfg)
 	consumerMap = transport.ConsumerMap{
 		transport.CollectingPush: os.Getenv("COLLECTING_PUSH_FUNCTION_NAME"),
 	}
 
-	mongoInfo := dbutils.GetMongoInfoFromEnv()
-	client, err := dbutils.InitMongoClient(mongoInfo.URL)
+	usersDB, err := dbutils.InitMongoDatabaseFromEnv("USERS")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("failed to init users db:", err)
 	}
 
 	adminConfig, err := utils.GetFile("firebase.admin.json")
@@ -70,7 +69,7 @@ func init() {
 
 	authMiddleware = auth.LambdaAuthMiddleware(
 		authManager,
-		usersdb.NewUsersRepo(client.Database(mongoInfo.DBName)),
+		usersdb.NewUsersRepo(usersDB),
 	)
 }
 

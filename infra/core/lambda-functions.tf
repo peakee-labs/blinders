@@ -66,6 +66,9 @@ resource "aws_lambda_function" "translate" {
       ENVIRONMENT : var.project.environment
       YANDEX_API_KEY : local.envs.YANDEX_API_KEY
 
+      USERS_MONGO_DATABASE : local.envs.USERS_MONGO_DATABASE
+      USERS_MONGO_DATABASE_URL : local.envs.USERS_MONGO_DATABASE_URL
+
       COLLECTING_PUSH_FUNCTION_NAME : aws_lambda_function.collecting-push.function_name
     }
   }
