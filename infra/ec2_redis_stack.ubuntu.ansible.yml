@@ -57,6 +57,14 @@
         dest: /etc/redis-stack.conf
         mode: "0644"
 
+    # there is some problem with starting without reloading daemon
+    # need to overwrite default ExecStart with direct redis-stack-server path
+    - name: Overwrite Redis Stack Server systemd service
+      ansible.builtin.template:
+        src: ./templates/redis-stack-server.service
+        dest: /etc/systemd/system/redis-stack-server.service
+        mode: "0644"
+
     - name: Start Redis Stack Server
       ansible.builtin.systemd:
         name: redis-stack-server
