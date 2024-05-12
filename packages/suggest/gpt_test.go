@@ -11,9 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var authToken = os.Getenv("OPENAI_API_KEY")
-
-var suggester, _ = NewGPTSuggester(openai.NewClient(authToken))
+var (
+	authToken    = os.Getenv("OPENAI_API_KEY")
+	suggester, _ = NewGPTSuggester(openai.NewClient(authToken))
+)
 
 func TestTextCompletion(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
