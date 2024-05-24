@@ -134,6 +134,11 @@ func (r *FlashCardsRepo) GetFlashCardCollectionsByUserID(userID primitive.Object
 				"flashcards": bson.M{"$push": "$$ROOT"},
 			},
 		},
+		{
+			"$addFields": bson.M{
+				"userId": userID,
+			},
+		},
 	}
 	cur, err := r.Aggregate(ctx, pipeline)
 	if err != nil {
