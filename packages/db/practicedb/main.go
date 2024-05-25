@@ -3,8 +3,7 @@ package practicedb
 import "go.mongodb.org/mongo-driver/mongo"
 
 const (
-	FlashCardColName      = "flashcards"
-	CardCollectionColName = "card_collections"
+	FlashCardColName = "flashcards"
 )
 
 type PracticeDB struct {

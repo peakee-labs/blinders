@@ -2,6 +2,7 @@ package practiceapi
 
 import (
 	"blinders/packages/auth"
+	"blinders/packages/db/practicedb"
 	"blinders/packages/db/usersdb"
 	"blinders/packages/transport"
 
@@ -9,11 +10,12 @@ import (
 )
 
 type Service struct {
-	App         *fiber.App
-	Auth        auth.Manager
-	UserRepo    *usersdb.UsersRepo
-	Transport   transport.Transport
-	ConsumerMap transport.ConsumerMap
+	App           *fiber.App
+	Auth          auth.Manager
+	UserRepo      *usersdb.UsersRepo
+	Transport     transport.Transport
+	ConsumerMap   transport.ConsumerMap
+	FlashCardRepo *practicedb.FlashCardsRepo
 }
 
 func NewService(
@@ -40,4 +42,15 @@ func (s *Service) InitRoute() {
 	practiceRoute.Get("/public/unit", s.HandleGetRandomLanguageUnit)
 	authorized := practiceRoute.Group("/", auth.FiberAuthMiddleware(s.Auth, s.UserRepo))
 	authorized.Get("/unit", s.HandleGetPracticeUnitFromAnalyzeExplainLog)
+
+	authorized.Get("/flashcards", s.HandleGetFlashCards)
+	authorized.Post("/flashcards", s.HandleGetFlashCards)
+
+	authorized.Get("/flashcards/:id", s.HandleGetFlashCardByID)
+	authorized.Put("/flashcards/:id", s.HandleUpdateFlashCard)
+	authorized.Delete("/flashcards/:id", s.HandleDeleteFlashCard)
+
+	authorized.Get("/flashcard/collections", s.HandleGetFlashCardCollections)
+	authorized.Get("/flashcard/collections/:id", s.HandleGetFlashCardCollectionByID)
+	authorized.Delete("/flashcard/collections/:id", s.handleDeleteFlashCardCollection)
 }
