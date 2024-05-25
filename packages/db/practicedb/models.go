@@ -7,6 +7,7 @@ import (
 )
 
 type FlashCard struct {
+	// ID of flashcard if from collecting event will be set to the event id, to avoid duplicate flashcard
 	dbutils.RawModel `json:",inline" bson:",inline"`
 	FrontText        string             `json:"frontText" bson:"frontText"`
 	FrontImgURL      string             `json:"frontImageUrl"`
