@@ -240,11 +240,10 @@ var (
 			},
 		},
 	}
+	DefaultFlashCard = practicedb.FlashCard{
+		FrontText:   "Minimum Viable Product (MVP)",
+		FrontImgURL: "",
+		BackText:    "The simplest version of a product that can be released to test ideas and gather user feedback.",
+		BackImgURL:  "",
+	}
 )
-
-var DefaultFlashCard = practicedb.FlashCard{
-	FrontText:   "Minimum Viable Product (MVP)",
-	FrontImgURL: "",
-	BackText:    "The simplest version of a product that can be released to test ideas and gather user feedback.",
-	BackImgURL:  "",
-}
