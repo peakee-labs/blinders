@@ -1,13 +1,14 @@
 package practicedb
 
 import (
-	dbutils "blinders/packages/db/utils"
 	"context"
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/test-go/testify/assert"
+	dbutils "blinders/packages/db/utils"
+
+	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
