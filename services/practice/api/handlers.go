@@ -137,7 +137,7 @@ func (s Service) HandleGetPracticeFlashCard(ctx *fiber.Ctx) error {
 		reqBytes,
 	)
 	if err != nil {
-		log.Printf("cannot get %v log: %v\n", requestType, err)
+		log.Printf("cannot get %v, error: %v\n", requestType, err)
 		// we could return 1 flashcard from user collection
 		goto returnRandomFlashCard
 	}
@@ -188,11 +188,11 @@ returnRandomFlashCard:
 	cards, err := s.FlashCardRepo.GetFlashCardByUserID(userOID)
 	if err != nil {
 		log.Println("cannot get flashcard:", err)
-		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "cannot get flashcard"})
+		return ctx.Status(http.StatusOK).JSON(DefaultFlashCard)
 	}
 	if len(cards) == 0 {
 		log.Println("user has no flashcard")
-		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "cannot get flashcard"})
+		return ctx.Status(http.StatusOK).JSON(DefaultFlashCard)
 	}
 	return ctx.Status(http.StatusOK).JSON(cards[rand.Intn(len(cards))])
 }
