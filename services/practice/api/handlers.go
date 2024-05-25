@@ -346,12 +346,13 @@ func (s Service) HandleAddFlashCardCollection(ctx *fiber.Ctx) error {
 			UserID:      userOID,
 		})
 	}
-	if err := s.FlashCardRepo.AddFlashCardsOfCollection(cards); err != nil {
+	collection, err := s.FlashCardRepo.AddFlashCardsOfCollection(cards)
+	if err != nil {
 		log.Println("cannot add flash cards of collection:", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot add flash cards of collection"})
 	}
 
-	return ctx.SendStatus(fiber.StatusOK)
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"id": collection.ID})
 }
 
 func (s Service) HandleGetFlashCardCollections(ctx *fiber.Ctx) error {
