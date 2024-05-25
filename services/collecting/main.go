@@ -50,6 +50,6 @@ func main() {
 	port := os.Getenv("COLLECTING_SERVICE_PORT")
 	err := m.App.Listen(fmt.Sprintf(":%s", port))
 	if err != nil {
-		log.Println("launch practice service error", err)
+		log.Println("launch collecting service error", err)
 	}
 }
