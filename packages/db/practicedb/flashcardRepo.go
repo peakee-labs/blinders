@@ -21,6 +21,23 @@ func NewFlashCardRepo(db *mongo.Database) *FlashCardsRepo {
 	return &FlashCardsRepo{SingleCollectionRepo: dbutils.SingleCollectionRepo[*FlashCard]{Collection: col}}
 }
 
+func (r *FlashCardsRepo) AddFlashCardsOfCollection(cards []FlashCard) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	collectionOID := primitive.NewObjectID()
+	docs := make([]interface{}, len(cards))
+
+	for idx, card := range cards {
+		card.CollectionID = collectionOID
+		card.SetID(primitive.NewObjectID())
+		docs[idx] = card
+	}
+
+	_, err := r.InsertMany(ctx, docs)
+	return err
+}
+
 func (r *FlashCardsRepo) GetFlashCardByUserID(userID primitive.ObjectID) ([]FlashCard, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -59,9 +76,12 @@ func (r *FlashCardsRepo) GetFlashCardCollectionByID(collectionID primitive.Objec
 	if len(cards) == 0 {
 		return nil, mongo.ErrNoDocuments
 	}
+	// since all cards in a collection have the same userID, we can just get the userID from the first card
+	userOID := cards[0].UserID
 
 	return &CardCollection{
 		ID:         collectionID,
+		UserID:     userOID,
 		FlashCards: cards,
 	}, err
 }

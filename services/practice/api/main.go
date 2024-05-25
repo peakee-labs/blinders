@@ -22,15 +22,17 @@ func NewService(
 	app *fiber.App,
 	auth auth.Manager,
 	usersRepo *usersdb.UsersRepo,
+	flashcardsRepo *practicedb.FlashCardsRepo,
 	transport transport.Transport,
 	consumerMap transport.ConsumerMap,
 ) *Service {
 	return &Service{
-		App:         app,
-		Auth:        auth,
-		UserRepo:    usersRepo,
-		Transport:   transport,
-		ConsumerMap: consumerMap,
+		App:           app,
+		Auth:          auth,
+		UserRepo:      usersRepo,
+		FlashCardRepo: flashcardsRepo,
+		Transport:     transport,
+		ConsumerMap:   consumerMap,
 	}
 }
 
@@ -43,14 +45,15 @@ func (s *Service) InitRoute() {
 	authorized := practiceRoute.Group("/", auth.FiberAuthMiddleware(s.Auth, s.UserRepo))
 	authorized.Get("/unit", s.HandleGetPracticeUnitFromAnalyzeExplainLog)
 
-	authorized.Get("/flashcards", s.HandleGetFlashCards)
-	authorized.Post("/flashcards", s.HandleGetFlashCards)
+	authorized.Get("/flashcards/collections", s.HandleGetFlashCardCollections)
+	authorized.Post("/flashcards/collections", s.HandleAddFlashCardCollection)
+	authorized.Get("/flashcards/collections/:id", s.HandleGetFlashCardCollectionByID)
+	authorized.Delete("/flashcards/collections/:id", s.HandleDeleteFlashCardCollection)
 
 	authorized.Get("/flashcards/:id", s.HandleGetFlashCardByID)
 	authorized.Put("/flashcards/:id", s.HandleUpdateFlashCard)
 	authorized.Delete("/flashcards/:id", s.HandleDeleteFlashCard)
 
-	authorized.Get("/flashcard/collections", s.HandleGetFlashCardCollections)
-	authorized.Get("/flashcard/collections/:id", s.HandleGetFlashCardCollectionByID)
-	authorized.Delete("/flashcard/collections/:id", s.handleDeleteFlashCardCollection)
+	authorized.Get("/flashcards", s.HandleGetFlashCards)
+	authorized.Post("/flashcards", s.HandleAddFlashCard)
 }

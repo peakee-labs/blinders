@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"blinders/packages/auth"
+	"blinders/packages/db/practicedb"
 	"blinders/packages/db/usersdb"
 	dbutils "blinders/packages/db/utils"
 	"blinders/packages/transport"
@@ -31,6 +32,7 @@ func init() {
 		log.Fatal(err)
 	}
 	usersRepo := usersdb.NewUsersRepo(usersDB)
+	flashcardsRepo := practicedb.NewFlashCardRepo(usersDB)
 
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {
@@ -52,6 +54,7 @@ func init() {
 		app,
 		authManager,
 		usersRepo,
+		flashcardsRepo,
 		transport.NewLambdaTransport(cfg),
 		transport.ConsumerMap{
 			transport.CollectingPush: os.Getenv("COLLECTING_PUSH_FUNCTION_NAME"),

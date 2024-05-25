@@ -13,7 +13,7 @@ type FlashCard struct {
 	BackText         string             `json:"backText" bson:"backText"`
 	BackImgURL       string             `json:"backImageURL" bson:"backImageURL"`
 	UserID           primitive.ObjectID `json:"userId" bson:"userId"`
-	CollectionID     primitive.ObjectID `json:"collectionId" bson:"collectionId"`
+	CollectionID     primitive.ObjectID `json:"collectionId" bson:"collectionId"` // by default, the collectionId is the same as the userId as the user can have 1 default collection
 }
 
 type CardCollection struct {
