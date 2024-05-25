@@ -1,15 +1,19 @@
 package practicedb
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	dbutils "blinders/packages/db/utils"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type FlashCard struct {
-	ID           primitive.ObjectID `json:"id" bson:"_id"`
-	FrontText    string             `json:"frontText" bson:"frontText"`
-	FrontImgURL  string             `json:"frontImageUrl"`
-	BackText     string             `json:"backText" bson:"backText"`
-	BackImgURL   string             `json:"backImageURL" bson:"backImageURL"`
-	UserID       primitive.ObjectID `json:"userId" bson:"userId"`
-	CollectionID primitive.ObjectID `json:"collectionId" bson:"collectionId"`
+	dbutils.RawModel `json:",inline" bson:",inline"`
+	FrontText        string             `json:"frontText" bson:"frontText"`
+	FrontImgURL      string             `json:"frontImageUrl"`
+	BackText         string             `json:"backText" bson:"backText"`
+	BackImgURL       string             `json:"backImageURL" bson:"backImageURL"`
+	UserID           primitive.ObjectID `json:"userId" bson:"userId"`
+	CollectionID     primitive.ObjectID `json:"collectionId" bson:"collectionId"`
 }
 
 type CardCollection struct {

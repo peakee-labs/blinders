@@ -1,6 +1,7 @@
 package practicedb
 
 import (
+	dbutils "blinders/packages/db/utils"
 	"context"
 	"time"
 
@@ -11,42 +12,12 @@ import (
 )
 
 type FlashCardsRepo struct {
-	mongo.Collection
+	dbutils.SingleCollectionRepo[*FlashCard]
 }
 
 func NewFlashCardRepo(db *mongo.Database) *FlashCardsRepo {
 	col := db.Collection(FlashCardColName)
-	return &FlashCardsRepo{Collection: *col}
-}
-
-func (r *FlashCardsRepo) InsertRawFlashCard(card *FlashCard) (*FlashCard, error) {
-	card.ID = primitive.NewObjectID()
-	return r.InsertFlashCard(card)
-}
-
-func (r *FlashCardsRepo) InsertFlashCard(card *FlashCard) (*FlashCard, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	_, err := r.InsertOne(ctx, card)
-	if err != nil {
-		return nil, err
-	}
-	return card, nil
-}
-
-func (r *FlashCardsRepo) GetFlashCardByID(cardID primitive.ObjectID) (*FlashCard, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	filter := bson.M{"_id": cardID}
-	card := new(FlashCard)
-	err := r.FindOne(ctx, filter).Decode(card)
-	if err != nil {
-		return nil, err
-	}
-
-	return card, nil
+	return &FlashCardsRepo{SingleCollectionRepo: dbutils.SingleCollectionRepo[*FlashCard]{Collection: col}}
 }
 
 func (r *FlashCardsRepo) GetFlashCardByUserID(userID primitive.ObjectID) ([]FlashCard, error) {
