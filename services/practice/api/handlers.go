@@ -16,6 +16,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func (s Service) HandleGetPracticeUnitFromAnalyzeExplainLog(ctx *fiber.Ctx) error {
@@ -143,7 +144,7 @@ func (s Service) HandleGetPracticeFlashCard(ctx *fiber.Ctx) error {
 	}
 
 	{
-		var updatedFlashcard *practicedb.FlashCard
+		var practiceFlashcard *practicedb.FlashCard
 
 		switch requestType {
 		case transport.GetExplainLog:
@@ -153,14 +154,14 @@ func (s Service) HandleGetPracticeFlashCard(ctx *fiber.Ctx) error {
 				goto returnRandomFlashCard
 			}
 			// create a new flashcard from explain log, and add it to default collection
-			updatedFlashcard = &practicedb.FlashCard{
+			practiceFlashcard = &practicedb.FlashCard{
 				UserID:       userOID,
 				FrontText:    explainLog.Request.Text,
 				BackText:     explainLog.Response.Translate + "\n" + explainLog.Response.IPA,
 				CollectionID: userOID,
 			}
-			updatedFlashcard.SetID(explainLog.ID)
-			updatedFlashcard.SetInitTimeByNow()
+			practiceFlashcard.SetID(explainLog.ID)
+			practiceFlashcard.SetInitTimeByNow()
 
 		case transport.GetTranslateLog:
 			translateLog, err := utils.ParseJSON[collectingdb.TranslateLog](response)
@@ -170,18 +171,25 @@ func (s Service) HandleGetPracticeFlashCard(ctx *fiber.Ctx) error {
 			}
 
 			// create a new flashcard from translate log, and add it to default collection
-			updatedFlashcard = &practicedb.FlashCard{
+			practiceFlashcard = &practicedb.FlashCard{
 				UserID:       userOID,
 				FrontText:    translateLog.Request.Text,
 				BackText:     translateLog.Response.Translate,
 				CollectionID: userOID,
 			}
-			updatedFlashcard.SetID(translateLog.ID)
-			updatedFlashcard.SetInitTimeByNow()
+			practiceFlashcard.SetID(translateLog.ID)
+			practiceFlashcard.SetInitTimeByNow()
 		}
 
-		updatedFlashcard, _ = s.FlashCardRepo.Insert(updatedFlashcard)
-		return ctx.Status(http.StatusOK).JSON(updatedFlashcard)
+		practiceFlashcard, err = s.FlashCardRepo.Insert(practiceFlashcard)
+		// check if this flashcard is already existed, if so, get latest version from db
+		if mongo.IsDuplicateKeyError(err) {
+			practiceFlashcard, err = s.FlashCardRepo.GetByID(practiceFlashcard.ID)
+			if err != nil {
+				goto returnRandomFlashCard
+			}
+		}
+		return ctx.Status(http.StatusOK).JSON(practiceFlashcard)
 	}
 
 returnRandomFlashCard:
