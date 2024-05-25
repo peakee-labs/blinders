@@ -25,6 +25,17 @@ func (m *RawModel) SetID(id primitive.ObjectID) {
 	m.ID = id
 }
 
+func (m *RawModel) SetInitTime(at time.Time) {
+	atTime := primitive.NewDateTimeFromTime(at)
+	m.CreatedAt = atTime
+	m.UpdatedAt = atTime
+}
+
+func (m *RawModel) SetUpdatedAt(at time.Time) {
+	atTime := primitive.NewDateTimeFromTime(at)
+	m.UpdatedAt = atTime
+}
+
 func (m *RawModel) SetInitTimeByNow() {
 	now := primitive.NewDateTimeFromTime(time.Now())
 	m.CreatedAt = now
