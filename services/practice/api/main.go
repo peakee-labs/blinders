@@ -47,6 +47,7 @@ func (s *Service) InitRoute() {
 	authorized.Get("/unit/flashcard", s.HandleGetPracticeFlashCard)
 
 	authorized.Get("/flashcards/collections", s.HandleGetFlashCardCollections)
+	authorized.Get("/flashcards/collections/default", s.HandleGetDefaultFlashcardCollection)
 	authorized.Post("/flashcards/collections", s.HandleAddFlashCardCollection)
 	authorized.Get("/flashcards/collections/:id", s.HandleGetFlashCardCollectionByID)
 	authorized.Delete("/flashcards/collections/:id", s.HandleDeleteFlashCardCollection)
