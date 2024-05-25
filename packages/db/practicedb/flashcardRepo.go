@@ -42,7 +42,11 @@ func (r *FlashCardsRepo) GetFlashCardByID(cardID primitive.ObjectID) (*FlashCard
 	filter := bson.M{"_id": cardID}
 	card := new(FlashCard)
 	err := r.FindOne(ctx, filter).Decode(card)
-	return card, err
+	if err != nil {
+		return nil, err
+	}
+
+	return card, nil
 }
 
 func (r *FlashCardsRepo) GetFlashCardByUserID(userID primitive.ObjectID) ([]FlashCard, error) {
@@ -80,6 +84,9 @@ func (r *FlashCardsRepo) GetFlashCardCollectionByID(collectionID primitive.Objec
 	if err != nil {
 		return nil, err
 	}
+	if len(cards) == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
 
 	return &CardCollection{
 		ID:         collectionID,
@@ -97,7 +104,7 @@ func (r *FlashCardsRepo) UpdateFlashCard(cardID primitive.ObjectID, newCard *Fla
 		return err
 	}
 
-	if cur.MatchedCount != 1 {
+	if cur.MatchedCount == 0 {
 		return mongo.ErrNoDocuments
 	}
 
@@ -107,6 +114,7 @@ func (r *FlashCardsRepo) UpdateFlashCard(cardID primitive.ObjectID, newCard *Fla
 func (r *FlashCardsRepo) DeleteFlashCardByID(cardID primitive.ObjectID) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
+
 	filter := bson.M{"_id": cardID}
 	cur, err := r.DeleteOne(ctx, filter)
 	if err != nil {
@@ -116,6 +124,7 @@ func (r *FlashCardsRepo) DeleteFlashCardByID(cardID primitive.ObjectID) error {
 	if cur.DeletedCount == 0 {
 		return mongo.ErrNoDocuments
 	}
+
 	return nil
 }
 
@@ -123,11 +132,9 @@ func (r *FlashCardsRepo) GetFlashCardCollectionsByUserID(userID primitive.Object
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	pipeline := []bson.M{
-		// get all cards of users
 		{
 			"$match": bson.M{"userId": userID},
 		},
-		// group by collectionID
 		{
 			"$group": bson.M{
 				"_id":        "$collectionId",
@@ -148,4 +155,20 @@ func (r *FlashCardsRepo) GetFlashCardCollectionsByUserID(userID primitive.Object
 	collections := make([]*CardCollection, 0)
 	err = cur.All(ctx, &collections)
 	return collections, err
+}
+
+func (r *FlashCardsRepo) DeleteCardCollectionByID(collectionID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	filter := bson.M{"collectionId": collectionID}
+	cur, err := r.DeleteMany(ctx, filter)
+	if err != nil {
+		return err
+	}
+
+	if cur.DeletedCount == 0 {
+		return mongo.ErrNoDocuments
+	}
+	return nil
 }

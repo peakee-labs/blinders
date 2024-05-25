@@ -54,7 +54,6 @@ func TestFlashCardsRepo(t *testing.T) {
 	require.Contains(t, collection.FlashCards, *insertedCard)
 	require.Equal(t, collection.ID, collectionID)
 
-	// Test UpdateFlashCard
 	newCard := &FlashCard{
 		ID:           insertedCard.ID,
 		UserID:       insertedCard.UserID,
@@ -65,12 +64,19 @@ func TestFlashCardsRepo(t *testing.T) {
 	err = repo.UpdateFlashCard(insertedCard.ID, newCard)
 	require.Nil(t, err)
 
+	err = repo.UpdateFlashCard(primitive.NilObjectID, newCard)
+	require.NotNil(t, err)
+
 	updatedCard, err := repo.GetFlashCardByID(insertedCard.ID)
 	require.Nil(t, err)
 	require.Equal(t, *newCard, *updatedCard)
 
 	err = repo.DeleteFlashCardByID(insertedCard.ID)
 	require.Nil(t, err)
+
+	deletedCard, err := repo.GetFlashCardByID(insertedCard.ID)
+	require.NotNil(t, err)
+	require.Nil(t, deletedCard)
 }
 
 func TestGetFlashCardCollectionsByUserID(t *testing.T) {
@@ -88,7 +94,7 @@ func TestGetFlashCardCollectionsByUserID(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		card := &FlashCard{
 			UserID:       userID,
-			CollectionID: collectionsID[i%len(collectionsID)], // This will distribute the flashcards across the collections
+			CollectionID: collectionsID[i%len(collectionsID)],
 			FrontText:    fmt.Sprintf("sample front text %d", i),
 			BackText:     fmt.Sprintf("sample back text %d", i),
 		}
@@ -112,6 +118,39 @@ func TestGetFlashCardCollectionsByUserID(t *testing.T) {
 		}
 	}
 
+	// verify that the card belongs to correct collection
+	for _, card := range cards {
+		for _, collection := range result {
+			if collection.ID == card.CollectionID {
+				assert.Contains(t, collection.FlashCards, card)
+			} else {
+				assert.NotContains(t, collection.FlashCards, card)
+			}
+		}
+	}
+
+	deleteCollection := collectionsID[0]
+	// verify that delete collection works
+	err = repo.DeleteCardCollectionByID(deleteCollection)
+	require.Nil(t, err)
+
+	// verify that delete not existed collection works
+	err = repo.DeleteCardCollectionByID(deleteCollection)
+	require.NotNil(t, err)
+
+	// verify that the collection is deleted
+	collection, err := repo.GetFlashCardCollectionByID(deleteCollection)
+	require.NotNil(t, err)
+	require.Nil(t, collection)
+
+	collectionID := collectionsID[1]
+	collectionCards, err := repo.GetFlashCardsByCollectionID(collectionID)
+	require.Nil(t, err)
+
+	for _, card := range collectionCards {
+		require.Contains(t, cards, card)
+		require.Equal(t, card.CollectionID, collectionID)
+	}
 }
 
 func GetTestRepo(t *testing.T) *FlashCardsRepo {
