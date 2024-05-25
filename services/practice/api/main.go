@@ -44,6 +44,7 @@ func (s *Service) InitRoute() {
 	practiceRoute.Get("/public/unit", s.HandleGetRandomLanguageUnit)
 	authorized := practiceRoute.Group("/", auth.FiberAuthMiddleware(s.Auth, s.UserRepo))
 	authorized.Get("/unit", s.HandleGetPracticeUnitFromAnalyzeExplainLog)
+	authorized.Get("/unit/flashcard", s.HandleGetPracticeFlashCard)
 
 	authorized.Get("/flashcards/collections", s.HandleGetFlashCardCollections)
 	authorized.Post("/flashcards/collections", s.HandleAddFlashCardCollection)

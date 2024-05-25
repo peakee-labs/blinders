@@ -9,8 +9,10 @@ import (
 	"strings"
 
 	"blinders/packages/auth"
+	"blinders/packages/db/collectingdb"
 	"blinders/packages/db/practicedb"
 	"blinders/packages/transport"
+	"blinders/packages/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -109,6 +111,90 @@ func (s Service) HandleAddFlashCard(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(flashcard)
+}
+
+// this functions get practice unit from collection service and create a new flashcard to review that practice unit
+// this flashcard will be added to default collection
+func (s Service) HandleGetPracticeFlashCard(ctx *fiber.Ctx) error {
+	authUser, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
+	if !ok {
+		log.Panic("cannot get user auth information")
+	}
+	userOID, _ := primitive.ObjectIDFromHex(authUser.ID)
+
+	// random select a practice unit type from collection service
+	types := []transport.RequestType{transport.GetExplainLog, transport.GetTranslateLog}
+	requestType := types[rand.Intn(len(types))]
+
+	req := transport.GetCollectingLogRequest{
+		Request: transport.Request{Type: requestType},
+		Payload: transport.GetCollectingLogPayload{UserID: authUser.ID},
+	}
+	reqBytes, _ := json.Marshal(req)
+	response, err := s.Transport.Request(
+		ctx.Context(),
+		s.ConsumerMap[transport.CollectingGet],
+		reqBytes,
+	)
+	if err != nil {
+		log.Printf("cannot get %v log: %v\n", requestType, err)
+		// we could return 1 flashcard from user collection
+		goto returnRandomFlashCard
+	}
+
+	{
+		var updatedFlashcard *practicedb.FlashCard
+
+		switch requestType {
+		case transport.GetExplainLog:
+			explainLog, err := utils.ParseJSON[collectingdb.ExplainLog](response)
+			if err != nil {
+				log.Println("cannot parse explain log:", err)
+				goto returnRandomFlashCard
+			}
+			// create a new flashcard from explain log, and add it to default collection
+			updatedFlashcard = &practicedb.FlashCard{
+				UserID:       userOID,
+				FrontText:    explainLog.Request.Text,
+				BackText:     explainLog.Response.Translate + "\n" + explainLog.Response.IPA,
+				CollectionID: userOID,
+			}
+			updatedFlashcard.SetID(explainLog.ID)
+			updatedFlashcard.SetInitTimeByNow()
+
+		case transport.GetTranslateLog:
+			translateLog, err := utils.ParseJSON[collectingdb.TranslateLog](response)
+			if err != nil {
+				log.Println("cannot parse translate log:", err)
+				goto returnRandomFlashCard
+			}
+
+			// create a new flashcard from translate log, and add it to default collection
+			updatedFlashcard = &practicedb.FlashCard{
+				UserID:       userOID,
+				FrontText:    translateLog.Request.Text,
+				BackText:     translateLog.Response.Translate,
+				CollectionID: userOID,
+			}
+			updatedFlashcard.SetID(translateLog.ID)
+			updatedFlashcard.SetInitTimeByNow()
+		}
+
+		updatedFlashcard, _ = s.FlashCardRepo.Insert(updatedFlashcard)
+		return ctx.Status(http.StatusOK).JSON(updatedFlashcard)
+	}
+
+returnRandomFlashCard:
+	cards, err := s.FlashCardRepo.GetFlashCardByUserID(userOID)
+	if err != nil {
+		log.Println("cannot get flashcard:", err)
+		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "cannot get flashcard"})
+	}
+	if len(cards) == 0 {
+		log.Println("user has no flashcard")
+		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "cannot get flashcard"})
+	}
+	return ctx.Status(http.StatusOK).JSON(cards[rand.Intn(len(cards))])
 }
 
 func (s Service) HandleGetFlashCards(ctx *fiber.Ctx) error {

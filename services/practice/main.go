@@ -61,6 +61,10 @@ func init() {
 				"http://localhost:%s/",
 				os.Getenv("COLLECTING_SERVICE_PORT"),
 			),
+			transport.CollectingGet: fmt.Sprintf(
+				"http://localhost:%s/",
+				os.Getenv("COLLECTING_SERVICE_PORT"),
+			),
 		})
 
 	service.App.Use(cors.New())
