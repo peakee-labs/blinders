@@ -32,7 +32,12 @@ func init() {
 		log.Fatal(err)
 	}
 	usersRepo := usersdb.NewUsersRepo(usersDB)
-	flashcardsRepo := practicedb.NewFlashCardRepo(usersDB)
+
+	practiceDB, err := dbutils.InitMongoDatabaseFromEnv("PRACTICE")
+	if err != nil {
+		log.Fatal(err)
+	}
+	flashcardsRepo := practicedb.NewFlashCardRepo(practiceDB)
 
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {
@@ -64,7 +69,7 @@ func init() {
 	api.App.Use(logger.New(logger.Config{Format: utils.DefaultGinLoggerFormat}))
 	api.App.Use(cors.New(cors.Config{
 		AllowOrigins: utils.GetOriginsFromEnv(),
-		AllowMethods: "GET",
+		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 		AllowHeaders: "*",
 	}))
 	api.InitRoute()

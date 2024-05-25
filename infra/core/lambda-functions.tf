@@ -351,6 +351,9 @@ resource "aws_lambda_function" "practice" {
       USERS_MONGO_DATABASE : local.envs.USERS_MONGO_DATABASE
       USERS_MONGO_DATABASE_URL : local.envs.USERS_MONGO_DATABASE_URL
 
+      PRACTICE_MONGO_DATABASE : local.envs.PRACTICE_MONGO_DATABASE
+      PRACTICE_MONGO_DATABASE_URL : local.envs.PRACTICE_MONGO_DATABASE_URL
+
       COLLECTING_GET_FUNCTION_NAME : aws_lambda_function.collecting-get.function_name
       COLLECTING_PUSH_FUNCTION_NAME : aws_lambda_function.collecting-push.function_name
     }

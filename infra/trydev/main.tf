@@ -25,4 +25,3 @@ module "core" {
 
   env_filename = "../../.env.dev"
 }
-
