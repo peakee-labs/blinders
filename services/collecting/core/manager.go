@@ -1,4 +1,4 @@
-package main
+package collecting
 
 import (
 	"log"
@@ -6,20 +6,19 @@ import (
 	"blinders/packages/db/collectingdb"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
-	collecting "blinders/services/collecting/core"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type Manager struct {
 	App               *fiber.App
-	CollectingService *collecting.Service
+	CollectingService *Service
 }
 
 func NewManager(app *fiber.App, db *collectingdb.CollectingDB) *Manager {
 	return &Manager{
 		App:               app,
-		CollectingService: collecting.NewService(db.ExplainLogsRepo, db.TranslateLogsRepo),
+		CollectingService: NewService(db.ExplainLogsRepo, db.TranslateLogsRepo),
 	}
 }
 
@@ -52,7 +51,8 @@ func (s *Manager) InitRoute() error {
 		res, err := s.CollectingService.HandleGetRequest(*request)
 		if err != nil {
 			log.Println("can not handle request:", err)
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "failed to handle request: " + err.Error()})
+
 		}
 		return c.Status(fiber.StatusOK).JSON(res)
 	})
