@@ -247,7 +247,7 @@ func (s Service) HandleAddFlashCardCollection(ctx *fiber.Ctx) error {
 
 	if err := bodyCollection.Validate(); err != nil {
 		log.Println("invalid collection", err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid collection: " + err.Error()})
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid collection, " + err.Error()})
 	}
 
 	cards := make([]practicedb.FlashCard, 0)
