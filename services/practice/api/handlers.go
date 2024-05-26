@@ -113,7 +113,7 @@ func (s Service) HandleAddFlashCard(ctx *fiber.Ctx) error {
 
 		// insert missing metadata if this is default collection
 		metadata = CreateDefaultCollectionMetadata(userOID)
-		_, err = s.CollectionMetadatasRepo.Insert(metadata)
+		metadata, err = s.CollectionMetadatasRepo.Insert(metadata)
 		if err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot add flashcard"})
 		}
@@ -125,7 +125,7 @@ func (s Service) HandleAddFlashCard(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot add flashcard"})
 	}
 
-	err = s.CollectionMetadatasRepo.AddFlashCardInformation(collectionOID, flashcard.ID)
+	err = s.CollectionMetadatasRepo.AddFlashCardInformation(metadata.ID, flashcard.ID)
 	if err != nil {
 		log.Println("cannot update metadata:", err)
 	}
@@ -223,7 +223,7 @@ func (s Service) HandleGetPracticeFlashCard(ctx *fiber.Ctx) error {
 		}
 
 		// update metadata
-		err = s.CollectionMetadatasRepo.AddFlashCardInformation(practiceFlashcard.CollectionID, practiceFlashcard.ID)
+		err = s.CollectionMetadatasRepo.AddFlashCardInformation(metadata.ID, practiceFlashcard.ID)
 		if err != nil {
 			log.Println("cannot add practice flashcard to collection metadata:", err)
 		}

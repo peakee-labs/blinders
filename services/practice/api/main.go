@@ -54,6 +54,7 @@ func (s *Service) InitRoute() {
 	authorized.Get("/flashcards/collections/preview", s.HandleGetFlashCardCollectionsPreview)
 	authorized.Post("/flashcards/collections", s.HandleAddFlashCardCollection)
 	authorized.Get("/flashcards/collections/:id", s.HandleGetFlashCardCollectionByID)
+	// TODO: view status of collection APIs
 	authorized.Delete("/flashcards/collections/:id", s.HandleDeleteFlashCardCollection)
 
 	authorized.Get("/flashcards/:id", s.HandleGetFlashCardByID)

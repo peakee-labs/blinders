@@ -1,10 +1,11 @@
 package practicedb_test
 
 import (
-	"blinders/packages/db/practicedb"
 	"context"
 	"testing"
 	"time"
+
+	"blinders/packages/db/practicedb"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
