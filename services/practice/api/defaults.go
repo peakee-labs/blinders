@@ -92,15 +92,15 @@ var (
 			},
 			Response: collectingdb.ExplainResponse{
 				Translate: "Các startup là những doanh nghiệp mới sáng tạo nhằm vào việc làm gián đoạn các ngành công nghiệp truyền thống.",
-				GrammarAnalysis: map[string]any{
-					"tense": map[string]any{
-						"type":       "present",
-						"identifier": "simple",
+				GrammarAnalysis: collectingdb.ExplainGrammar{
+					Tense: collectingdb.ExplainGrammarTense{
+						Type:       "present",
+						Identifier: "simple",
 					},
-					"structure": map[string]any{
-						"type":      "declarative",
-						"structure": "Startups are + adjective + noun + that + verb",
-						"for":       "Describing the nature of startups",
+					Structure: collectingdb.ExplainGrammarStructure{
+						Type:      "declarative",
+						Structure: "Startups are + adjective + noun + that + verb",
+						For:       "Describing the nature of startups",
 					},
 				},
 				ExpandWords: []string{"innovative", "disrupt", "industries"},
@@ -114,15 +114,15 @@ var (
 			},
 			Response: collectingdb.ExplainResponse{
 				Translate: "Hệ sinh thái khởi nghiệp phát triển mạnh mẽ trên sự hợp tác, sáng tạo và tăng trưởng nhanh chóng.",
-				GrammarAnalysis: map[string]any{
-					"tense": map[string]string{
-						"type":       "present",
-						"identifier": "simple",
+				GrammarAnalysis: collectingdb.ExplainGrammar{
+					Tense: collectingdb.ExplainGrammarTense{
+						Type:       "present",
+						Identifier: "simple",
 					},
-					"structure": map[string]string{
-						"type":      "declarative",
-						"structure": "Startup ecosystems thrive + on + nouns",
-						"for":       "Describing the nature of startup ecosystems",
+					Structure: collectingdb.ExplainGrammarStructure{
+						Type:      "declarative",
+						Structure: "Startup ecosystems thrive + on + nouns",
+						For:       "Describing the nature of startup ecosystems",
 					},
 				},
 				ExpandWords: []string{"collaboration", "innovation", "growth"},
@@ -136,15 +136,15 @@ var (
 			},
 			Response: collectingdb.ExplainResponse{
 				Translate: "Nhiều startup thất bại do thiếu nghiên cứu thị trường và không phù hợp với thị trường sản phẩm.",
-				GrammarAnalysis: map[string]any{
-					"tense": map[string]string{
-						"type":       "present",
-						"identifier": "simple",
+				GrammarAnalysis: collectingdb.ExplainGrammar{
+					Tense: collectingdb.ExplainGrammarTense{
+						Type:       "present",
+						Identifier: "simple",
 					},
-					"structure": map[string]string{
-						"type":      "declarative",
-						"structure": "Many startups fail + due to + noun + and + adjective + noun",
-						"for":       "Describing the common reasons for startup failure",
+					Structure: collectingdb.ExplainGrammarStructure{
+						Type:      "declarative",
+						Structure: "Many startups fail + due to + noun + and + adjective + noun",
+						For:       "Describing the common reasons for startup failure",
 					},
 				},
 				ExpandWords: []string{"market research", "product-market fit", "failure"},
@@ -158,15 +158,15 @@ var (
 			},
 			Response: collectingdb.ExplainResponse{
 				Translate: "Các startup thành công thường có một tầm nhìn mạnh mẽ và một chiến lược đi ra thị trường rõ ràng.",
-				GrammarAnalysis: map[string]any{
-					"tense": map[string]string{
-						"type":       "present",
-						"identifier": "simple",
+				GrammarAnalysis: collectingdb.ExplainGrammar{
+					Tense: collectingdb.ExplainGrammarTense{
+						Type:       "present",
+						Identifier: "simple",
 					},
-					"structure": map[string]string{
-						"type":      "declarative",
-						"structure": "Successful startups often have + adjective + noun + and + adjective + noun",
-						"for":       "Describing common characteristics of successful startups",
+					Structure: collectingdb.ExplainGrammarStructure{
+						Type:      "declarative",
+						Structure: "Successful startups often have + adjective + noun + and + adjective + noun",
+						For:       "Describing common characteristics of successful startups",
 					},
 				},
 				ExpandWords: []string{"vision", "go-to-market strategy", "successful"},
@@ -180,15 +180,15 @@ var (
 			},
 			Response: collectingdb.ExplainResponse{
 				Translate: "Những người sáng lập startup cần phải kiên nhẫn và linh hoạt để vượt qua những thách thức.",
-				GrammarAnalysis: map[string]any{
-					"tense": map[string]string{
-						"type":       "present",
-						"identifier": "simple",
+				GrammarAnalysis: collectingdb.ExplainGrammar{
+					Tense: collectingdb.ExplainGrammarTense{
+						Type:       "present",
+						Identifier: "simple",
 					},
-					"structure": map[string]string{
-						"type":      "declarative",
-						"structure": "Startup founders need to be + adjective + and + adjective + to + verb + through + noun",
-						"for":       "Describing the qualities required for startup founders",
+					Structure: collectingdb.ExplainGrammarStructure{
+						Type:      "declarative",
+						Structure: "Startup founders need to be + adjective + and + adjective + to + verb + through + noun",
+						For:       "Describing the qualities required for startup founders",
 					},
 				},
 				ExpandWords: []string{"resilient", "adaptable", "challenges"},
@@ -202,15 +202,15 @@ var (
 			},
 			Response: collectingdb.ExplainResponse{
 				Translate: "Các startup thường tìm kiếm vốn từ các nhà đầu tư mạo hiểm để thúc đẩy sự phát triển của họ.",
-				GrammarAnalysis: map[string]interface{}{
-					"tense": map[string]interface{}{
-						"type":       "present",
-						"identifier": "simple",
+				GrammarAnalysis: collectingdb.ExplainGrammar{
+					Tense: collectingdb.ExplainGrammarTense{
+						Type:       "present",
+						Identifier: "simple",
 					},
-					"structure": map[string]interface{}{
-						"type":      "declarative",
-						"structure": "Startups often seek + noun + from + noun",
-						"for":       "Describing the common practice of startups seeking funding",
+					Structure: collectingdb.ExplainGrammarStructure{
+						Type:      "declarative",
+						Structure: "Startups often seek + noun + from + noun",
+						For:       "Describing the common practice of startups seeking funding",
 					},
 				},
 				ExpandWords: []string{"funding", "venture capitalists", "growth"},
@@ -224,15 +224,15 @@ var (
 			},
 			Response: collectingdb.ExplainResponse{
 				Translate: "Văn hóa startup thường đánh giá cao sự sáng tạo, sẵn lòng chấp nhận rủi ro và học hỏi liên tục.",
-				GrammarAnalysis: map[string]interface{}{
-					"tense": map[string]interface{}{
-						"type":       "present",
-						"identifier": "simple",
+				GrammarAnalysis: collectingdb.ExplainGrammar{
+					Tense: collectingdb.ExplainGrammarTense{
+						Type:       "present",
+						Identifier: "simple",
 					},
-					"structure": map[string]interface{}{
-						"type":      "declarative",
-						"structure": "Startup culture often values + noun + noun, + noun + and + adjective + noun",
-						"for":       "Describing the characteristics of startup culture",
+					Structure: collectingdb.ExplainGrammarStructure{
+						Type:      "declarative",
+						Structure: "Startup culture often values + noun + noun, + noun + and + adjective + noun",
+						For:       "Describing the characteristics of startup culture",
 					},
 				},
 				ExpandWords: []string{"creativity", "risk-taking", "continuous learning"},
