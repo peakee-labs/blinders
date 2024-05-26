@@ -16,12 +16,12 @@ func TestMetadataCollection(t *testing.T) {
 	repo := GetTestCollectionMetadatasRepo(t)
 	userID := primitive.NewObjectID()
 
-	metadata := &practicedb.FlashCardCollectionMetadata{
+	metadata := &practicedb.CardCollectionMetadata{
 		UserID:      userID,
 		Name:        "Test Collection",
 		Description: "This is a test collection",
-		Viewed:      0,
-		Total:       10,
+		Viewed:      make([]primitive.ObjectID, 0),
+		Total:       make([]primitive.ObjectID, 0),
 	}
 	insertedMetadata, err := repo.InsertRaw(metadata)
 	assert.Nil(t, err)

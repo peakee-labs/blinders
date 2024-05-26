@@ -13,19 +13,19 @@ import (
 )
 
 type CollectionMetadatasRepo struct {
-	dbutils.SingleCollectionRepo[*FlashCardCollectionMetadata]
+	dbutils.SingleCollectionRepo[*CardCollectionMetadata]
 }
 
 func NewCollectionMetadataRepo(db *mongo.Database) *CollectionMetadatasRepo {
 	col := db.Collection(FlashCardMetadataColName)
 	return &CollectionMetadatasRepo{
-		dbutils.SingleCollectionRepo[*FlashCardCollectionMetadata]{
+		dbutils.SingleCollectionRepo[*CardCollectionMetadata]{
 			Collection: col,
 		},
 	}
 }
 
-func (r *CollectionMetadatasRepo) GetByUserID(userID primitive.ObjectID) ([]FlashCardCollectionMetadata, error) {
+func (r *CollectionMetadatasRepo) GetByUserID(userID primitive.ObjectID) ([]CardCollectionMetadata, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -36,17 +36,17 @@ func (r *CollectionMetadatasRepo) GetByUserID(userID primitive.ObjectID) ([]Flas
 		return nil, err
 	}
 
-	collections := make([]FlashCardCollectionMetadata, 0)
+	collections := make([]CardCollectionMetadata, 0)
 	err = cur.All(ctx, &collections)
 	return collections, err
 }
 
-func (r *CollectionMetadatasRepo) Update(cardID primitive.ObjectID, update *FlashCardCollectionMetadata) error {
+func (r *CollectionMetadatasRepo) Update(collectionID primitive.ObjectID, update *CardCollectionMetadata) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	filter := bson.M{"_id": cardID}
-	cur, err := r.ReplaceOne(ctx, filter, update, options.Replace().SetUpsert(false))
+	filter := bson.M{"_id": collectionID}
+	cur, err := r.ReplaceOne(ctx, filter, update, options.Replace().SetUpsert(true))
 	if err != nil {
 		return err
 	}
@@ -58,19 +58,48 @@ func (r *CollectionMetadatasRepo) Update(cardID primitive.ObjectID, update *Flas
 	return nil
 }
 
-func (r *FlashCardsRepo) DeleteByID(collectionID primitive.ObjectID) error {
+func (r *CollectionMetadatasRepo) MarkFlashCardAsViewed(collectionID, cardID primitive.ObjectID) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	filter := bson.M{"_id": collectionID}
-	cur, err := r.DeleteOne(ctx, filter)
-	if err != nil {
-		return err
-	}
+	update := bson.M{"$addToSet": bson.M{"viewed": cardID}}
+	_, err := r.UpdateOne(ctx, filter, update)
+	return err
+}
 
-	if cur.DeletedCount == 0 {
-		return mongo.ErrNoDocuments
-	}
+func (r *CollectionMetadatasRepo) RemoveFlashCardViewe(collectionID, cardID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 
-	return nil
+	filter := bson.M{"_id": collectionID}
+	update := bson.M{"$pull": bson.M{"viewed": cardID}}
+	_, err := r.UpdateOne(ctx, filter, update)
+	return err
+}
+
+// AddFlashCardInformation adds a flashcard to the total list of flashcards in the collection
+func (r *CollectionMetadatasRepo) AddFlashCardInformation(collectionID primitive.ObjectID, cardID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	filter := bson.M{"_id": collectionID}
+	update := bson.M{"$addToSet": bson.M{"total": cardID}}
+	_, err := r.UpdateOne(ctx, filter, update)
+	return err
+}
+
+// RemoveFlashCardInformation removes a flashcard from the total list of flashcards in the collection
+func (r *CollectionMetadatasRepo) RemoveFlashCardInformation(collectionID primitive.ObjectID, cardID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	filter := bson.M{"_id": collectionID}
+	// remove the card from the total list, and viewed list if existed
+	update := bson.M{
+		"$addToSet": bson.M{"total": cardID},
+		"$pull":     bson.M{"viewed": cardID},
+	}
+	_, err := r.UpdateOne(ctx, filter, update)
+	return err
 }
