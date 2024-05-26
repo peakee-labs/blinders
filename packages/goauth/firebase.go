@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"blinders/packages/utils"
@@ -53,18 +54,27 @@ func NewFirebaseManager(adminConfig []byte) (*FirebaseManager, error) {
 	return &manager, nil
 }
 
+func NewFirebaseManagerFromFile(filename string) (Manager, error) {
+	adminConfig, err := utils.GetFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("can not load firebase config file: %v", err)
+	}
+
+	m, err := NewFirebaseManager(adminConfig)
+	if err != nil {
+		return nil, fmt.Errorf("can not init firebase manager: %v", err)
+	}
+	return m, nil
+}
+
+// experimental: not work for now
 // return FirebaseManager channel instead
 func InitFirebaseManagerFromFile(filename string) chan Manager {
 	ch := make(chan Manager)
 	go func() {
-		adminConfig, err := utils.GetFile(filename)
+		m, err := NewFirebaseManagerFromFile(filename)
 		if err != nil {
 			log.Fatal(err)
-		}
-
-		m, err := NewFirebaseManager(adminConfig)
-		if err != nil {
-			log.Fatalf("can not init firebase manager: %v", err)
 		}
 
 		ch <- m

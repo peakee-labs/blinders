@@ -117,7 +117,10 @@ func LambdaAuthMiddlewareFromChan(
 
 			if len(options) == 0 || options[0].CheckUser {
 				// currently, user.AuthID is firebaseUID
+
+				log.Println("[Debug] wait for user repo")
 				userRepo := <-userRepoCh
+				log.Println("[Debug] resolve for user repo")
 				user, err := userRepo.GetUserByFirebaseUID(userAuth.AuthID)
 				if err != nil {
 					log.Println("failed to get user:", err)

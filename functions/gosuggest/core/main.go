@@ -30,7 +30,7 @@ type LlamaResponse struct {
 }
 
 func ExplainPhraseInSentence(
-	brrc bedrockruntime.Client,
+	brrc *bedrockruntime.Client,
 	phrase string,
 	sentence string,
 ) (*collectingdb.ExplainResponse, error) {

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"blinders/functions/suggest/core"
@@ -23,10 +24,9 @@ import (
 )
 
 var (
-	transportCh chan transport.Transport
-	authCh      chan auth.Manager
-	usersRepoCh chan *usersdb.UsersRepo
-	brrcCh      chan *bedrockruntime.Client
+	transporter    transport.Transport
+	brrc           *bedrockruntime.Client
+	authMiddleware auth.LambdaMiddleware
 )
 
 func init() {
@@ -34,17 +34,36 @@ func init() {
 	env := os.Getenv("ENVIRONMENT")
 	log.Printf("GoSuggest api running on %s environment\n", env)
 
-	transportCh = InitTransport(context.Background())
-	usersRepoCh = make(chan *usersdb.UsersRepo)
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
 	go func() {
-		dbCh := dbutils.InitMongoDatabaseChanFromEnv("USERS")
-		usersDB := <-dbCh
-		usersRepoCh <- usersdb.NewUsersRepo(usersDB)
+		defer wg.Done()
+		transporter = InitTransportSync(context.Background())
 	}()
 
-	authCh = auth.InitFirebaseManagerFromFile("firebase.admin.json")
-	brrcCh = core.InitBedrockRuntimeClient(context.Background())
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		userDB, err := dbutils.InitMongoDatabaseFromEnv("USERS")
+		if err != nil {
+			log.Fatalf("can not init database: %v", userDB)
+		}
+		usersRepo := usersdb.NewUsersRepo(userDB)
+		am, err := auth.NewFirebaseManagerFromFile("firebase.admin.json")
+		if err != nil {
+			log.Fatalf("can not create auth manager: %v", err)
+		}
+		authMiddleware = auth.LambdaAuthMiddleware(am, usersRepo)
+	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		brrc = core.InitBedrockRuntimeClientSync(context.Background())
+	}()
+
+	wg.Wait()
 	en := time.Now()
 	log.Printf("Cold-start duration: %v ms", en.Sub(st).Milliseconds())
 }
@@ -53,11 +72,7 @@ func HandleRequest(
 	ctx context.Context,
 	req events.APIGatewayV2HTTPRequest,
 ) (events.APIGatewayV2HTTPResponse, error) {
-	authUser, ok := ctx.Value(auth.UserAuthKey).(*auth.UserAuth)
-	if !ok {
-		log.Panicln("unexpected err, authUser not included in ctx")
-	}
-
+	log.Println("[Debug] start handle")
 	phrase, ok := req.QueryStringParameters["phrase"]
 	if !ok {
 		return events.APIGatewayV2HTTPResponse{
@@ -75,8 +90,8 @@ func HandleRequest(
 		}, nil
 	}
 
-	brrc := <-brrcCh
-	explanation, err := core.ExplainPhraseInSentence(*brrc, phrase, sentence)
+	log.Println("[Debug] start request explain")
+	explanation, err := core.ExplainPhraseInSentence(brrc, phrase, sentence)
 	if err != nil {
 		log.Println("error when explaining: ", err)
 		return events.APIGatewayV2HTTPResponse{
@@ -86,6 +101,10 @@ func HandleRequest(
 		}, nil
 	}
 
+	authUser, ok := ctx.Value(auth.UserAuthKey).(*auth.UserAuth)
+	if !ok {
+		log.Panicln("unexpected err, authUser not included in ctx")
+	}
 	userID, _ := primitive.ObjectIDFromHex(authUser.ID)
 	event := transport.AddExplainLogEvent{
 		Event: transport.Event{Type: transport.AddTranslateLog},
@@ -96,7 +115,7 @@ func HandleRequest(
 		},
 	}
 
-	transporter := <-transportCh
+	log.Println("[Debug] start push to collecting service")
 	eventPayload, _ := json.Marshal(event)
 	if err := transporter.Push(
 		ctx,
@@ -106,7 +125,8 @@ func HandleRequest(
 		log.Printf("cannot push event to collecting service, err: %v\n", err)
 	}
 
-	resInBytes, _ := json.Marshal(explanation)
+	log.Println("[Debug] respond")
+	resInBytes, _ := json.Marshal(*explanation)
 	return events.APIGatewayV2HTTPResponse{
 		StatusCode: http.StatusOK,
 		Body:       string(resInBytes),
@@ -115,5 +135,6 @@ func HandleRequest(
 }
 
 func main() {
-	lambda.Start(auth.LambdaAuthMiddlewareFromChan(authCh, usersRepoCh)(HandleRequest))
+	log.Println("[Debug] handle request")
+	lambda.Start(authMiddleware(HandleRequest))
 }

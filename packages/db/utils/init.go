@@ -47,9 +47,12 @@ func InitMongoDatabaseFromEnv(prefix ...string) (*mongo.Database, error) {
 	return client.Database(info.DBName), nil
 }
 
+// experimental: not work for now.
+//
 // return a Database channel, leverage goroutines to optimize aws lambda cold-start
 // temporarily use log.Fatalf if error happen
 func InitMongoDatabaseChanFromEnv(prefix ...string) chan *mongo.Database {
+	log.Println("calling init mongo database chan")
 	ch := make(chan *mongo.Database)
 	go func() {
 		DB, err := InitMongoDatabaseFromEnv(prefix...)
@@ -57,6 +60,7 @@ func InitMongoDatabaseChanFromEnv(prefix ...string) chan *mongo.Database {
 			log.Fatal(err)
 		}
 
+		log.Println("resolve db")
 		ch <- DB
 	}()
 
