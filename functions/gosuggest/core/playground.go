@@ -31,16 +31,12 @@ func ListModels(cfg aws.Config) {
 	}
 }
 
-// RunPlayground uses the AWS SDK for Go (v2) to create an Amazon Bedrock client and
-// list the available foundation models in your account and the chosen region.
-// This example uses the default settings specified in your shared credentials
-// and config files.
 func RunPlayground(cfg aws.Config) {
 	brrc := bedrockruntime.NewFromConfig(cfg)
 	phrase := "technical sharing"
 	sentence := "Hey guys, this channel is used for technical sharing, anyone can share link/docs or even your short blog"
 	req := LlamaRequest{
-		Prompt:      fmt.Sprintf(ExplainTextInSentencePrompt, phrase, sentence),
+		Prompt:      fmt.Sprintf(ExplainPhraseInSentencePrompt, phrase, sentence),
 		MaxGenLen:   512,
 		Temperature: 0.5,
 		TopP:        0.9,
@@ -81,7 +77,7 @@ type LlamaResponse struct {
 	StopReason           string `json:"stop_reason"` // "stop" || "length"
 }
 
-const ExplainTextInSentencePrompt = `
+const ExplainPhraseInSentencePrompt = `
 <|begin_of_text|>
 
 <|start_header_id|>system<|end_header_id|> 
