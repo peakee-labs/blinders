@@ -15,20 +15,19 @@ type FlashCard struct {
 	BackImgURL       string             `json:"backImageURL" bson:"backImageURL"`
 	UserID           primitive.ObjectID `json:"userId" bson:"userId"`
 	CollectionID     primitive.ObjectID `json:"collectionId" bson:"collectionId"` // by default, the collectionId is the same as the userId as the user can have 1 default collection
-	Viewed           bool               `json:"count" bson:"count"`
 }
 
 type CardCollection struct {
 	ID         primitive.ObjectID `json:"id" bson:"_id"`
 	UserID     primitive.ObjectID `json:"userId" bson:"userId"`
-	FlashCards []FlashCard        `json:"flashcards" bson:"flashcards"`
+	FlashCards []*FlashCard       `json:"flashcards" bson:"flashcards"`
 }
 
-type FlashCardCollectionMetadata struct {
+type CardCollectionMetadata struct {
 	dbutils.RawModel `json:",inline" bson:",inline"`
-	UserID           primitive.ObjectID `json:"userId" bson:"userId"`
-	Name             string             `json:"name" bson:"name"`
-	Description      string             `json:"description" bson:"description"`
-	Total            int                `json:"total" bson:"total"`
-	Viewed           int                `json:"viewed" bson:"viewed"`
+	UserID           primitive.ObjectID   `json:"userId" bson:"userId"`
+	Name             string               `json:"name" bson:"name"`
+	Description      string               `json:"description" bson:"description"`
+	Total            []primitive.ObjectID `json:"total" bson:"total"`
+	Viewed           []primitive.ObjectID `json:"viewed" bson:"viewed"`
 }

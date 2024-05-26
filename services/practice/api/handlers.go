@@ -105,10 +105,29 @@ func (s Service) HandleAddFlashCard(ctx *fiber.Ctx) error {
 		CollectionID: collectionOID,
 	}
 
+	metadata, err := s.CollectionMetadatasRepo.GetByID(collectionOID)
+	if err != nil {
+		if err != mongo.ErrNoDocuments || collectionOID != userOID {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot add flashcard"})
+		}
+
+		// insert missing metadata if this is default collection
+		metadata = CreateDefaultCollectionMetadata(userOID)
+		_, err = s.CollectionMetadatasRepo.Insert(metadata)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot add flashcard"})
+		}
+	}
+
 	flashcard, err := s.FlashCardRepo.InsertRaw(&rawFlashCard)
 	if err != nil {
 		log.Println("cannot insert card", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot add flashcard"})
+	}
+
+	err = s.CollectionMetadatasRepo.AddFlashCardInformation(collectionOID, flashcard.ID)
+	if err != nil {
+		log.Println("cannot update metadata:", err)
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(flashcard)
@@ -181,6 +200,19 @@ func (s Service) HandleGetPracticeFlashCard(ctx *fiber.Ctx) error {
 			practiceFlashcard.SetInitTimeByNow()
 		}
 
+		// get default collection metadata
+		metadata, err := s.CollectionMetadatasRepo.GetByID(practiceFlashcard.CollectionID)
+		if err != nil {
+			// if default metadata is not created, create a new one
+			if err == mongo.ErrNoDocuments {
+				metadata = CreateDefaultCollectionMetadata(userOID)
+				metadata, err = s.CollectionMetadatasRepo.Insert(metadata)
+				if err != nil {
+					log.Println("cannot insert metadata:", err)
+				}
+			}
+		}
+
 		practiceFlashcard, err = s.FlashCardRepo.Insert(practiceFlashcard)
 		// check if this flashcard is already existed, if so, get latest version from db
 		if mongo.IsDuplicateKeyError(err) {
@@ -189,6 +221,13 @@ func (s Service) HandleGetPracticeFlashCard(ctx *fiber.Ctx) error {
 				goto returnRandomFlashCard
 			}
 		}
+
+		// update metadata
+		err = s.CollectionMetadatasRepo.AddFlashCardInformation(practiceFlashcard.CollectionID, practiceFlashcard.ID)
+		if err != nil {
+			log.Println("cannot add practice flashcard to collection metadata:", err)
+		}
+
 		return ctx.Status(http.StatusOK).JSON(practiceFlashcard)
 	}
 
@@ -306,10 +345,29 @@ func (s Service) HandleUpdateFlashCard(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot update flash card"})
 	}
 
+	// if this flashcard is move to another collection (if collection id is updated), update metadata of old and new collection
+	if updatedCard.CollectionID != card.CollectionID {
+		err := s.CollectionMetadatasRepo.RemoveFlashCardInformation(card.CollectionID, cardOID)
+		if err != nil {
+			log.Println("cannot remove flash card information from old collection:", err)
+		}
+
+		err = s.CollectionMetadatasRepo.AddFlashCardInformation(updatedCard.CollectionID, cardOID)
+		if err != nil {
+			log.Println("cannot add flash card information to new collection:", err)
+		}
+	}
+
 	return ctx.SendStatus(fiber.StatusOK)
 }
 
 func (s Service) HandleDeleteFlashCard(ctx *fiber.Ctx) error {
+	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
+	if !ok {
+		log.Panic("cannot get user auth information")
+	}
+	userOID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+
 	cardID := ctx.Params("id")
 	cardOID, err := primitive.ObjectIDFromHex(cardID)
 	if err != nil {
@@ -317,10 +375,26 @@ func (s Service) HandleDeleteFlashCard(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid card id"})
 	}
 
+	card, err := s.FlashCardRepo.GetByID(cardOID)
+	if err != nil {
+		log.Println("cannot get flash card:", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get flash card"})
+	}
+
+	if card.UserID != userOID {
+		log.Println("inefficent permission")
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "inefficent permission"})
+	}
+
 	err = s.FlashCardRepo.DeleteFlashCardByID(cardOID)
 	if err != nil {
 		log.Println("cannot delete flash card:", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot delete flash card"})
+	}
+
+	err = s.CollectionMetadatasRepo.RemoveFlashCardInformation(card.CollectionID, cardOID)
+	if err != nil {
+		log.Println("cannot remove flash card information from collection:", err)
 	}
 
 	return ctx.SendStatus(fiber.StatusOK)
@@ -344,23 +418,44 @@ func (s Service) HandleAddFlashCardCollection(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid collection, " + err.Error()})
 	}
 
-	cards := make([]practicedb.FlashCard, 0)
-	for _, card := range bodyCollection.Cards {
-		cards = append(cards, practicedb.FlashCard{
+	cards := make([]*practicedb.FlashCard, len(bodyCollection.Cards))
+	for idx, card := range bodyCollection.Cards {
+		cards[idx] = &practicedb.FlashCard{
 			FrontText:   card.FrontText,
 			FrontImgURL: card.FrontImgURL,
 			BackText:    card.BackText,
 			BackImgURL:  card.BackImgURL,
 			UserID:      userOID,
-		})
+		}
 	}
+
 	collection, err := s.FlashCardRepo.AddFlashCardsOfCollection(cards)
 	if err != nil {
 		log.Println("cannot add flash cards of collection:", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot add flash cards of collection"})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"id": collection.ID})
+	total := make([]primitive.ObjectID, len(cards))
+	for i, card := range collection.FlashCards {
+		total[i] = card.ID
+	}
+	metadata := &practicedb.CardCollectionMetadata{
+		UserID:      userOID,
+		Name:        bodyCollection.Name,
+		Description: bodyCollection.Description,
+		Viewed:      make([]primitive.ObjectID, 0),
+		Total:       total,
+	}
+	metadata.SetID(collection.ID)
+	metadata.SetInitTimeByNow()
+
+	metadata, err = s.CollectionMetadatasRepo.Insert(metadata)
+	if err != nil {
+		// TODO: find a way to rollback the collection if metadata cannot be added
+		log.Println("cannot add flash cards metadata:", err)
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(metadata)
 }
 
 func (s Service) HandleGetFlashCardCollections(ctx *fiber.Ctx) error {
@@ -376,7 +471,26 @@ func (s Service) HandleGetFlashCardCollections(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get flash card collections"})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(collections)
+	metadatas, err := s.CollectionMetadatasRepo.GetByUserID(userOID)
+	if err != nil {
+		log.Println("cannot get flash card collections metadata:", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get flash card collections metadata"})
+	}
+
+	lookup := make(map[primitive.ObjectID]practicedb.CardCollectionMetadata)
+	for _, metadata := range metadatas {
+		lookup[metadata.ID] = metadata
+	}
+
+	responseCollections := make([]ResponseFlashCardCollection, len(collections))
+	for idx, collection := range collections {
+		responseCollections[idx] = ResponseFlashCardCollection{
+			Metadata:   lookup[collection.ID],
+			FlashCards: collection.FlashCards,
+		}
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(responseCollections)
 }
 
 func (s Service) HandleGetFlashCardCollectionByID(ctx *fiber.Ctx) error {
@@ -403,7 +517,17 @@ func (s Service) HandleGetFlashCardCollectionByID(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "inefficent permission"})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(collection)
+	metadata, err := s.CollectionMetadatasRepo.GetByID(collectionOID)
+	if err != nil {
+		log.Print("cannot get flash card collection metadata:", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get flash card collection metadata"})
+	}
+
+	responseCollection := ResponseFlashCardCollection{
+		Metadata:   *metadata,
+		FlashCards: collection.FlashCards,
+	}
+	return ctx.Status(fiber.StatusOK).JSON(responseCollection)
 }
 
 func (s Service) HandleGetDefaultFlashcardCollection(ctx *fiber.Ctx) error {
@@ -413,16 +537,49 @@ func (s Service) HandleGetDefaultFlashcardCollection(ctx *fiber.Ctx) error {
 	}
 
 	// default collection id will be user id
-	defaultCollectionOID, _ := primitive.ObjectIDFromHex(authUser.ID)
-	collection, err := s.FlashCardRepo.GetFlashCardCollectionByID(defaultCollectionOID)
+	userOID, _ := primitive.ObjectIDFromHex(authUser.ID)
+	collection, err := s.FlashCardRepo.GetFlashCardCollectionByID(userOID)
 	if err != nil {
 		log.Println("cannot get default flash card collection:", err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get default flash card collection"})
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "user has no default collection"})
 	}
-	return ctx.Status(fiber.StatusOK).JSON(collection)
+
+	metadata, err := s.CollectionMetadatasRepo.GetByID(userOID)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			// metadata of default collection is not created
+			// update default collection metadata
+			total := make([]primitive.ObjectID, len(collection.FlashCards))
+			for i, card := range collection.FlashCards {
+				total[i] = card.ID
+			}
+			metadata = CreateDefaultCollectionMetadata(userOID)
+			metadata, err = s.CollectionMetadatasRepo.Insert(metadata)
+			if err != nil {
+				log.Println("cannot insert default collection metadata:", err)
+			}
+		}
+	}
+
+	responseCollection := ResponseFlashCardCollection{
+		Metadata:   *metadata,
+		FlashCards: collection.FlashCards,
+	}
+	return ctx.Status(fiber.StatusOK).JSON(responseCollection)
 }
+
 func (s Service) HandleGetFlashCardCollectionsPreview(ctx *fiber.Ctx) error {
-	return nil
+	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
+	if !ok {
+		log.Panicln("cannot get user auth information")
+	}
+	userOID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+	metadatas, err := s.CollectionMetadatasRepo.GetByUserID(userOID)
+	if err != nil {
+		log.Println("cannot get flash card collections metadata:", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get flash card collections metadata"})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(metadatas)
 }
 
 func (s Service) HandleDeleteFlashCardCollection(ctx *fiber.Ctx) error {
@@ -456,5 +613,25 @@ func (s Service) HandleDeleteFlashCardCollection(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot delete flash card collection"})
 	}
 
+	err = s.CollectionMetadatasRepo.DeleteByID(collectionOID)
+	if err != nil {
+		log.Println("cannot delete flash card collection metadata:", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot delete flash card collection metadata"})
+	}
+
 	return ctx.SendStatus(fiber.StatusOK)
+}
+
+func CreateDefaultCollectionMetadata(userID primitive.ObjectID) *practicedb.CardCollectionMetadata {
+	metadata := &practicedb.CardCollectionMetadata{
+		UserID:      userID,
+		Name:        "Default collection",
+		Description: "This collection is automatically created for you",
+		Total:       make([]primitive.ObjectID, 0),
+		Viewed:      make([]primitive.ObjectID, 0),
+	}
+	// default collection will have ID equal to user ID
+	metadata.SetID(userID)
+	metadata.SetInitTimeByNow()
+	return metadata
 }

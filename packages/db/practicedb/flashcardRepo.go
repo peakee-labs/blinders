@@ -21,7 +21,7 @@ func NewFlashCardRepo(db *mongo.Database) *FlashCardsRepo {
 	return &FlashCardsRepo{SingleCollectionRepo: dbutils.SingleCollectionRepo[*FlashCard]{Collection: col}}
 }
 
-func (r *FlashCardsRepo) AddFlashCardsOfCollection(cards []FlashCard) (*CardCollection, error) {
+func (r *FlashCardsRepo) AddFlashCardsOfCollection(cards []*FlashCard) (*CardCollection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -61,7 +61,7 @@ func (r *FlashCardsRepo) GetFlashCardByUserID(userID primitive.ObjectID) ([]Flas
 	return cards, err
 }
 
-func (r *FlashCardsRepo) GetFlashCardsByCollectionID(collectionID primitive.ObjectID) ([]FlashCard, error) {
+func (r *FlashCardsRepo) GetFlashCardsByCollectionID(collectionID primitive.ObjectID) ([]*FlashCard, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -70,7 +70,7 @@ func (r *FlashCardsRepo) GetFlashCardsByCollectionID(collectionID primitive.Obje
 	if err != nil {
 		return nil, err
 	}
-	cards := make([]FlashCard, 0)
+	cards := make([]*FlashCard, 0)
 	err = cur.All(ctx, &cards)
 	return cards, err
 }
