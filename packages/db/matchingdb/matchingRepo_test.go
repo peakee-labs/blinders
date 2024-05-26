@@ -2,6 +2,7 @@ package matchingdb
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"testing"
 	"time"
@@ -46,7 +47,7 @@ func TestInsertNewRawMatchInfo(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, *insertedUser, *gotWithUserID)
 
-	deleted, err := r.DropMatchInfoByUserID(rawUser.UserID)
+	deleted, err := r.DropByUserID(rawUser.UserID)
 	assert.Nil(t, err)
 	assert.Equal(t, *insertedUser, *deleted)
 }
@@ -73,7 +74,7 @@ func TestGetMatchInfoByUserID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, *insertedUser, *gotWithUserID)
 
-	deleted, err := r.DropMatchInfoByUserID(rawUser.UserID)
+	deleted, err := r.DropByUserID(rawUser.UserID)
 	assert.Nil(t, err)
 	assert.Equal(t, *insertedUser, *deleted)
 
@@ -98,7 +99,7 @@ func TestGetUsersByLanguage(t *testing.T) {
 	}
 	numReturn := uint32(10)
 
-	deletedUser, err := r.DropMatchInfoByUserID(rawUser.UserID)
+	deletedUser, err := r.DropByUserID(rawUser.UserID)
 	if err != nil {
 		assert.Nil(t, deletedUser)
 	} else {
@@ -138,7 +139,7 @@ candidateLoop:
 		assert.Contains(t, insertedUser.Learnings, candidate.Native)
 		assert.Contains(t, candidate.Learnings, insertedUser.Native)
 	}
-	dropUser, err := r.DropMatchInfoByUserID(rawUser.UserID)
+	dropUser, err := r.DropByUserID(rawUser.UserID)
 	assert.Nil(t, err)
 	assert.Equal(t, *insertedUser, *dropUser)
 }
@@ -161,13 +162,63 @@ func TestDropUserByUserID(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, insertedUser)
 
-	deleted, err := r.DropMatchInfoByUserID(insertedUser.UserID)
+	deleted, err := r.DropByUserID(insertedUser.UserID)
 	assert.Nil(t, err)
 	assert.Equal(t, *insertedUser, *deleted)
 
-	failed, err := r.DropMatchInfoByUserID(insertedUser.UserID)
+	failed, err := r.DropByUserID(insertedUser.UserID)
 	assert.NotNil(t, err)
 	assert.Nil(t, failed)
+}
+
+func TestGetMatchingPool(t *testing.T) {
+	r := GetTestRepo(t)
+	defer CleanRepo(t, r)
+	rawUser := MatchInfo{
+		UserID:    primitive.NewObjectID(),
+		Name:      "name",
+		Gender:    "male",
+		Major:     "student",
+		Native:    "vietnamese",
+		Country:   "vn",
+		Learnings: make([]string, 0),
+		Interests: make([]string, 0),
+		Age:       0,
+	}
+	insertedUser, err := r.InsertRaw(&rawUser)
+	assert.Nil(t, err)
+	assert.NotNil(t, insertedUser)
+
+	numSeed := 20
+	seedUsers := make(map[primitive.ObjectID]MatchInfo, numSeed)
+
+	for i := 0; i < numSeed; i++ {
+		seedUser := MatchInfo{
+			UserID:    primitive.NewObjectID(),
+			Name:      fmt.Sprintf("name %d", i),
+			Gender:    fmt.Sprintf("gender %d", i),
+			Country:   fmt.Sprintf("country %d", i),
+			Major:     fmt.Sprintf("major %d", i),
+			Native:    fmt.Sprintf("native %d", i),
+			Learnings: make([]string, 0),
+			Interests: make([]string, 0),
+			Age:       0,
+		}
+		insertedSeedUser, err := r.InsertRaw(&seedUser)
+		assert.Nil(t, err)
+		seedUsers[insertedSeedUser.UserID] = *insertedSeedUser
+	}
+	poolSize := numSeed - 10
+
+	pool, err := r.GetMatchingPool(insertedUser.UserID, poolSize)
+	assert.Nil(t, err)
+
+	assert.Equal(t, poolSize, len(pool))
+
+	for _, poolUser := range pool {
+		assert.NotEqual(t, *insertedUser, poolUser)
+		assert.NotEmpty(t, seedUsers[poolUser.UserID])
+	}
 }
 
 func CleanRepo(t *testing.T, repo *MatchingRepo) {

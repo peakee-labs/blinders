@@ -15,6 +15,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Service struct {
@@ -42,15 +43,23 @@ func (s *Service) HandleGetMatches(ctx *fiber.Ctx) error {
 		log.Println("cannot get auth user")
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get user"})
 	}
+	userOID, _ := primitive.ObjectIDFromHex(userAuth.ID)
 
 	candidates, err := s.Core.SuggestWithContext(userAuth.ID)
 	if err != nil {
-		log.Println("cannot get suggest for user", userAuth.ID, "err", err)
-		return ctx.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
+		goto returnRandomPool
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(candidates)
+
+returnRandomPool:
+	pool, err := s.Core.SuggestRandom(userOID)
+	if err != nil {
+		log.Println("cannot get suggest for user", userAuth.ID, "err", err)
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": "cannot suggest users"})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(pool)
 }
 
 // HandleAddUserMatch will add match-related information to match db

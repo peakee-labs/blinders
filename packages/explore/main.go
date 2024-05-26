@@ -14,6 +14,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+var defaultLimit = 5
+
 type Explorer interface {
 	// SuggestWithContext returns list of users that maybe match with given user
 	SuggestWithContext(userID string) ([]matchingdb.MatchInfo, error)
@@ -22,7 +24,7 @@ type Explorer interface {
 	// AddEmbedding adds user embed vector to the vector database.
 	AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error
 	// SuggestRandom returns list of random 5 users that maybe match with given user
-	SuggestRandom() ([]matchingdb.MatchInfo, error)
+	SuggestRandom(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error)
 }
 
 type MongoExplorer struct {
@@ -117,7 +119,7 @@ func (m *MongoExplorer) SuggestWithContext(userID string) ([]matchingdb.MatchInf
 	cmd := m.RedisClient.Do(ctx,
 		"FT.SEARCH",
 		"idx:match_vss",
-		fmt.Sprintf("%s=>[KNN 5 @embed $query_vector as vector_score]", prefilter),
+		fmt.Sprintf("%s=>[KNN %d @embed $query_vector as vector_score]", defaultLimit, prefilter),
 		"SORTBY", "vector_score",
 		"PARAMS", "2",
 		"query_vector", &embed,
@@ -189,6 +191,6 @@ func (m *MongoExplorer) AddEmbedding(userID primitive.ObjectID, embed EmbeddingV
 	return err
 }
 
-func (m *MongoExplorer) SuggestRandom() ([]matchingdb.MatchInfo, error) {
-	return nil, nil
+func (m *MongoExplorer) SuggestRandom(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error) {
+	return m.MatchingRepo.GetMatchingPool(userID, defaultLimit)
 }

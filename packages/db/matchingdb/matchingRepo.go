@@ -1,10 +1,11 @@
 package matchingdb
 
 import (
-	dbutils "blinders/packages/db/utils"
 	"context"
 	"log"
 	"time"
+
+	dbutils "blinders/packages/db/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,7 +17,6 @@ var MatchingCollection = "matching"
 
 type MatchingRepo struct {
 	dbutils.SingleCollectionRepo[*MatchInfo]
-	// *mongo.Collection
 }
 
 func NewMatchingRepo(db *mongo.Database) *MatchingRepo {
@@ -118,7 +118,7 @@ func (r *MatchingRepo) GetUsersByLanguage(
 	return ids, nil
 }
 
-func (r *MatchingRepo) DropMatchInfoByUserID(userID primitive.ObjectID) (*MatchInfo, error) {
+func (r *MatchingRepo) DropByUserID(userID primitive.ObjectID) (*MatchInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -132,4 +132,30 @@ func (r *MatchingRepo) DropMatchInfoByUserID(userID primitive.ObjectID) (*MatchI
 		return nil, err
 	}
 	return &deletedUser, nil
+}
+
+func (r *MatchingRepo) GetMatchingPool(userID primitive.ObjectID, limit int) ([]MatchInfo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	r.Find(ctx, nil, options.Find().SetLimit(int64(limit)))
+
+	stages := []bson.M{
+		{"$match": bson.M{
+			"userId": bson.M{"$ne": userID},
+		}},
+		// at here we may sort users based on any ranking mark from the system.
+		// currently, we random choose 1000 user.
+		{
+			"$sample": bson.M{"size": limit},
+		},
+	}
+	cur, err := r.Aggregate(ctx, stages)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]MatchInfo, limit)
+	if err := cur.All(ctx, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
