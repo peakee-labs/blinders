@@ -52,17 +52,17 @@ type (
 	}
 
 	ExplainGrammar struct {
-		Tense     ExplainGrammarTense
-		Structure ExplainGrammarStructure
+		Tense     ExplainGrammarTense     `json:"tense"     bson:"tense"`
+		Structure ExplainGrammarStructure `json:"structure" bson:"structure"`
 	}
 
 	ExplainGrammarTense struct {
-		Type       string
-		Identifier string
+		Type       string `json:"type"       bson:"type"`
+		Identifier string `json:"identifier" bson:"identifier"`
 	}
 	ExplainGrammarStructure struct {
-		Type      string
-		Structure string
-		For       string
+		Type      string `json:"type"      bson:"type"`
+		Structure string `json:"structure" bson:"structure"`
+		For       string `json:"for"       bson:"for"`
 	}
 )
