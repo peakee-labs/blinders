@@ -8,6 +8,7 @@ import (
 type Transport interface {
 	Request(ctx context.Context, id string, payload []byte) (response []byte, err error)
 	Push(ctx context.Context, id string, payload []byte) error
+	ConsumerID(key Key) string
 }
 
 type Key string

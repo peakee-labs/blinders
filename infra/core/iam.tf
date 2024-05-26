@@ -52,6 +52,15 @@ resource "aws_iam_policy" "iam_policy_for_lambda" {
           "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${aws_lambda_function.collecting-get.function_name}",
           "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${aws_lambda_function.authenticate.function_name}"
         ]
+    },
+    {
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:InvokeModel"
+        ],
+        "Resource": [
+          "arn:aws:bedrock:${data.aws_region.current.name}::foundation-model/*"
+        ]
     }]
 }
 EOF

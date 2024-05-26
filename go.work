@@ -5,6 +5,7 @@ use (
 	./functions/authenticate
 	./functions/collecting
 	./functions/explore
+	./functions/gosuggest
 	./functions/practice
 	./functions/rest
 	./functions/translate

@@ -135,7 +135,10 @@ func HandleRequest(
 	return events.APIGatewayV2HTTPResponse{
 		StatusCode: http.StatusOK,
 		Body:       string(resInBytes),
-		Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
+		Headers: map[string]string{
+			"Access-Control-Allow-Origin": "*",
+			"Content-Type":                "application/json",
+		},
 	}, nil
 }
 
