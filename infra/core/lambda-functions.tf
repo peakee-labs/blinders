@@ -79,6 +79,34 @@ resource "aws_lambda_function" "translate" {
   }
 }
 
+
+resource "aws_lambda_function" "gosuggest" {
+  function_name    = "${var.project.name}-gosuggest-${var.project.environment}"
+  filename         = "../../dist/gosuggest-${var.project.environment}.zip"
+  handler          = "bootstrap"
+  role             = aws_iam_role.lambda_role.arn
+  runtime          = "provided.al2"
+  architectures    = ["arm64"]
+  depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+  source_code_hash = filebase64sha256("../../dist/gosuggest-${var.project.environment}.zip")
+
+  environment {
+    variables = {
+      ENVIRONMENT : var.project.environment
+
+      USERS_MONGO_DATABASE : local.envs.USERS_MONGO_DATABASE
+      USERS_MONGO_DATABASE_URL : local.envs.USERS_MONGO_DATABASE_URL
+
+      COLLECTING_PUSH_FUNCTION_NAME : aws_lambda_function.collecting-push.function_name
+    }
+  }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
+  }
+}
+
 resource "aws_lambda_function" "ws_connect" {
   function_name    = "${var.project.name}-ws-connect-${var.project.environment}"
   filename         = "../../dist/connect-${var.project.environment}.zip"

@@ -49,6 +49,32 @@ output "get_suggest_api" {
   value = "https://${aws_apigatewayv2_api_mapping.http_api_v1.domain_name}/${aws_apigatewayv2_api_mapping.http_api_v1.api_mapping_key}/suggest"
 }
 
+
+# suggest v2 with gosuggest route
+resource "aws_apigatewayv2_integration" "suggestv2" {
+  api_id           = aws_apigatewayv2_api.http_api.id
+  integration_uri  = aws_lambda_function.gosuggest.invoke_arn
+  integration_type = "AWS_PROXY"
+}
+
+resource "aws_apigatewayv2_route" "get_suggest_v2" {
+  api_id    = aws_apigatewayv2_api.http_api.id
+  route_key = "GET /suggest/v2"
+  target    = "integrations/${aws_apigatewayv2_integration.suggestv2.id}"
+}
+
+resource "aws_lambda_permission" "suggestv2" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.gosuggest.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
+}
+
+output "get_suggest_v2_api" {
+  value = "https://${aws_apigatewayv2_api_mapping.http_api_v1.domain_name}/${aws_apigatewayv2_api_mapping.http_api_v1.api_mapping_key}/suggest/v2"
+}
+
 # translate route
 resource "aws_apigatewayv2_integration" "translate" {
   api_id           = aws_apigatewayv2_api.http_api.id
