@@ -11,6 +11,7 @@ import (
 
 type HTTPTransport struct {
 	client *http.Client
+	BaseTransport
 }
 
 func NewLocalTransport(client ...*http.Client) *HTTPTransport {
@@ -51,7 +52,10 @@ func (t HTTPTransport) Request(
 		if msg != "" {
 			return bodyReader.Bytes(), fmt.Errorf(msg)
 		}
-		return bodyReader.Bytes(), fmt.Errorf("cannot make push request to target, statuscode: %d", rsp.StatusCode)
+		return bodyReader.Bytes(), fmt.Errorf(
+			"cannot make push request to target, statuscode: %d",
+			rsp.StatusCode,
+		)
 	}
 
 	return bodyReader.Bytes(), nil

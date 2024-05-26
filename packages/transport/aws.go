@@ -12,10 +12,20 @@ import (
 
 type LambdaTransport struct {
 	*lambda.Client
+	BaseTransport
 }
 
 func NewLambdaTransport(cfg aws.Config) *LambdaTransport {
-	return &LambdaTransport{lambda.NewFromConfig(cfg)}
+	return &LambdaTransport{Client: lambda.NewFromConfig(cfg)}
+}
+
+func NewLambdaTransportWithConsumers(cfg aws.Config, cm ConsumerMap) *LambdaTransport {
+	return &LambdaTransport{
+		Client: lambda.NewFromConfig(cfg),
+		BaseTransport: BaseTransport{
+			ConsumerMap: cm,
+		},
+	}
 }
 
 func (t LambdaTransport) Request(
