@@ -3,6 +3,7 @@ package dbutils
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -44,6 +45,22 @@ func InitMongoDatabaseFromEnv(prefix ...string) (*mongo.Database, error) {
 	}
 
 	return client.Database(info.DBName), nil
+}
+
+// return a Database channel, leverage goroutines to optimize aws lambda cold-start
+// temporarily use log.Fatalf if error happen
+func InitMongoDatabaseChanFromEnv(prefix ...string) chan *mongo.Database {
+	ch := make(chan *mongo.Database)
+	go func() {
+		DB, err := InitMongoDatabaseFromEnv(prefix...)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		ch <- DB
+	}()
+
+	return ch
 }
 
 type MongoInfo struct {
