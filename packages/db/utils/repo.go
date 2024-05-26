@@ -84,3 +84,17 @@ func (r *SingleCollectionRepo[M]) GetByID(ID primitive.ObjectID) (M, error) {
 
 	return obj, err
 }
+
+func (r *SingleCollectionRepo[M]) DeleteByID(ID primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	cur, err := r.DeleteOne(ctx, bson.M{"_id": ID})
+	if err != nil {
+		return err
+	}
+	if cur.DeletedCount != 1 {
+		return mongo.ErrNoDocuments
+	}
+	return nil
+}
