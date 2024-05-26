@@ -64,7 +64,7 @@ func (r *CollectionMetadatasRepo) MarkFlashCardAsViewed(collectionID, cardID pri
 
 	filter := bson.M{"_id": collectionID}
 	update := bson.M{"$addToSet": bson.M{"viewed": cardID}}
-	_, err := r.UpdateOne(ctx, filter, update)
+	_, err := r.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	return err
 }
 
@@ -74,7 +74,7 @@ func (r *CollectionMetadatasRepo) RemoveFlashCardViewe(collectionID, cardID prim
 
 	filter := bson.M{"_id": collectionID}
 	update := bson.M{"$pull": bson.M{"viewed": cardID}}
-	_, err := r.UpdateOne(ctx, filter, update)
+	_, err := r.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	return err
 }
 
@@ -85,7 +85,7 @@ func (r *CollectionMetadatasRepo) AddFlashCardInformation(collectionID primitive
 
 	filter := bson.M{"_id": collectionID}
 	update := bson.M{"$addToSet": bson.M{"total": cardID}}
-	_, err := r.UpdateOne(ctx, filter, update)
+	_, err := r.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	return err
 }
 
@@ -100,6 +100,6 @@ func (r *CollectionMetadatasRepo) RemoveFlashCardInformation(collectionID primit
 		"$addToSet": bson.M{"total": cardID},
 		"$pull":     bson.M{"viewed": cardID},
 	}
-	_, err := r.UpdateOne(ctx, filter, update)
+	_, err := r.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 	return err
 }
