@@ -111,3 +111,11 @@ echo "copied firebase.admin.json to authenticate"
 cd ./dist/authenticate-$1
 zip -r ../authenticate-$1.zip .
 cd ../..
+
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/gosuggest-$1/bootstrap ./functions/gosuggest
+echo "build gosuggest lambda function completed"
+cp ./firebase.admin.$1.json ./dist/gosuggest-$1/firebase.admin.json
+echo "copied firebase.admin.json to gosuggest"
+cd ./dist/gosuggest-$1
+zip -r ../gosuggest-$1.zip .
+cd ../..
