@@ -1,6 +1,10 @@
 package practiceapi
 
-import "fmt"
+import (
+	"fmt"
+
+	"blinders/packages/db/practicedb"
+)
 
 type SimplePracticeUnit struct {
 	Word        string   `json:"word"`
@@ -42,4 +46,9 @@ func (b RequestFlashCardCollection) Validate() error {
 	}
 
 	return nil
+}
+
+type ResponseFlashCardCollection struct {
+	Metadata   practicedb.CardCollectionMetadata `json:"metadata"`
+	FlashCards []*practicedb.FlashCard           `json:"flashcards"`
 }

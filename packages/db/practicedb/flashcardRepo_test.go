@@ -1,4 +1,4 @@
-package practicedb
+package practicedb_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"blinders/packages/db/practicedb"
 	dbutils "blinders/packages/db/utils"
 
 	"github.com/stretchr/testify/assert"
@@ -20,14 +21,14 @@ var (
 )
 
 func TestFlashCardsRepo(t *testing.T) {
-	repo := GetTestRepo(t)
+	repo := GetTestFlashCardsRepo(t)
 
 	var (
 		userID       = primitive.NewObjectID()
 		collectionID = primitive.NewObjectID()
 	)
 
-	card := &FlashCard{
+	card := &practicedb.FlashCard{
 		RawModel: dbutils.RawModel{
 			ID: primitive.NewObjectID(),
 		},
@@ -57,7 +58,7 @@ func TestFlashCardsRepo(t *testing.T) {
 	assert.Contains(t, collection.FlashCards, *insertedCard)
 	assert.Equal(t, collection.ID, collectionID)
 
-	newCard := &FlashCard{
+	newCard := &practicedb.FlashCard{
 		RawModel: dbutils.RawModel{
 			ID: insertedCard.ID,
 		},
@@ -82,10 +83,11 @@ func TestFlashCardsRepo(t *testing.T) {
 	deletedCard, err := repo.GetByID(insertedCard.ID)
 	assert.NotNil(t, err)
 	assert.Nil(t, deletedCard)
+	CleanRepo(t, repo.Collection)
 }
 
 func TestGetFlashCardCollectionsByUserID(t *testing.T) {
-	repo := GetTestRepo(t) // Assuming you have a function to create a new repo
+	repo := GetTestFlashCardsRepo(t) // Assuming you have a function to create a new repo
 	userID := primitive.NewObjectID()
 
 	collectionsID := []primitive.ObjectID{
@@ -94,10 +96,10 @@ func TestGetFlashCardCollectionsByUserID(t *testing.T) {
 		primitive.NewObjectID(),
 	}
 
-	cards := []FlashCard{}
+	cards := []practicedb.FlashCard{}
 
 	for i := 0; i < 100; i++ {
-		card := &FlashCard{
+		card := &practicedb.FlashCard{
 			UserID:       userID,
 			CollectionID: collectionsID[i%len(collectionsID)],
 			FrontText:    fmt.Sprintf("sample front text %d", i),
@@ -156,9 +158,10 @@ func TestGetFlashCardCollectionsByUserID(t *testing.T) {
 		assert.Contains(t, cards, card)
 		assert.Equal(t, card.CollectionID, collectionID)
 	}
+	CleanRepo(t, repo.Collection)
 }
 
-func GetTestRepo(t *testing.T) *FlashCardsRepo {
+func GetTestFlashCardsRepo(t *testing.T) *practicedb.FlashCardsRepo {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -167,5 +170,5 @@ func GetTestRepo(t *testing.T) *FlashCardsRepo {
 
 	db := client.Database(mongoTestDB)
 
-	return NewFlashCardRepo(db)
+	return practicedb.NewFlashCardRepo(db)
 }

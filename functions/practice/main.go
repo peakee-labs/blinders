@@ -37,7 +37,8 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	flashcardsRepo := practicedb.NewFlashCardRepo(practiceDB)
+	flashCardsRepo := practicedb.NewFlashCardRepo(practiceDB)
+	collectionMetadatasRepo := practicedb.NewCollectionMetadataRepo(practiceDB)
 
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {
@@ -59,7 +60,8 @@ func init() {
 		app,
 		authManager,
 		usersRepo,
-		flashcardsRepo,
+		flashCardsRepo,
+		collectionMetadatasRepo,
 		transport.NewLambdaTransport(cfg),
 		transport.ConsumerMap{
 			transport.CollectingPush: os.Getenv("COLLECTING_PUSH_FUNCTION_NAME"),

@@ -10,29 +10,32 @@ import (
 )
 
 type Service struct {
-	App           *fiber.App
-	Auth          auth.Manager
-	UserRepo      *usersdb.UsersRepo
-	Transport     transport.Transport
-	ConsumerMap   transport.ConsumerMap
-	FlashCardRepo *practicedb.FlashCardsRepo
+	App                     *fiber.App
+	Auth                    auth.Manager
+	UserRepo                *usersdb.UsersRepo
+	Transport               transport.Transport
+	ConsumerMap             transport.ConsumerMap
+	FlashCardRepo           *practicedb.FlashCardsRepo
+	CollectionMetadatasRepo *practicedb.CollectionMetadatasRepo
 }
 
 func NewService(
 	app *fiber.App,
 	auth auth.Manager,
 	usersRepo *usersdb.UsersRepo,
-	flashcardsRepo *practicedb.FlashCardsRepo,
+	flashCardsRepo *practicedb.FlashCardsRepo,
+	collectionMetadatasRepo *practicedb.CollectionMetadatasRepo,
 	transport transport.Transport,
 	consumerMap transport.ConsumerMap,
 ) *Service {
 	return &Service{
-		App:           app,
-		Auth:          auth,
-		UserRepo:      usersRepo,
-		FlashCardRepo: flashcardsRepo,
-		Transport:     transport,
-		ConsumerMap:   consumerMap,
+		App:                     app,
+		Auth:                    auth,
+		UserRepo:                usersRepo,
+		FlashCardRepo:           flashCardsRepo,
+		CollectionMetadatasRepo: collectionMetadatasRepo,
+		Transport:               transport,
+		ConsumerMap:             consumerMap,
 	}
 }
 
@@ -48,8 +51,10 @@ func (s *Service) InitRoute() {
 
 	authorized.Get("/flashcards/collections", s.HandleGetFlashCardCollections)
 	authorized.Get("/flashcards/collections/default", s.HandleGetDefaultFlashcardCollection)
+	authorized.Get("/flashcards/collections/preview", s.HandleGetFlashCardCollectionsPreview)
 	authorized.Post("/flashcards/collections", s.HandleAddFlashCardCollection)
 	authorized.Get("/flashcards/collections/:id", s.HandleGetFlashCardCollectionByID)
+	// TODO: view status of collection APIs
 	authorized.Delete("/flashcards/collections/:id", s.HandleDeleteFlashCardCollection)
 
 	authorized.Get("/flashcards/:id", s.HandleGetFlashCardByID)

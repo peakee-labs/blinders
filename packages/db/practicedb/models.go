@@ -20,5 +20,14 @@ type FlashCard struct {
 type CardCollection struct {
 	ID         primitive.ObjectID `json:"id" bson:"_id"`
 	UserID     primitive.ObjectID `json:"userId" bson:"userId"`
-	FlashCards []FlashCard        `json:"flashcards" bson:"flashcards"`
+	FlashCards []*FlashCard       `json:"flashcards" bson:"flashcards"`
+}
+
+type CardCollectionMetadata struct {
+	dbutils.RawModel `json:",inline" bson:",inline"`
+	UserID           primitive.ObjectID   `json:"userId" bson:"userId"`
+	Name             string               `json:"name" bson:"name"`
+	Description      string               `json:"description" bson:"description"`
+	Total            []primitive.ObjectID `json:"total" bson:"total"`
+	Viewed           []primitive.ObjectID `json:"viewed" bson:"viewed"`
 }

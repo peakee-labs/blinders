@@ -45,12 +45,15 @@ func init() {
 	adminJSON, _ := utils.GetFile("firebase.admin.json")
 	authManager, _ := auth.NewFirebaseManager(adminJSON)
 
-	flashcardsRepo := practicedb.NewFlashCardRepo(client.Database(dbName))
+	flashCardsRepo := practicedb.NewFlashCardRepo(client.Database(dbName))
+	collectionMetadataRepo := practicedb.NewCollectionMetadataRepo(client.Database(dbName))
+
 	service = practiceapi.NewService(
 		app,
 		authManager,
 		usersRepo,
-		flashcardsRepo,
+		flashCardsRepo,
+		collectionMetadataRepo,
 		transport.NewLocalTransport(),
 		transport.ConsumerMap{
 			transport.Suggest: fmt.Sprintf(
