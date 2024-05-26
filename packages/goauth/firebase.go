@@ -2,6 +2,9 @@ package auth
 
 import (
 	"context"
+	"log"
+
+	"blinders/packages/utils"
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/auth"
@@ -48,4 +51,24 @@ func NewFirebaseManager(adminConfig []byte) (*FirebaseManager, error) {
 	manager.Client = newClient
 
 	return &manager, nil
+}
+
+// return FirebaseManager channel instead
+func InitFirebaseManagerFromFile(filename string) chan Manager {
+	ch := make(chan Manager)
+	go func() {
+		adminConfig, err := utils.GetFile(filename)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		m, err := NewFirebaseManager(adminConfig)
+		if err != nil {
+			log.Fatalf("can not init firebase manager: %v", err)
+		}
+
+		ch <- m
+	}()
+
+	return ch
 }
