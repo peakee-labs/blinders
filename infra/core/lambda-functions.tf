@@ -84,6 +84,7 @@ resource "aws_lambda_function" "gosuggest" {
   function_name    = "${var.project.name}-gosuggest-${var.project.environment}"
   filename         = "../../dist/gosuggest-${var.project.environment}.zip"
   handler          = "bootstrap"
+  timeout          = 60
   role             = aws_iam_role.lambda_role.arn
   runtime          = "provided.al2"
   architectures    = ["arm64"]
