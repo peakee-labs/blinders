@@ -112,7 +112,7 @@ poetry run embedder_service
 
 ## Deployment
 
-We have 3 separate environments:  `dev`, `staging`, and `prod`. Each deployment environment has a deployment state.
+We have 3 separate environments: `dev`, `staging`, and `prod`. Each deployment environment has a deployment state.
 
 Also, we have a `shared` state for managing `route53_certificate` and deploying some shared ec2 instances for `dev` and `staging` environments
 
@@ -138,21 +138,29 @@ sh scripts/build_all.sh dev|staging|prod
 
 At the first time or having any update to the shared state
 
-```
-cd infra/shared && terraform plan
-terraform apply
+Note: if you change the profile name, you might want to update backend.conf file and reconfigure backend config of the terraform state.
 
-# or with a profile
+```
+# run plan
+cd infra/shared
+terraform plan -var="profile=<profile>"
+
+# apply change
+terraform apply
+## or with a profile
 terraform apply -var="profile=..."
 ```
 
 For a specific environment
 
 ```
-cd infra/dev|staging|prod && terraform plan
-terraform apply
+# run plan
+cd infra/dev|staging|prod
+terraform plan -var="profile=<profile>"
 
-# or with a profile
+# apply change
+terraform apply
+## or with a profile
 terraform apply -var="profile=..."
 ```
 
