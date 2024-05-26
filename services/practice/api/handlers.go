@@ -421,6 +421,9 @@ func (s Service) HandleGetDefaultFlashcardCollection(ctx *fiber.Ctx) error {
 	}
 	return ctx.Status(fiber.StatusOK).JSON(collection)
 }
+func (s Service) HandleGetFlashCardCollectionsPreview(ctx *fiber.Ctx) error {
+	return nil
+}
 
 func (s Service) HandleDeleteFlashCardCollection(ctx *fiber.Ctx) error {
 	collectionID := ctx.Params("id")
