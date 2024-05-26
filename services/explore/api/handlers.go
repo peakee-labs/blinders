@@ -36,6 +36,26 @@ func NewService(
 	}
 }
 
+func (s *Service) HandleGetMatchingProfile(ctx *fiber.Ctx) error {
+	matchID := ctx.Params("id")
+	if matchID == "" {
+		log.Println("cannot match id is empty")
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "match id is empty"})
+	}
+	matchOID, err := primitive.ObjectIDFromHex(matchID)
+	if err != nil {
+		log.Println("cannot convert match id to object id", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid match id"})
+	}
+
+	profile, err := s.Core.GetMatchingProfile(matchOID)
+	if err != nil {
+		log.Println("cannot get matching profile", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get matching profile"})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(profile)
+}
+
 // HandleGetMatches returns 5 users that similarity with current user.
 func (s *Service) HandleGetMatches(ctx *fiber.Ctx) error {
 	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)

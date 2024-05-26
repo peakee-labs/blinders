@@ -18,13 +18,15 @@ var defaultLimit = 5
 
 type Explorer interface {
 	// SuggestWithContext returns list of users that maybe match with given user
-	SuggestWithContext(userID string) ([]matchingdb.MatchInfo, error)
+	SuggestWithContext(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error)
 	// AddUserMatchInformation adds user match information to the database.
 	AddUserMatchInformation(info matchingdb.MatchInfo) (matchingdb.MatchInfo, error)
 	// AddEmbedding adds user embed vector to the vector database.
 	AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error
 	// SuggestRandom returns list of random 5 users that maybe match with given user
 	SuggestRandom(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error)
+	// GetMatchingProfile returns matching profile of given user
+	GetMatchingProfile(userID primitive.ObjectID) (*matchingdb.MatchInfo, error)
 }
 
 type MongoExplorer struct {
@@ -55,21 +57,11 @@ or users who are currently learning the same language as the current user.
 
 We will then use KNN-search in the filtered space to identify 5 users that may match with the current user.
 */
-func (m *MongoExplorer) SuggestWithContext(userID string) ([]matchingdb.MatchInfo, error) {
+func (m *MongoExplorer) SuggestWithContext(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	oid, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		log.Printf(
-			"explore: cannot parse object id with given hex string(%s), err: %v\n",
-			userID,
-			err,
-		)
-		return nil, err
-	}
-
-	user, err := m.UsersRepo.GetUserByID(oid)
+	user, err := m.UsersRepo.GetUserByID(userID)
 	if err != nil {
 		log.Println("explore: cannot get user by id, err:", err)
 		return nil, err
@@ -77,7 +69,7 @@ func (m *MongoExplorer) SuggestWithContext(userID string) ([]matchingdb.MatchInf
 
 	// JSONGet return value wrapped in an array.
 	// at here, if there aren't entries in redis, the jsonStr will be empty, we could check it here then return
-	jsonStr, err := m.RedisClient.JSONGet(ctx, CreateMatchKeyWithUserID(userID), "$.embed").Result()
+	jsonStr, err := m.RedisClient.JSONGet(ctx, CreateMatchKeyWithUserID(userID.Hex()), "$.embed").Result()
 	if err != nil || jsonStr == "" {
 		log.Println("explore: cannot get explore entry in redis, err:", err)
 		return []matchingdb.MatchInfo{}, fmt.Errorf(
@@ -93,7 +85,7 @@ func (m *MongoExplorer) SuggestWithContext(userID string) ([]matchingdb.MatchInf
 	embed := embedArr[0]
 
 	// exclude friends of current user
-	excludeFilter := userID
+	excludeFilter := userID.Hex()
 	for _, friendID := range user.FriendIDs {
 		excludeFilter += " | " + friendID.Hex()
 	}
@@ -119,7 +111,7 @@ func (m *MongoExplorer) SuggestWithContext(userID string) ([]matchingdb.MatchInf
 	cmd := m.RedisClient.Do(ctx,
 		"FT.SEARCH",
 		"idx:match_vss",
-		fmt.Sprintf("%s=>[KNN %d @embed $query_vector as vector_score]", defaultLimit, prefilter),
+		fmt.Sprintf("%s=>[KNN %d @embed $query_vector as vector_score]", prefilter, defaultLimit),
 		"SORTBY", "vector_score",
 		"PARAMS", "2",
 		"query_vector", &embed,
@@ -193,4 +185,8 @@ func (m *MongoExplorer) AddEmbedding(userID primitive.ObjectID, embed EmbeddingV
 
 func (m *MongoExplorer) SuggestRandom(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error) {
 	return m.MatchingRepo.GetMatchingPool(userID, defaultLimit)
+}
+
+func (m *MongoExplorer) GetMatchingProfile(userID primitive.ObjectID) (*matchingdb.MatchInfo, error) {
+	return m.MatchingRepo.GetByID(userID)
 }

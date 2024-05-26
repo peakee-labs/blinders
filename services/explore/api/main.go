@@ -35,5 +35,6 @@ func (m *Manager) InitRoute() {
 	})
 
 	authorizedRoute := exploreRoute.Group("/", auth.FiberAuthMiddleware(m.Auth, m.UsersRepo))
+	authorizedRoute.Get("/suggest/:id", m.Service.HandleGetMatchingProfile)
 	authorizedRoute.Get("/suggest", m.Service.HandleGetMatches)
 }
