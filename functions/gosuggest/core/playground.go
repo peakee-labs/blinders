@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 
+	"blinders/packages/db/collectingdb"
 	"blinders/packages/utils"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -59,53 +60,7 @@ func RunPlayground(cfg aws.Config) {
 	log.Println("generation token count:", res.GenerationTokenCount)
 	log.Println("prompt token count:", res.PromptTokenCount)
 	log.Println("stop reason:", res.StopReason)
+
+	explainResult, err := utils.ParseJSON[collectingdb.ExplainResponse]([]byte(res.Generation))
+	log.Println("parsed:", explainResult, err)
 }
-
-// https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-meta.html
-type LlamaRequest struct {
-	// Prompt format: https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-3/
-	Prompt      string  `json:"prompt"`
-	Temperature float32 `json:"temperature"`
-	TopP        float32 `json:"top_p"`
-	MaxGenLen   int     `json:"max_gen_len"`
-}
-
-type LlamaResponse struct {
-	Generation           string `json:"generation"` // "\n\n<response>"
-	PromptTokenCount     int    `json:"prompt_token_count"`
-	GenerationTokenCount int    `json:"generation_token_count"`
-	StopReason           string `json:"stop_reason"` // "stop" || "length"
-}
-
-const ExplainPhraseInSentencePrompt = `
-<|begin_of_text|>
-
-<|start_header_id|>system<|end_header_id|> 
-You are a helpful AI assistant for learning English for Vietnamese learner. Only response to user a JSON object, the result must be short, clear
-<|eot_id|>
-
-<|start_header_id|>user<|end_header_id|>
-I want to understand:
-- word/phrase: "%v"
-- sentence: "%v"
-<|eot_id|>
-
-<|start_header_id|>system<|end_header_id|> 
-Only respond JSON format: 
-    {
-        "translate": translate the word/phrase to Vietnamese,
-        "IPA": IPA English pronunciation of word/phrase,
-        "grammar_analysis": {
-            "tense": {"type": type of tense of the whole sentence, "identifier": how user can identify the tense},
-            "structure": {"type": structure type of the whole sentence,
-                "structure": show the grammar structure of the sentence as form example 'I know that + S + has been + V_ed +',
-                "for": how the structure is used for
-            }
-        },
-        "key_words": get 1, or 2, or 3 main words in the sentence (it can be noun/verb/adjective),
-        "expand_words": give 3 words might be relevant but not in the sentence
-    }
-<|eot_id|>
-
-<|start_header_id|>assistant<|end_header_id|>
-`
