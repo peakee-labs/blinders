@@ -12,6 +12,7 @@ import (
 	"blinders/packages/db/usersdb"
 	dbutils "blinders/packages/db/utils"
 	"blinders/packages/explore"
+	"blinders/packages/transport"
 	"blinders/packages/utils"
 	exploreapi "blinders/services/explore/api"
 
@@ -76,12 +77,13 @@ func init() {
 		usersRepo,
 		redisClient,
 	)
-
-	embedderEndpoint := fmt.Sprintf(
-		"http://localhost:%s/embed",
-		os.Getenv("EMBEDDER_SERVICE_PORT"),
+	tp := transport.NewLocalTransportWithConsumers(
+		transport.ConsumerMap{
+			transport.Embed: os.Getenv("EMBEDDER_ENDPOINT"),
+		},
 	)
-	service = exploreapi.NewService(core, redisClient, embedderEndpoint)
+
+	service = exploreapi.NewService(core, redisClient, tp)
 
 	manager = exploreapi.NewManager(app, authManager, usersRepo, service)
 	manager.App.Use(logger.New(), cors.New())

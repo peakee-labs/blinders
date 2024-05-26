@@ -11,15 +11,15 @@ import (
 	"blinders/packages/auth"
 	"blinders/packages/db/matchingdb"
 	"blinders/packages/db/usersdb"
+	dbutils "blinders/packages/db/utils"
 	"blinders/packages/explore"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
-
-	dbutils "blinders/packages/db/utils"
 	exploreapi "blinders/services/explore/api"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/config"
 	fiberadapter "github.com/awslabs/aws-lambda-go-api-proxy/fiber"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -61,9 +61,17 @@ func init() {
 
 	matchingRepo := matchingdb.NewMatchingRepo(matchingDB)
 	usersRepo := usersdb.NewUsersRepo(usersDB)
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		log.Panicln("failed to load aws config:", err)
+	}
+	consumerMap := transport.ConsumerMap{
+		transport.Embed: os.Getenv("EMBEDDER_ENDPOINT"),
+	}
+	transporter := transport.NewLambdaTransportWithConsumers(cfg, consumerMap)
 
 	core := explore.NewExplorer(matchingRepo, usersRepo, redisClient)
-	service := exploreapi.NewService(core, redisClient, os.Getenv("EMBEDDER_ENDPOINT"))
+	service := exploreapi.NewService(core, redisClient, transporter)
 
 	adminJSON, _ := utils.GetFile("firebase.admin.json")
 	auth, err := auth.NewFirebaseManager(adminJSON)
@@ -98,7 +106,7 @@ func HandleRequest(ctx context.Context, req any) (any, error) {
 			return nil, fmt.Errorf("can not parse match info: %v", err)
 		}
 
-		err = api.Service.AddUserMatch(req.Payload)
+		err = api.Service.AddUserMatch(&req.Payload)
 		if err != nil {
 			return nil, fmt.Errorf("can not add user match: %v", err)
 		}

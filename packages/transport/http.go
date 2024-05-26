@@ -21,6 +21,22 @@ func NewLocalTransport(client ...*http.Client) *HTTPTransport {
 	}
 	return &HTTPTransport{
 		client: c,
+		BaseTransport: BaseTransport{
+			ConsumerMap: make(ConsumerMap),
+		},
+	}
+}
+
+func NewLocalTransportWithConsumers(cm ConsumerMap, client ...*http.Client) *HTTPTransport {
+	c := http.DefaultClient
+	if len(client) == 1 {
+		c = client[0]
+	}
+	return &HTTPTransport{
+		client: c,
+		BaseTransport: BaseTransport{
+			ConsumerMap: cm,
+		},
 	}
 }
 

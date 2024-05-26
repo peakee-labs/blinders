@@ -20,7 +20,7 @@ type Explorer interface {
 	// SuggestWithContext returns list of users that maybe match with given user
 	SuggestWithContext(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error)
 	// AddUserMatchInformation adds user match information to the database.
-	AddUserMatchInformation(info matchingdb.MatchInfo) (matchingdb.MatchInfo, error)
+	AddUserMatchInformation(info *matchingdb.MatchInfo) (*matchingdb.MatchInfo, error)
 	// AddEmbedding adds user embed vector to the vector database.
 	AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error
 	// SuggestRandom returns list of random 5 users that maybe match with given user
@@ -151,19 +151,20 @@ to notify that a new user has been created. This allows the embedding service to
 in the vector database.
 */
 func (m *MongoExplorer) AddUserMatchInformation(
-	info matchingdb.MatchInfo,
-) (matchingdb.MatchInfo, error) {
+	info *matchingdb.MatchInfo,
+) (*matchingdb.MatchInfo, error) {
 	_, err := m.UsersRepo.GetUserByID(info.UserID)
 	if err != nil {
-		return matchingdb.MatchInfo{}, err
+		return nil, err
 	}
 
 	// duplicated match information will be handled by the repository since we have already indexed the collection with firebaseUID.
-	matchInfo, err := m.MatchingRepo.InsertRaw(&info)
+	info, err = m.MatchingRepo.InsertRaw(info)
 	if err != nil {
-		return matchingdb.MatchInfo{}, err
+		return nil, err
 	}
-	return *matchInfo, nil
+
+	return info, nil
 }
 
 func (m *MongoExplorer) AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error {
