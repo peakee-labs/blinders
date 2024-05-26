@@ -15,12 +15,14 @@ import (
 )
 
 type Explorer interface {
-	// Suggest returns list of users that maybe match with given user
-	Suggest(userID string) ([]matchingdb.MatchInfo, error)
+	// SuggestWithContext returns list of users that maybe match with given user
+	SuggestWithContext(userID string) ([]matchingdb.MatchInfo, error)
 	// AddUserMatchInformation adds user match information to the database.
 	AddUserMatchInformation(info matchingdb.MatchInfo) (matchingdb.MatchInfo, error)
 	// AddEmbedding adds user embed vector to the vector database.
 	AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error
+	// SuggestRandom returns list of random 5 users that maybe match with given user
+	SuggestRandom() ([]matchingdb.MatchInfo, error)
 }
 
 type MongoExplorer struct {
@@ -51,7 +53,7 @@ or users who are currently learning the same language as the current user.
 
 We will then use KNN-search in the filtered space to identify 5 users that may match with the current user.
 */
-func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
+func (m *MongoExplorer) SuggestWithContext(userID string) ([]matchingdb.MatchInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -134,11 +136,11 @@ func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		user, err := m.MatchingRepo.GetMatchInfoByUserID(oid)
+		user, err := m.MatchingRepo.GetByUserID(oid)
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, user)
+		res = append(res, *user)
 	}
 
 	// TODO: After the suggestion process, mark these users as suggested to prevent them from being recommended in future suggestions.
@@ -163,15 +165,15 @@ func (m *MongoExplorer) AddUserMatchInformation(
 	}
 
 	// duplicated match information will be handled by the repository since we have already indexed the collection with firebaseUID.
-	matchInfo, err := m.MatchingRepo.InsertNewRawMatchInfo(info)
+	matchInfo, err := m.MatchingRepo.InsertRaw(&info)
 	if err != nil {
 		return matchingdb.MatchInfo{}, err
 	}
-	return matchInfo, nil
+	return *matchInfo, nil
 }
 
 func (m *MongoExplorer) AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error {
-	_, err := m.MatchingRepo.GetMatchInfoByUserID(userID)
+	_, err := m.MatchingRepo.GetByUserID(userID)
 	if err != nil {
 		return err
 	}
@@ -185,4 +187,8 @@ func (m *MongoExplorer) AddEmbedding(userID primitive.ObjectID, embed EmbeddingV
 		map[string]any{"embed": embed, "id": userID},
 	).Err()
 	return err
+}
+
+func (m *MongoExplorer) SuggestRandom() ([]matchingdb.MatchInfo, error) {
+	return nil, nil
 }

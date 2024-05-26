@@ -1,6 +1,7 @@
 package matchingdb
 
 import (
+	dbutils "blinders/packages/db/utils"
 	"context"
 	"log"
 	"time"
@@ -14,7 +15,8 @@ import (
 var MatchingCollection = "matching"
 
 type MatchingRepo struct {
-	*mongo.Collection
+	dbutils.SingleCollectionRepo[*MatchInfo]
+	// *mongo.Collection
 }
 
 func NewMatchingRepo(db *mongo.Database) *MatchingRepo {
@@ -31,32 +33,25 @@ func NewMatchingRepo(db *mongo.Database) *MatchingRepo {
 	}
 
 	return &MatchingRepo{
-		col,
+		dbutils.SingleCollectionRepo[*MatchInfo]{
+			Collection: col,
+		},
 	}
 }
 
-func (r *MatchingRepo) InsertNewRawMatchInfo(doc MatchInfo) (MatchInfo, error) {
-	ctx, cal := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cal()
-
-	_, err := r.InsertOne(ctx, doc)
-
-	return doc, err
-}
-
-func (r *MatchingRepo) GetMatchInfoByUserID(userID primitive.ObjectID) (MatchInfo, error) {
+func (r *MatchingRepo) GetByUserID(userID primitive.ObjectID) (*MatchInfo, error) {
 	ctx, cal := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cal()
 
 	var doc MatchInfo
 	res := r.FindOne(ctx, bson.M{"userId": userID})
 	if err := res.Err(); err != nil {
-		return MatchInfo{}, err
+		return nil, err
 	}
 	if err := res.Decode(&doc); err != nil {
-		return MatchInfo{}, err
+		return nil, err
 	}
-	return doc, nil
+	return &doc, nil
 }
 
 // GetUsersByLanguage returns `limit` ID of users that speak one language of `learnings` and are currently learning `native` or are currently learning same language as user.
@@ -64,7 +59,7 @@ func (r *MatchingRepo) GetUsersByLanguage(
 	userID primitive.ObjectID,
 	limit uint32,
 ) ([]string, error) {
-	user, err := r.GetMatchInfoByUserID(userID)
+	user, err := r.GetByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -123,18 +118,18 @@ func (r *MatchingRepo) GetUsersByLanguage(
 	return ids, nil
 }
 
-func (r *MatchingRepo) DropMatchInfoByUserID(userID primitive.ObjectID) (MatchInfo, error) {
+func (r *MatchingRepo) DropMatchInfoByUserID(userID primitive.ObjectID) (*MatchInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
 	filter := bson.M{"userId": userID}
 	res := r.FindOneAndDelete(ctx, filter)
 	if err := res.Err(); err != nil {
-		return MatchInfo{}, err
+		return nil, err
 	}
 	var deletedUser MatchInfo
 	if err := res.Decode(&deletedUser); err != nil {
-		return MatchInfo{}, err
+		return nil, err
 	}
-	return deletedUser, nil
+	return &deletedUser, nil
 }

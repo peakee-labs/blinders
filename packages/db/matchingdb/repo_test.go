@@ -1,8 +1,10 @@
 package matchingdb
 
 import (
+	"context"
 	"slices"
 	"testing"
+	"time"
 
 	dbutils "blinders/packages/db/utils"
 
@@ -11,11 +13,13 @@ import (
 )
 
 var (
-	client, _ = dbutils.InitMongoClient("mongodb://localhost:27017")
-	r         = NewMatchingRepo(client.Database("blinders"))
+	MongoTestURL = "mongodb://localhost:27017"
+	MongoTestDB  = "blinder-test"
 )
 
 func TestInsertNewRawMatchInfo(t *testing.T) {
+	r := GetTestRepo(t)
+	defer CleanRepo(t, r)
 	rawUser := MatchInfo{
 		UserID:    primitive.NewObjectID(),
 		Name:      "name",
@@ -27,20 +31,29 @@ func TestInsertNewRawMatchInfo(t *testing.T) {
 		Interests: make([]string, 0),
 		Age:       0,
 	}
-	usr, err := r.InsertNewRawMatchInfo(rawUser)
+	insertedUser, err := r.InsertRaw(&rawUser)
 	assert.Nil(t, err)
-	assert.Equal(t, rawUser, usr)
+	assert.Equal(t, rawUser.UserID, insertedUser.UserID)
+	assert.Equal(t, rawUser.Gender, insertedUser.Gender)
+	assert.Equal(t, rawUser.Major, insertedUser.Major)
+	assert.Equal(t, rawUser.Native, insertedUser.Native)
+	assert.Equal(t, rawUser.Country, insertedUser.Country)
+	assert.Equal(t, rawUser.Learnings, insertedUser.Learnings)
+	assert.Equal(t, rawUser.Interests, insertedUser.Interests)
+	assert.Equal(t, rawUser.Age, insertedUser.Age)
 
-	gotWithUserID, err := r.GetMatchInfoByUserID(rawUser.UserID)
+	gotWithUserID, err := r.GetByUserID(rawUser.UserID)
 	assert.Nil(t, err)
-	assert.Equal(t, rawUser, gotWithUserID)
+	assert.Equal(t, *insertedUser, *gotWithUserID)
 
 	deleted, err := r.DropMatchInfoByUserID(rawUser.UserID)
 	assert.Nil(t, err)
-	assert.Equal(t, rawUser, deleted)
+	assert.Equal(t, *insertedUser, *deleted)
 }
 
 func TestGetMatchInfoByUserID(t *testing.T) {
+	r := GetTestRepo(t)
+	defer CleanRepo(t, r)
 	rawUser := MatchInfo{
 		UserID:    primitive.NewObjectID(),
 		Name:      "name",
@@ -52,24 +65,26 @@ func TestGetMatchInfoByUserID(t *testing.T) {
 		Interests: make([]string, 0),
 		Age:       0,
 	}
-	usr, err := r.InsertNewRawMatchInfo(rawUser)
+	insertedUser, err := r.InsertRaw(&rawUser)
 	assert.Nil(t, err)
-	assert.Equal(t, rawUser, usr)
+	assert.NotNil(t, insertedUser)
 
-	gotWithUserID, err := r.GetMatchInfoByUserID(rawUser.UserID)
+	gotWithUserID, err := r.GetByUserID(rawUser.UserID)
 	assert.Nil(t, err)
-	assert.Equal(t, rawUser, gotWithUserID)
+	assert.Equal(t, *insertedUser, *gotWithUserID)
 
 	deleted, err := r.DropMatchInfoByUserID(rawUser.UserID)
 	assert.Nil(t, err)
-	assert.Equal(t, rawUser, deleted)
+	assert.Equal(t, *insertedUser, *deleted)
 
-	gotFailed, err := r.GetMatchInfoByUserID(rawUser.UserID)
+	gotFailed, err := r.GetByUserID(rawUser.UserID)
 	assert.NotNil(t, err)
-	assert.Equal(t, MatchInfo{}, gotFailed)
+	assert.Nil(t, gotFailed)
 }
 
 func TestGetUsersByLanguage(t *testing.T) {
+	r := GetTestRepo(t)
+	defer CleanRepo(t, r)
 	rawUser := MatchInfo{
 		UserID:    primitive.NewObjectID(),
 		Name:      "name",
@@ -83,20 +98,20 @@ func TestGetUsersByLanguage(t *testing.T) {
 	}
 	numReturn := uint32(10)
 
-	usr, err := r.DropMatchInfoByUserID(rawUser.UserID)
+	deletedUser, err := r.DropMatchInfoByUserID(rawUser.UserID)
 	if err != nil {
-		assert.Equal(t, MatchInfo{}, usr)
+		assert.Nil(t, deletedUser)
 	} else {
-		assert.NotEmpty(t, usr)
+		assert.NotNil(t, deletedUser)
 	}
 
 	failedGot, err := r.GetUsersByLanguage(rawUser.UserID, 10)
 	assert.NotNil(t, err)
 	assert.Len(t, failedGot, 0)
 
-	usr, err = r.InsertNewRawMatchInfo(rawUser)
+	insertedUser, err := r.InsertRaw(&rawUser)
 	assert.Nil(t, err)
-	assert.Equal(t, rawUser, usr)
+	assert.NotNil(t, insertedUser)
 
 	got, err := r.GetUsersByLanguage(rawUser.UserID, numReturn)
 	assert.Nil(t, err)
@@ -109,26 +124,28 @@ candidateLoop:
 		assert.Nil(t, err)
 		assert.False(t, oid.IsZero())
 
-		candidate, err := r.GetMatchInfoByUserID(oid)
+		candidate, err := r.GetByUserID(oid)
 		assert.Nil(t, err)
 		assert.NotNil(t, candidate)
 		// at here, candidate must be learning same language with curr user or natively speak the language that current
 		// user is learning as well as learning language that current user is natively speak.
 		for _, language := range candidate.Learnings {
-			if slices.Contains[[]string, string](usr.Learnings, language) {
+			if slices.Contains[[]string, string](insertedUser.Learnings, language) {
 				// user and candidate learning same language
 				continue candidateLoop
 			}
 		}
-		assert.Contains(t, usr.Learnings, candidate.Native)
-		assert.Contains(t, candidate.Learnings, usr.Native)
+		assert.Contains(t, insertedUser.Learnings, candidate.Native)
+		assert.Contains(t, candidate.Learnings, insertedUser.Native)
 	}
-	usr, err = r.DropMatchInfoByUserID(rawUser.UserID)
+	dropUser, err := r.DropMatchInfoByUserID(rawUser.UserID)
 	assert.Nil(t, err)
-	assert.Equal(t, rawUser, usr)
+	assert.Equal(t, *insertedUser, *dropUser)
 }
 
 func TestDropUserByUserID(t *testing.T) {
+	r := GetTestRepo(t)
+	defer CleanRepo(t, r)
 	rawUser := MatchInfo{
 		UserID:    primitive.NewObjectID(),
 		Name:      "name",
@@ -140,15 +157,32 @@ func TestDropUserByUserID(t *testing.T) {
 		Interests: make([]string, 0),
 		Age:       0,
 	}
-	usr, err := r.InsertNewRawMatchInfo(rawUser)
+	insertedUser, err := r.InsertRaw(&rawUser)
 	assert.Nil(t, err)
-	assert.Equal(t, rawUser, usr)
+	assert.NotNil(t, insertedUser)
 
-	deleted, err := r.DropMatchInfoByUserID(usr.UserID)
+	deleted, err := r.DropMatchInfoByUserID(insertedUser.UserID)
 	assert.Nil(t, err)
-	assert.Equal(t, rawUser, deleted)
+	assert.Equal(t, *insertedUser, *deleted)
 
-	failed, err := r.DropMatchInfoByUserID(usr.UserID)
+	failed, err := r.DropMatchInfoByUserID(insertedUser.UserID)
 	assert.NotNil(t, err)
-	assert.Equal(t, MatchInfo{}, failed)
+	assert.Nil(t, failed)
+}
+
+func CleanRepo(t *testing.T, repo *MatchingRepo) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	assert.Nil(t, repo.Drop(ctx))
+}
+
+func GetTestRepo(t *testing.T) *MatchingRepo {
+	client, err := dbutils.InitMongoClient(MongoTestURL)
+	assert.Nil(t, err)
+	assert.NotNil(t, client)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	assert.Nil(t, client.Ping(ctx, nil))
+
+	return NewMatchingRepo(client.Database(MongoTestDB))
 }

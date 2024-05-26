@@ -43,7 +43,7 @@ func (s *Service) HandleGetMatches(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get user"})
 	}
 
-	candidates, err := s.Core.Suggest(userAuth.ID)
+	candidates, err := s.Core.SuggestWithContext(userAuth.ID)
 	if err != nil {
 		log.Println("cannot get suggest for user", userAuth.ID, "err", err)
 		return ctx.Status(fiber.StatusBadRequest).
