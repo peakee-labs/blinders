@@ -72,7 +72,6 @@ func HandleRequest(
 	ctx context.Context,
 	req events.APIGatewayV2HTTPRequest,
 ) (events.APIGatewayV2HTTPResponse, error) {
-	log.Println("[Debug] start handle")
 	phrase, ok := req.QueryStringParameters["phrase"]
 	if !ok {
 		return events.APIGatewayV2HTTPResponse{
@@ -90,7 +89,6 @@ func HandleRequest(
 		}, nil
 	}
 
-	log.Println("[Debug] start request explain")
 	explanation, err := core.ExplainPhraseInSentence(brrc, phrase, sentence)
 	if err != nil {
 		log.Println("error when explaining: ", err)
@@ -115,7 +113,6 @@ func HandleRequest(
 		},
 	}
 
-	log.Println("[Debug] start push to collecting service")
 	eventPayload, _ := json.Marshal(event)
 	if err := transporter.Push(
 		ctx,
@@ -125,7 +122,6 @@ func HandleRequest(
 		log.Printf("cannot push event to collecting service, err: %v\n", err)
 	}
 
-	log.Println("[Debug] respond")
 	resInBytes, _ := json.Marshal(*explanation)
 	return events.APIGatewayV2HTTPResponse{
 		StatusCode: http.StatusOK,
@@ -135,6 +131,5 @@ func HandleRequest(
 }
 
 func main() {
-	log.Println("[Debug] handle request")
 	lambda.Start(authMiddleware(HandleRequest))
 }
