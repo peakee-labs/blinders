@@ -303,6 +303,11 @@ resource "aws_lambda_function" "explore" {
       USERS_MONGO_DATABASE : local.envs.USERS_MONGO_DATABASE
       USERS_MONGO_DATABASE_URL : local.envs.USERS_MONGO_DATABASE_URL
 
+      REDIS_HOST : local.envs.REDIS_HOST
+      REDIS_PORT: local.envs.REDIS_PORT
+      REDIS_USERNAME: local.envs.REDIS_USERNAME
+      REDIS_PASSWORD: local.envs.REDIS_PASSWORD
+
       MATCHING_MONGO_DATABASE : local.envs.MATCHING_MONGO_DATABASE
       MATCHING_MONGO_DATABASE_URL : local.envs.MATCHING_MONGO_DATABASE_URL
     }
