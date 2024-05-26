@@ -538,13 +538,22 @@ func (s Service) HandleGetDefaultFlashcardCollection(ctx *fiber.Ctx) error {
 
 	// default collection id will be user id
 	userOID, _ := primitive.ObjectIDFromHex(authUser.ID)
+	var metadata *practicedb.CardCollectionMetadata
 	collection, err := s.FlashCardRepo.GetFlashCardCollectionByID(userOID)
 	if err != nil {
 		log.Println("cannot get default flash card collection:", err)
-		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "user has no default collection"})
+		// instead of return error, we could try to return any default flashcard collection
+		collection = &practicedb.CardCollection{
+			ID:         userOID,
+			UserID:     userOID,
+			FlashCards: []*practicedb.FlashCard{&DefaultFlashCard},
+		}
+		metadata = CreateDefaultCollectionMetadata(userOID)
+		metadata.Total = []primitive.ObjectID{DefaultFlashCard.ID}
+		goto returnCollection
 	}
 
-	metadata, err := s.CollectionMetadatasRepo.GetByID(userOID)
+	metadata, err = s.CollectionMetadatasRepo.GetByID(userOID)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			// metadata of default collection is not created
@@ -554,6 +563,8 @@ func (s Service) HandleGetDefaultFlashcardCollection(ctx *fiber.Ctx) error {
 				total[i] = card.ID
 			}
 			metadata = CreateDefaultCollectionMetadata(userOID)
+			metadata.Total = total
+
 			metadata, err = s.CollectionMetadatasRepo.Insert(metadata)
 			if err != nil {
 				log.Println("cannot insert default collection metadata:", err)
@@ -561,6 +572,7 @@ func (s Service) HandleGetDefaultFlashcardCollection(ctx *fiber.Ctx) error {
 		}
 	}
 
+returnCollection:
 	responseCollection := ResponseFlashCardCollection{
 		Metadata:   *metadata,
 		FlashCards: collection.FlashCards,
