@@ -2,6 +2,7 @@ package practiceapi
 
 import (
 	"blinders/packages/db/collectingdb"
+	"blinders/packages/db/practicedb"
 )
 
 var (
@@ -238,5 +239,11 @@ var (
 				KeyWords:    []string{"startup culture", "creativity", "learning"},
 			},
 		},
+	}
+	DefaultFlashCard = practicedb.FlashCard{
+		FrontText:   "Minimum Viable Product (MVP)",
+		FrontImgURL: "",
+		BackText:    "The simplest version of a product that can be released to test ideas and gather user feedback.",
+		BackImgURL:  "",
 	}
 )

@@ -8,13 +8,14 @@ import (
 
 	"blinders/packages/db/collectingdb"
 	dbutils "blinders/packages/db/utils"
+	core "blinders/services/collecting/core"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 )
 
-var m *Manager
+var m *core.Manager
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
@@ -36,7 +37,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	m = NewManager(
+	m = core.NewManager(
 		app,
 		collectingdb.NewCollectingDB(client.Database(dbName)),
 	)
@@ -46,5 +47,9 @@ func init() {
 }
 
 func main() {
-	fmt.Println("hello world from collecting service")
+	port := os.Getenv("COLLECTING_SERVICE_PORT")
+	err := m.App.Listen(fmt.Sprintf(":%s", port))
+	if err != nil {
+		log.Println("launch collecting service error", err)
+	}
 }

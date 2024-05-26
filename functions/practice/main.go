@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"blinders/packages/auth"
+	"blinders/packages/db/practicedb"
 	"blinders/packages/db/usersdb"
 	dbutils "blinders/packages/db/utils"
 	"blinders/packages/transport"
@@ -32,6 +33,12 @@ func init() {
 	}
 	usersRepo := usersdb.NewUsersRepo(usersDB)
 
+	practiceDB, err := dbutils.InitMongoDatabaseFromEnv("PRACTICE")
+	if err != nil {
+		log.Fatal(err)
+	}
+	flashcardsRepo := practicedb.NewFlashCardRepo(practiceDB)
+
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {
 		log.Fatal(err)
@@ -52,6 +59,7 @@ func init() {
 		app,
 		authManager,
 		usersRepo,
+		flashcardsRepo,
 		transport.NewLambdaTransport(cfg),
 		transport.ConsumerMap{
 			transport.CollectingPush: os.Getenv("COLLECTING_PUSH_FUNCTION_NAME"),
@@ -61,7 +69,7 @@ func init() {
 	api.App.Use(logger.New(logger.Config{Format: utils.DefaultGinLoggerFormat}))
 	api.App.Use(cors.New(cors.Config{
 		AllowOrigins: utils.GetOriginsFromEnv(),
-		AllowMethods: "GET",
+		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 		AllowHeaders: "*",
 	}))
 	api.InitRoute()
