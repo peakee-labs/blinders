@@ -137,7 +137,6 @@ func (r *MatchingRepo) DropByUserID(userID primitive.ObjectID) (*MatchInfo, erro
 func (r *MatchingRepo) GetMatchingPool(userID primitive.ObjectID, limit int) ([]MatchInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	r.Find(ctx, nil, options.Find().SetLimit(int64(limit)))
 
 	stages := []bson.M{
 		{"$match": bson.M{

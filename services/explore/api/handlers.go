@@ -65,7 +65,7 @@ func (s *Service) HandleGetMatches(ctx *fiber.Ctx) error {
 	}
 	userOID, _ := primitive.ObjectIDFromHex(userAuth.ID)
 
-	candidates, err := s.Core.SuggestWithContext(userAuth.ID)
+	candidates, err := s.Core.SuggestWithContext(userOID)
 	if err != nil {
 		goto returnRandomPool
 	}

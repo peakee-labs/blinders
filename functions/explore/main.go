@@ -16,7 +16,6 @@ import (
 	"blinders/packages/utils"
 
 	dbutils "blinders/packages/db/utils"
-
 	exploreapi "blinders/services/explore/api"
 
 	"github.com/aws/aws-lambda-go/events"
