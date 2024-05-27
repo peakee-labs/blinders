@@ -141,7 +141,7 @@ func (s Service) HandleUpdateMatchingProfile(ctx *fiber.Ctx) error {
 	matchInformation.SetID(currentInformation.ID)
 	matchInformation.SetInitTime(currentInformation.CreatedAt.Time())
 
-	needUpdateEmbed := s.CheckIfNeededToUpdateEmbed(currentInformation, matchInformation)
+	needUpdateEmbed := checkIfNeededToUpdateEmbed(currentInformation, matchInformation)
 
 	_, err = s.Core.UpdaterUserMatchInformation(matchInformation)
 	if err != nil {
@@ -238,7 +238,7 @@ func (s *Service) AddUserMatch(info *matchingdb.MatchInfo) error {
 	return nil
 }
 
-func (s *Service) CheckIfNeededToUpdateEmbed(old, new *matchingdb.MatchInfo) bool {
+func checkIfNeededToUpdateEmbed(old, new *matchingdb.MatchInfo) bool {
 	// TODO: remove this hard-coded check
 	if old.Gender != new.Gender && new.Gender != "" {
 		return true
@@ -263,5 +263,6 @@ func (s *Service) CheckIfNeededToUpdateEmbed(old, new *matchingdb.MatchInfo) boo
 	if strings.Join(old.Interests, ",") != strings.Join(new.Interests, ",") {
 		return true
 	}
+
 	return false
 }
