@@ -4,6 +4,7 @@ use (
 	./cli
 	./functions/authenticate
 	./functions/collecting
+	./functions/embedder
 	./functions/explore
 	./functions/gosuggest
 	./functions/practice
