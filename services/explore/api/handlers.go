@@ -20,6 +20,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+const UserEmbedFormat = "[BEGIN]gender: %s[SEP]age: %v[SEP]job: %s[SEP]native language: %s[SEP]learning language: %s[SEP]country: %s[SEP]interests: %s[END]"
+
 type Service struct {
 	Core             explore.Explorer
 	RedisClient      *redis.Client
@@ -85,16 +87,6 @@ returnRandomPool:
 	return ctx.Status(fiber.StatusOK).JSON(pool)
 }
 
-type matchUserBody struct {
-	Gender    string   `json:"gender"`
-	Major     string   `json:"major"`
-	Native    string   `json:"native"`    // language code with RFC-5646 format
-	Country   string   `json:"country"`   // ISO-3166 format
-	Learnings []string `json:"learnings"` // languages code with RFC-5646 format
-	Interests []string `json:"interests"`
-	Age       int      `json:"age"`
-}
-
 func (s *Service) HandleAddMatchingProfile(ctx *fiber.Ctx) error {
 	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
 	if !ok {
@@ -149,11 +141,7 @@ func (s Service) HandleUpdateMatchingProfile(ctx *fiber.Ctx) error {
 	matchInformation.SetID(currentInformation.ID)
 	matchInformation.SetInitTime(currentInformation.CreatedAt.Time())
 
-	embed, err := s.HandleGetEmbedding(matchInformation)
-	if err != nil {
-		log.Println("cannot get embedding", err)
-		return fmt.Errorf("cannot get embedding")
-	}
+	needUpdateEmbed := s.CheckIfNeededToUpdateEmbed(currentInformation, matchInformation)
 
 	_, err = s.Core.UpdaterUserMatchInformation(matchInformation)
 	if err != nil {
@@ -161,12 +149,21 @@ func (s Service) HandleUpdateMatchingProfile(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot update user match"})
 	}
 
+	if !needUpdateEmbed {
+		return ctx.SendStatus(fiber.StatusOK)
+	}
+
+	embed, err := s.HandleGetEmbedding(matchInformation)
+	if err != nil {
+		log.Println("cannot get embedding", err)
+		return fmt.Errorf("cannot get embedding")
+	}
 	if err := s.Core.UpdateEmbedding(userOID, embed); err != nil {
 		log.Println("cannot update user embed", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot update user embed"})
 	}
-
 	return ctx.SendStatus(fiber.StatusOK)
+
 }
 
 // InternalHandleAddUserMatch will add match-related information to match db
@@ -187,8 +184,6 @@ func (s *Service) InternalHandleAddUserMatch(ctx *fiber.Ctx) error {
 
 	return ctx.SendStatus(http.StatusOK)
 }
-
-const UserEmbedFormat = "[BEGIN]gender: %s[SEP]age: %v[SEP]job: %s[SEP]native language: %s[SEP]learning language: %s[SEP]country: %s[SEP]interests: %s[END]"
 
 func (s *Service) HandleGetEmbedding(info *matchingdb.MatchInfo) ([]float32, error) {
 	requestPayload := transport.EmbeddingRequest{
@@ -242,4 +237,31 @@ func (s *Service) AddUserMatch(info *matchingdb.MatchInfo) error {
 	}
 
 	return nil
+}
+func (s *Service) CheckIfNeededToUpdateEmbed(old, new *matchingdb.MatchInfo) bool {
+	// TODO: remove this hard-coded check
+	if old.Gender != new.Gender && new.Gender != "" {
+		return true
+	}
+	if old.Age != new.Age && new.Age != 0 {
+		return true
+	}
+	if old.Major != new.Major && new.Major != "" {
+		return true
+	}
+	if old.Native != new.Native && new.Native != "" {
+		return true
+	}
+	if old.Country != new.Country && new.Country != "" {
+		return true
+	}
+
+	if strings.Join(old.Learnings, ",") != strings.Join(new.Learnings, ",") {
+		return true
+	}
+
+	if strings.Join(old.Interests, ",") != strings.Join(new.Interests, ",") {
+		return true
+	}
+	return false
 }
