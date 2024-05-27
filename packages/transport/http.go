@@ -49,6 +49,7 @@ func (t HTTPTransport) Request(
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
 
 	rsp, err := t.client.Do(req)
 	if err != nil {

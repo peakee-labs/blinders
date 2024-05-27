@@ -148,10 +148,22 @@ func (s Service) HandleUpdateMatchingProfile(ctx *fiber.Ctx) error {
 	matchInformation.UserID = userOID
 	matchInformation.SetID(currentInformation.ID)
 	matchInformation.SetInitTime(currentInformation.CreatedAt.Time())
-	matchInformation, err = s.Core.AddUserMatchInformation(matchInformation)
+
+	embed, err := s.HandleGetEmbedding(matchInformation)
+	if err != nil {
+		log.Println("cannot get embedding", err)
+		return fmt.Errorf("cannot get embedding")
+	}
+
+	matchInformation, err = s.Core.UpdaterUserMatchInformation(matchInformation)
 	if err != nil {
 		log.Println("cannot update user match", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot update user match"})
+	}
+
+	if err := s.Core.UpdateEmbedding(userOID, embed); err != nil {
+		log.Println("cannot update user embed", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot update user embed"})
 	}
 
 	return ctx.SendStatus(fiber.StatusOK)
