@@ -1,13 +1,14 @@
 package main
 
 import (
-	"blinders/functions/embedder/core"
-	"blinders/packages/transport"
-	"blinders/packages/utils"
 	"context"
 	"log"
 	"os"
 	"time"
+
+	"blinders/packages/transport"
+	"blinders/packages/utils"
+	"blinders/services/embedder/core"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
@@ -21,7 +22,10 @@ func init() {
 	env := os.Getenv("ENVIRONMENT")
 	log.Printf("Embbeder api running on %s environment\n", env)
 
-	brrc := core.InitBedrockRuntimeClientFromConfig()
+	brrc, err := core.InitBedrockRuntimeClientFromConfig()
+	if err != nil {
+		log.Fatalln("cannot init bedrock runtime client", err)
+	}
 	modelID := os.Getenv("EMBEDDER_MODEL_ID")
 	if modelID == "" {
 		modelID = "cohere.embed-english-v3"
