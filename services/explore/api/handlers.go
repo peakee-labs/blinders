@@ -41,6 +41,22 @@ func NewService(
 	}
 }
 
+func (s *Service) HandleGetMatchingProfileOfUser(ctx *fiber.Ctx) error {
+	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
+	if !ok {
+		log.Panic("cannot get auth user")
+	}
+	userOID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+
+	profile, err := s.Core.GetMatchingProfile(userOID)
+	if err != nil {
+		log.Println("cannot get matching profile", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get matching profile"})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(profile)
+}
+
 func (s *Service) HandleGetMatchingProfile(ctx *fiber.Ctx) error {
 	matchID := ctx.Params("id")
 	if matchID == "" {
@@ -72,6 +88,7 @@ func (s *Service) HandleGetMatches(ctx *fiber.Ctx) error {
 
 	candidates, err := s.Core.SuggestWithContext(userOID)
 	if err != nil {
+		log.Println("cannot get suggest for user", userAuth.ID, "err", err)
 		goto returnRandomPool
 	}
 

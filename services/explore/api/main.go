@@ -38,5 +38,6 @@ func (m *Manager) InitRoute() {
 	authorizedRoute.Get("/suggest", m.Service.HandleGetMatches)
 	authorizedRoute.Get("/profiles/:id", m.Service.HandleGetMatchingProfile)
 	authorizedRoute.Post("/profiles", m.Service.HandleAddMatchingProfile)
+	authorizedRoute.Get("/profile", m.Service.HandleGetMatchingProfileOfUser)
 	authorizedRoute.Put("/profiles", m.Service.HandleUpdateMatchingProfile)
 }

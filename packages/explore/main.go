@@ -161,7 +161,7 @@ func (m *MongoExplorer) SuggestWithContext(userID primitive.ObjectID) ([]matchin
 		return nil, err
 	}
 
-	var res []matchingdb.MatchInfo
+	res := make([]matchingdb.MatchInfo, 0)
 	for _, doc := range cmd.Val().(map[any]any)["results"].([]any) {
 		userID := doc.(map[any]any)["extra_attributes"].(map[any]any)["id"].(string)
 		oid, err := primitive.ObjectIDFromHex(userID)
