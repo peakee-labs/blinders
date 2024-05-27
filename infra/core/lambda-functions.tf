@@ -437,7 +437,7 @@ resource "aws_lambda_function" "goembedder" {
   role             = aws_iam_role.lambda_role.arn
   runtime          = "provided.al2"
   architectures    = ["arm64"]
-  depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+  # depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
   source_code_hash = filebase64sha256("../../dist/goembedder-${var.project.environment}.zip")
 
   environment {
