@@ -95,7 +95,7 @@ type matchUserBody struct {
 	Age       int      `json:"age"`
 }
 
-func (s *Service) HandleAddUserMatch(ctx *fiber.Ctx) error {
+func (s *Service) HandleAddMatchingProfile(ctx *fiber.Ctx) error {
 	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
 	if !ok {
 		log.Panic("cannot get auth user")

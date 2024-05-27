@@ -14,7 +14,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+var (
+	defaultLimit    = 5
 	vectorIndexName = "idx:match_vss"
+	vectorSize      = 1024 // size of embedding vector return from cohere model
+)
 
 type Explorer interface {
 	// SuggestWithContext returns list of users that maybe match with given user
