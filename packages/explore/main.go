@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var defaultLimit = 5
+	vectorIndexName = "idx:match_vss"
 
 type Explorer interface {
 	// SuggestWithContext returns list of users that maybe match with given user
@@ -40,11 +40,12 @@ func NewExplorer(
 	usersRepo *usersdb.UsersRepo,
 	redisClient *redis.Client,
 ) *MongoExplorer {
-	return &MongoExplorer{
+	explorer := &MongoExplorer{
 		MatchingRepo: matchingRepo,
 		UsersRepo:    usersRepo,
 		RedisClient:  redisClient,
 	}
+		"FT.CREATE",
 }
 
 /*
