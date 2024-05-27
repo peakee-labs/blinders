@@ -23,6 +23,7 @@ use (
 	./packages/utils
 	./services/collecting
 	./services/explore
+	./services/goembedder
 	./services/practice
 	./services/rest
 	./tests

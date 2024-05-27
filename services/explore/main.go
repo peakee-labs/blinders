@@ -90,8 +90,8 @@ func init() {
 	service = exploreapi.NewService(core, redisClient, tp)
 
 	manager = exploreapi.NewManager(app, authManager, usersRepo, service)
-	manager.App.Use(logger.New(), cors.New())
 
+	manager.App.Use(logger.New(), cors.New())
 	manager.InitRoute()
 
 	// Expose for local development

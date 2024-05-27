@@ -238,6 +238,18 @@ func (m *MongoExplorer) AddEmbedding(userID primitive.ObjectID, embed EmbeddingV
 }
 
 func (m *MongoExplorer) UpdateEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error {
+	_, err := m.MatchingRepo.GetByUserID(userID)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	err = m.RedisClient.JSONSet(
+		ctx, CreateMatchKeyWithUserID(userID.Hex()),
+		"$.embed",
+		embed,
+	).Err()
 	return nil
 }
 
