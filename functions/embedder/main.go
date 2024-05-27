@@ -13,9 +13,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-var (
-	embedder *core.Embedder
-)
+var embedder *core.Embedder
 
 func init() {
 	st := time.Now()
@@ -57,13 +55,14 @@ func HandleRequest(
 }
 
 func HandleInternalEmbeddingRequest(
-	ctx context.Context,
+	_ context.Context,
 	req transport.EmbeddingRequest,
 ) (transport.EmbeddingResponse, error) {
 	embeddVector, err := embedder.Embedding(req.Payload)
 	if err != nil {
 		log.Fatalln("cannot get embedding", err)
 	}
+
 	res := transport.EmbeddingResponse{
 		Embedded: embeddVector,
 	}

@@ -1,13 +1,14 @@
 package main
 
 import (
-	"blinders/services/embedder/api"
-	"blinders/services/embedder/core"
 	"context"
 	"fmt"
 	"log"
 	"os"
 	"strings"
+
+	"blinders/services/embedder/api"
+	"blinders/services/embedder/core"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/gofiber/fiber/v2"
@@ -36,6 +37,9 @@ func init() {
 		config.WithRegion("ap-south-1"),
 		config.WithSharedConfigProfile("admin.peakee"),
 	)
+	if err != nil {
+		log.Fatal("failed to load aws config", err)
+	}
 
 	brrc, err := core.InitBedrockRuntimeClientFromConfig(cfg)
 	if err != nil {

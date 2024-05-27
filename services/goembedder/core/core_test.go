@@ -1,9 +1,10 @@
 package core_test
 
 import (
-	"blinders/services/embedder/core"
 	"context"
 	"testing"
+
+	"blinders/services/embedder/core"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/test-go/testify/assert"

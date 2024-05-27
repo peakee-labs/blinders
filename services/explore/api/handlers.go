@@ -155,7 +155,7 @@ func (s Service) HandleUpdateMatchingProfile(ctx *fiber.Ctx) error {
 		return fmt.Errorf("cannot get embedding")
 	}
 
-	matchInformation, err = s.Core.UpdaterUserMatchInformation(matchInformation)
+	_, err = s.Core.UpdaterUserMatchInformation(matchInformation)
 	if err != nil {
 		log.Println("cannot update user match", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot update user match"})

@@ -250,7 +250,7 @@ func (m *MongoExplorer) UpdateEmbedding(userID primitive.ObjectID, embed Embeddi
 		"$.embed",
 		embed,
 	).Err()
-	return nil
+	return err
 }
 
 func (m *MongoExplorer) SuggestRandom(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error) {
