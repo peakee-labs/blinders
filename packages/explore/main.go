@@ -27,10 +27,14 @@ type Explorer interface {
 	AddUserMatchInformation(info *matchingdb.MatchInfo) (*matchingdb.MatchInfo, error)
 	// AddEmbedding adds user embed vector to the vector database.
 	AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error
+	// UpdateEmbedding updates user embed vector to the vector database.
+	UpdateEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error
 	// SuggestRandom returns list of random 5 users that maybe match with given user
 	SuggestRandom(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error)
 	// GetMatchingProfile returns matching profile of given user
 	GetMatchingProfile(userID primitive.ObjectID) (*matchingdb.MatchInfo, error)
+	// UpdaterUserMatchInformation updates user match information to the database.
+	UpdaterUserMatchInformation(info *matchingdb.MatchInfo) (*matchingdb.MatchInfo, error)
 }
 
 type MongoExplorer struct {
@@ -49,7 +53,36 @@ func NewExplorer(
 		UsersRepo:    usersRepo,
 		RedisClient:  redisClient,
 	}
+
+	err := redisClient.Do(context.Background(),
+		"FT.INFO",
+		vectorIndexName,
+	).Err()
+	if err == nil {
+		log.Println("explore: index exists for vector database")
+		return explorer
+	}
+
+	log.Printf("explore: cannot find index for vector database, creating new index, response from redis %v\n", err)
+	err = redisClient.Do(context.Background(),
 		"FT.CREATE",
+		vectorIndexName,
+		"ON", "JSON",
+		"PREFIX", 1, "match:",
+		"SCHEMA",
+		"$.id", "AS", "id", "TEXT",
+		"$.embed", "AS", "embed", "VECTOR",
+		"HNSW", 6,
+		"DIM", vectorSize,
+		"DISTANCE_METRIC", "L2",
+		"TYPE", "FLOAT32",
+	).Err()
+	if err != nil {
+		log.Println("explore: cannot create index for vector database, err:", err)
+		return nil
+	}
+
+	return explorer
 }
 
 /*
@@ -172,12 +205,27 @@ func (m *MongoExplorer) AddUserMatchInformation(
 	return info, nil
 }
 
+func (m *MongoExplorer) UpdaterUserMatchInformation(
+	info *matchingdb.MatchInfo,
+) (*matchingdb.MatchInfo, error) {
+	_, err := m.UsersRepo.GetUserByID(info.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	info, err = m.MatchingRepo.UpdateByUserID(info.UserID, info)
+	if err != nil {
+		return nil, err
+	}
+
+	return info, nil
+}
+
 func (m *MongoExplorer) AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error {
 	_, err := m.MatchingRepo.GetByUserID(userID)
 	if err != nil {
 		return err
 	}
-	fmt.Println("checkpoint")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -189,10 +237,14 @@ func (m *MongoExplorer) AddEmbedding(userID primitive.ObjectID, embed EmbeddingV
 	return err
 }
 
+func (m *MongoExplorer) UpdateEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error {
+	return nil
+}
+
 func (m *MongoExplorer) SuggestRandom(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error) {
 	return m.MatchingRepo.GetMatchingPool(userID, defaultLimit)
 }
 
 func (m *MongoExplorer) GetMatchingProfile(userID primitive.ObjectID) (*matchingdb.MatchInfo, error) {
-	return m.MatchingRepo.GetByID(userID)
+	return m.MatchingRepo.GetByUserID(userID)
 }
