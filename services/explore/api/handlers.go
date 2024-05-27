@@ -163,7 +163,6 @@ func (s Service) HandleUpdateMatchingProfile(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot update user embed"})
 	}
 	return ctx.SendStatus(fiber.StatusOK)
-
 }
 
 // InternalHandleAddUserMatch will add match-related information to match db
@@ -238,6 +237,7 @@ func (s *Service) AddUserMatch(info *matchingdb.MatchInfo) error {
 
 	return nil
 }
+
 func (s *Service) CheckIfNeededToUpdateEmbed(old, new *matchingdb.MatchInfo) bool {
 	// TODO: remove this hard-coded check
 	if old.Gender != new.Gender && new.Gender != "" {
