@@ -158,4 +158,23 @@ func (r *MatchingRepo) GetMatchingPool(userID primitive.ObjectID, limit int) ([]
 	}
 	return result, nil
 }
+
+func (r *MatchingRepo) UpdateByUserID(userID primitive.ObjectID, update *MatchInfo) (*MatchInfo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
 	filter := bson.M{
+		"userId": userID,
+	}
+	update.SetUpdatedAtByNow()
+	cur, err := r.ReplaceOne(ctx, filter, update)
+	if err != nil {
+		return update, err
+	}
+
+	if cur.MatchedCount == 0 {
+		return update, mongo.ErrNoDocuments
+	}
+
+	return update, nil
+}

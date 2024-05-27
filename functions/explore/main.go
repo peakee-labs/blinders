@@ -66,7 +66,7 @@ func init() {
 		log.Panicln("failed to load aws config:", err)
 	}
 	consumerMap := transport.ConsumerMap{
-		transport.Embed: os.Getenv("EMBEDDER_ENDPOINT"),
+		transport.Embed: os.Getenv("EMBEDDER_FUNCTION_NAME"),
 	}
 	transporter := transport.NewLambdaTransportWithConsumers(cfg, consumerMap)
 
