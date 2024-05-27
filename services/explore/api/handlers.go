@@ -123,6 +123,40 @@ func (s *Service) HandleAddMatchingProfile(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(fiber.StatusOK)
 }
 
+func (s Service) HandleUpdateMatchingProfile(ctx *fiber.Ctx) error {
+	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
+	if !ok {
+		log.Panic("cannot get auth user")
+	}
+	userOID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+	currentInformation, err := s.Core.GetMatchingProfile(userOID)
+	if err != nil {
+		log.Println("cannot get current matching profile", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "matching profile must be created first"})
+	}
+	userMatch := new(matchUserBody)
+	if err := json.Unmarshal(ctx.Body(), userMatch); err != nil {
+		log.Println("cannot unmarshal user match", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot unmarshal user match"})
+	}
+
+	matchInformation, err := utils.JSONConvert[matchingdb.MatchInfo](userMatch)
+	if err != nil {
+		log.Println("cannot convert match info", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot convert match info"})
+	}
+	matchInformation.UserID = userOID
+	matchInformation.SetID(currentInformation.ID)
+	matchInformation.SetInitTime(currentInformation.CreatedAt.Time())
+	matchInformation, err = s.Core.AddUserMatchInformation(matchInformation)
+	if err != nil {
+		log.Println("cannot update user match", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot update user match"})
+	}
+
+	return ctx.SendStatus(fiber.StatusOK)
+}
+
 // InternalHandleAddUserMatch will add match-related information to match db
 func (s *Service) InternalHandleAddUserMatch(ctx *fiber.Ctx) error {
 	userMatch := new(matchingdb.MatchInfo)
@@ -144,7 +178,7 @@ func (s *Service) InternalHandleAddUserMatch(ctx *fiber.Ctx) error {
 
 const UserEmbedFormat = "[BEGIN]gender: %s[SEP]age: %v[SEP]job: %s[SEP]native language: %s[SEP]learning language: %s[SEP]country: %s[SEP]interests: %s[END]"
 
-func (s *Service) AddUserMatch(info *matchingdb.MatchInfo) error {
+func (s *Service) HandleGetEmbedding(info *matchingdb.MatchInfo) ([]float32, error) {
 	requestPayload := transport.EmbeddingRequest{
 		Request: transport.Request{Type: transport.Embedding},
 		Payload: fmt.Sprintf(
@@ -165,13 +199,23 @@ func (s *Service) AddUserMatch(info *matchingdb.MatchInfo) error {
 	response, err := s.Transport.Request(ctx, s.Transport.ConsumerID(transport.Embed), requestBytes)
 	if err != nil {
 		log.Println("cannot request embed vector", err)
-		return fmt.Errorf("failed to embed user match")
+		return nil, fmt.Errorf("failed to embed user match")
 	}
 
 	rsp, err := utils.ParseJSON[transport.EmbeddingResponse](response)
 	if err != nil {
 		log.Println("cannot get embed from embedder response", err)
-		return fmt.Errorf("can not get embed from embedder response")
+		return nil, fmt.Errorf("can not get embed from embedder response")
+	}
+
+	return rsp.Embedded, nil
+}
+
+func (s *Service) AddUserMatch(info *matchingdb.MatchInfo) error {
+	embed, err := s.HandleGetEmbedding(info)
+	if err != nil {
+		log.Println("cannot get embedding", err)
+		return fmt.Errorf("cannot get embedding")
 	}
 
 	info, err = s.Core.AddUserMatchInformation(info)
@@ -180,7 +224,7 @@ func (s *Service) AddUserMatch(info *matchingdb.MatchInfo) error {
 		return fmt.Errorf("cannot add user match information")
 	}
 
-	if err := s.Core.AddEmbedding(info.UserID, rsp.Embedded); err != nil {
+	if err := s.Core.AddEmbedding(info.UserID, embed); err != nil {
 		log.Println("cannot add user embed", err)
 		return fmt.Errorf("cannot add user embed")
 	}
