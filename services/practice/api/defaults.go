@@ -257,7 +257,7 @@ var (
 		{
 			FrontText:   "Pitch Deck",
 			FrontImgURL: "",
-			BackText:    "A presentation often used to seek funding from investors.",
+			BackText:    "A presentation often used to seek funding from investors",
 			BackImgURL:  "",
 		},
 		{
@@ -269,13 +269,13 @@ var (
 		{
 			FrontText:   "Bootstrapping",
 			FrontImgURL: "",
-			BackText:    "Building a company from the ground up with little or no outside capital.",
+			BackText:    "Khởi động",
 			BackImgURL:  "",
 		},
 		{
 			FrontText:   "Acquisition",
 			FrontImgURL: "",
-			BackText:    "The process by which one company purchases another company.",
+			BackText:    "Sự mua lại",
 			BackImgURL:  "",
 		},
 	}
