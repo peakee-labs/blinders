@@ -30,11 +30,17 @@ var (
 )
 
 func init() {
-	envFile := ".env.dev"
+	environment := os.Getenv("ENVIRONMENT")
+	log.Println("explore api running on environment:", environment)
+	envFile := ".env"
+
+	if environment != "" {
+		envFile = fmt.Sprintf(".env.%s", environment)
+	}
+
 	if err := godotenv.Load(envFile); err != nil {
 		log.Fatal("failed to load env", err)
 	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
