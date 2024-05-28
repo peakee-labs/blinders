@@ -138,7 +138,7 @@ sh scripts/build_all.sh dev|staging|prod
 
 At the first time or having any update to the shared state
 
-Note: if you change the profile name, you might want to update backend.conf file and reconfigure backend config of the terraform state.
+Note: if you change the profile name, you might want to update backend.conf file and reconfigure backend config of the terraform state. `AWS_PROFILE=peakee.admin terraform init -reconfigure -backend-config=../backend.conf`
 
 ```
 # run plan

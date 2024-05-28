@@ -105,7 +105,7 @@ func HandleRequest(
 	}
 	userID, _ := primitive.ObjectIDFromHex(authUser.ID)
 	event := transport.AddExplainLogEvent{
-		Event: transport.Event{Type: transport.AddTranslateLog},
+		Event: transport.Event{Type: transport.AddExplainLog},
 		Payload: collectingdb.ExplainLog{
 			UserID:   userID,
 			Request:  collectingdb.ExplainRequest{Text: phrase, Sentence: sentence},
