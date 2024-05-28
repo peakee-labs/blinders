@@ -240,10 +240,46 @@ var (
 			},
 		},
 	}
-	DefaultFlashCard = practicedb.FlashCard{
-		FrontText:   "Minimum Viable Product (MVP)",
-		FrontImgURL: "",
-		BackText:    "The simplest version of a product that can be released to test ideas and gather user feedback.",
-		BackImgURL:  "",
+	DefaultFlashcards = []practicedb.FlashCard{
+		{
+			FrontText: "Friendship",
+			BackText:  "Tình bạn",
+		},
+		{
+			FrontText: "Knowledge",
+			BackText:  "Kiến thức",
+		},
+		{
+			FrontText: "Courage",
+			BackText:  " Dũng cảm",
+		},
+		{
+			FrontText: "Wisdom",
+			BackText:  "Trí tuệ",
+		},
+		{
+			FrontText: "Success",
+			BackText:  "Thành công",
+		},
+		{
+			FrontText: "Integrity",
+			BackText:  "Chính trực",
+		},
+		{
+			FrontText: "Patience",
+			BackText:  "Kiên nhẫn",
+		},
+		{
+			FrontText: "Gratitude",
+			BackText:  "Biết ơn",
+		},
+		{
+			FrontText: "Perseverance",
+			BackText:  "Kiên trì",
+		},
+		{
+			FrontText: "Harmony",
+			BackText:  "Hòa hợp",
+		},
 	}
 )
