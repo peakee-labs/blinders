@@ -3,6 +3,9 @@ package practiceapi
 import (
 	"blinders/packages/db/collectingdb"
 	"blinders/packages/db/practicedb"
+	dbutils "blinders/packages/db/utils"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -242,42 +245,72 @@ var (
 	}
 	DefaultFlashcards = []practicedb.FlashCard{
 		{
+			RawModel: dbutils.RawModel{
+				ID: primitive.NewObjectID(),
+			},
 			FrontText: "Friendship",
 			BackText:  "Tình bạn",
 		},
 		{
+			RawModel: dbutils.RawModel{
+				ID: primitive.NewObjectID(),
+			},
 			FrontText: "Knowledge",
 			BackText:  "Kiến thức",
 		},
 		{
+			RawModel: dbutils.RawModel{
+				ID: primitive.NewObjectID(),
+			},
 			FrontText: "Courage",
 			BackText:  " Dũng cảm",
 		},
 		{
+			RawModel: dbutils.RawModel{
+				ID: primitive.NewObjectID(),
+			},
 			FrontText: "Wisdom",
 			BackText:  "Trí tuệ",
 		},
 		{
+			RawModel: dbutils.RawModel{
+				ID: primitive.NewObjectID(),
+			},
 			FrontText: "Success",
 			BackText:  "Thành công",
 		},
 		{
+			RawModel: dbutils.RawModel{
+				ID: primitive.NewObjectID(),
+			},
 			FrontText: "Integrity",
 			BackText:  "Chính trực",
 		},
 		{
+			RawModel: dbutils.RawModel{
+				ID: primitive.NewObjectID(),
+			},
 			FrontText: "Patience",
 			BackText:  "Kiên nhẫn",
 		},
 		{
+			RawModel: dbutils.RawModel{
+				ID: primitive.NewObjectID(),
+			},
 			FrontText: "Gratitude",
 			BackText:  "Biết ơn",
 		},
 		{
+			RawModel: dbutils.RawModel{
+				ID: primitive.NewObjectID(),
+			},
 			FrontText: "Perseverance",
 			BackText:  "Kiên trì",
 		},
 		{
+			RawModel: dbutils.RawModel{
+				ID: primitive.NewObjectID(),
+			},
 			FrontText: "Harmony",
 			BackText:  "Hòa hợp",
 		},
