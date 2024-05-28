@@ -24,7 +24,6 @@ import (
 )
 
 var (
-	service *exploreapi.Service
 	manager *exploreapi.Manager
 	err     error
 )

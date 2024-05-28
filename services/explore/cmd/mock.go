@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
-	"math/rand"
-
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"sync"
 	"time"
