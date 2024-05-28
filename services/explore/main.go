@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"blinders/packages/auth"
@@ -18,14 +19,13 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
-	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
-	service *exploreapi.Service
 	manager *exploreapi.Manager
+	err     error
 )
 
 func init() {
@@ -39,44 +39,34 @@ func init() {
 	if err := godotenv.Load(envFile); err != nil {
 		log.Fatal("failed to load env", err)
 	}
-	app := fiber.New(fiber.Config{
-		WriteTimeout:          time.Second * 5,
-		ReadTimeout:           time.Second * 5,
-		DisableStartupMessage: true,
-	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	dbName := os.Getenv("MONGO_DATABASE")
-	url := os.Getenv("MONGO_DATABASE_URL")
+	redisClient := utils.NewRedisClientFromEnv(ctx)
 
-	client, err := dbutils.InitMongoClient(url)
-	if err != nil {
-		log.Fatal(err)
-	}
+	var usersDB *mongo.Database
+	var matchingDB *mongo.Database
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		usersDB, err = dbutils.InitMongoDatabaseFromEnv("USERS")
+		if err != nil {
+			log.Fatal("failed to init users db:", err)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		matchingDB, err = dbutils.InitMongoDatabaseFromEnv("MATCHING")
+		if err != nil {
+			log.Fatal("failed to init matching db:", err)
+		}
+	}()
+	wg.Wait()
 
-	redisClient := redis.NewClient(&redis.Options{
-		Addr: os.Getenv("REDIS_URL"),
-	})
-	if err := redisClient.Ping(ctx).Err(); err != nil {
-		panic(err)
-	}
-
-	adminJSON, _ := utils.GetFile("firebase.admin.json")
-	authManager, err := auth.NewFirebaseManager(adminJSON)
-	if err != nil {
-		panic(err)
-	}
-
-	// matchingDB := matchingdb.
-	usersRepo := usersdb.NewUsersRepo(client.Database(dbName))
-	matchingRepo := matchingdb.NewMatchingRepo(client.Database(dbName))
-	core := explore.NewExplorer(
-		matchingRepo,
-		usersRepo,
-		redisClient,
-	)
+	matchingRepo := matchingdb.NewMatchingRepo(matchingDB)
+	usersRepo := usersdb.NewUsersRepo(usersDB)
 
 	embedderEndpoint := fmt.Sprintf("http://localhost:%s/embedd", os.Getenv("EMBEDDER_SERVICE_PORT"))
 	fmt.Println("embedder endpoint: ", embedderEndpoint)
@@ -87,11 +77,17 @@ func init() {
 		},
 	)
 
-	service = exploreapi.NewService(core, redisClient, tp)
+	core := explore.NewExplorer(matchingRepo, usersRepo, redisClient)
+	service := exploreapi.NewService(core, redisClient, tp)
 
-	manager = exploreapi.NewManager(app, authManager, usersRepo, service)
+	adminJSON, _ := utils.GetFile("firebase.admin.json")
+	auth, err := auth.NewFirebaseManager(adminJSON)
+	if err != nil {
+		panic(err)
+	}
+	app := fiber.New()
 
-	manager.App.Use(logger.New(), cors.New())
+	manager = exploreapi.NewManager(app, auth, usersRepo, service)
 	manager.InitRoute()
 
 	// Expose for local development
@@ -99,6 +95,7 @@ func init() {
 		AllowOrigins: "http://localhost",
 		AllowMethods: "POST,GET,OPTIONS,PUT,DELETE",
 	}))
+
 	manager.App.All("/explore", manager.Service.InternalHandleAddUserMatch)
 }
 
