@@ -233,14 +233,11 @@ func (s Service) HandleGetPracticeFlashCard(ctx *fiber.Ctx) error {
 
 returnRandomFlashCard:
 	cards, err := s.FlashCardRepo.GetFlashCardByUserID(userOID)
-	if err != nil {
+	if err != nil || len(cards) == 0 {
 		log.Println("cannot get flashcard:", err)
-		return ctx.Status(http.StatusOK).JSON(DefaultFlashCard)
+		return ctx.Status(http.StatusOK).JSON(DefaultFlashcards[rand.Intn(len(DefaultFlashcards))])
 	}
-	if len(cards) == 0 {
-		log.Println("user has no flashcard")
-		return ctx.Status(http.StatusOK).JSON(DefaultFlashCard)
-	}
+
 	return ctx.Status(http.StatusOK).JSON(cards[rand.Intn(len(cards))])
 }
 
@@ -543,13 +540,21 @@ func (s Service) HandleGetDefaultFlashcardCollection(ctx *fiber.Ctx) error {
 	if err != nil {
 		log.Println("cannot get default flash card collection:", err)
 		// instead of return error, we could try to return any default flashcard collection
+		flashcards := []*practicedb.FlashCard{}
+		total := []primitive.ObjectID{}
+		for _, card := range DefaultFlashcards {
+			flashcards = append(flashcards, &card)
+			total = append(total, card.ID)
+		}
+
 		collection = &practicedb.CardCollection{
 			ID:         userOID,
 			UserID:     userOID,
-			FlashCards: []*practicedb.FlashCard{&DefaultFlashCard},
+			FlashCards: flashcards,
 		}
+
 		metadata = CreateDefaultCollectionMetadata(userOID)
-		metadata.Total = []primitive.ObjectID{DefaultFlashCard.ID}
+		metadata.Total = total
 		goto returnCollection
 	}
 

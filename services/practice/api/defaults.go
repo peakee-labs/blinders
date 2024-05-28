@@ -240,10 +240,43 @@ var (
 			},
 		},
 	}
-	DefaultFlashCard = practicedb.FlashCard{
-		FrontText:   "Minimum Viable Product (MVP)",
-		FrontImgURL: "",
-		BackText:    "The simplest version of a product that can be released to test ideas and gather user feedback.",
-		BackImgURL:  "",
+	DefaultFlashcards = []practicedb.FlashCard{
+		// define 10 flashcard about startup terms
+		{
+			FrontText:   "Pivot",
+			FrontImgURL: "",
+			BackText:    "Re-evaluate model, target markets and revamps strategy",
+			BackImgURL:  "",
+		},
+		{
+			FrontText:   "MVP",
+			FrontImgURL: "",
+			BackText:    "Minimum Viable Product",
+			BackImgURL:  "",
+		},
+		{
+			FrontText:   "Pitch Deck",
+			FrontImgURL: "",
+			BackText:    "A presentation often used to seek funding from investors.",
+			BackImgURL:  "",
+		},
+		{
+			FrontText:   "IPO",
+			FrontImgURL: "",
+			BackText:    "Initial Public Offering",
+			BackImgURL:  "",
+		},
+		{
+			FrontText:   "Bootstrapping",
+			FrontImgURL: "",
+			BackText:    "Building a company from the ground up with little or no outside capital.",
+			BackImgURL:  "",
+		},
+		{
+			FrontText:   "Acquisition",
+			FrontImgURL: "",
+			BackText:    "The process by which one company purchases another company.",
+			BackImgURL:  "",
+		},
 	}
 )
