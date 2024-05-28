@@ -135,6 +135,23 @@ func (m *MongoExplorer) SuggestWithContext(userID primitive.ObjectID) ([]matchin
 		return nil, err
 	}
 
+	// if user don't have enough candidates, we will suggest from matching pool
+	if len(candidates) < defaultLimit {
+		log.Println("explore: not enough candidates, suggesting from matching pool")
+		candidates = []string{}
+
+		matchingCandidates, err := m.MatchingRepo.GetMatchingPool(userID, 50)
+		if err != nil {
+			log.Println("explore: cannot get matching pool, err:", err)
+			return nil, err
+		}
+
+		for _, c := range matchingCandidates {
+			log.Println("appending candidate", c.ID.Hex())
+			candidates = append(candidates, c.UserID.Hex())
+		}
+	}
+
 	includeFilter := ""
 	if len(candidates) != 0 {
 		includeFilter = candidates[0]
@@ -148,7 +165,7 @@ func (m *MongoExplorer) SuggestWithContext(userID primitive.ObjectID) ([]matchin
 
 	cmd := m.RedisClient.Do(ctx,
 		"FT.SEARCH",
-		"idx:match_vss",
+		vectorIndexName,
 		fmt.Sprintf("%s=>[KNN %d @embed $query_vector as vector_score]", prefilter, defaultLimit),
 		"SORTBY", "vector_score",
 		"PARAMS", "2",
@@ -163,13 +180,16 @@ func (m *MongoExplorer) SuggestWithContext(userID primitive.ObjectID) ([]matchin
 
 	res := make([]matchingdb.MatchInfo, 0)
 	for _, doc := range cmd.Val().(map[any]any)["results"].([]any) {
-		userID := doc.(map[any]any)["extra_attributes"].(map[any]any)["id"].(string)
-		oid, err := primitive.ObjectIDFromHex(userID)
+		candidateID := doc.(map[any]any)["extra_attributes"].(map[any]any)["id"].(string)
+		oid, err := primitive.ObjectIDFromHex(candidateID)
 		if err != nil {
+			fmt.Println("cannot parse to oid", err)
 			return nil, err
 		}
+
 		user, err := m.MatchingRepo.GetByUserID(oid)
 		if err != nil {
+			fmt.Println("explore: cannot get user by id, err:", err)
 			return nil, err
 		}
 		res = append(res, *user)
