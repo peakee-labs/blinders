@@ -303,8 +303,15 @@ resource "aws_lambda_function" "explore" {
       USERS_MONGO_DATABASE : local.envs.USERS_MONGO_DATABASE
       USERS_MONGO_DATABASE_URL : local.envs.USERS_MONGO_DATABASE_URL
 
+      REDIS_HOST : local.envs.REDIS_HOST
+      REDIS_PORT: local.envs.REDIS_PORT
+      REDIS_USERNAME: local.envs.REDIS_USERNAME
+      REDIS_PASSWORD: local.envs.REDIS_PASSWORD
+
       MATCHING_MONGO_DATABASE : local.envs.MATCHING_MONGO_DATABASE
       MATCHING_MONGO_DATABASE_URL : local.envs.MATCHING_MONGO_DATABASE_URL
+
+      EMBEDDER_FUNCTION_NAME : aws_lambda_function.goembedder.function_name
     }
   }
 
@@ -412,6 +419,30 @@ resource "aws_lambda_function" "authenticate" {
 
       USERS_MONGO_DATABASE : local.envs.USERS_MONGO_DATABASE
       USERS_MONGO_DATABASE_URL : local.envs.USERS_MONGO_DATABASE_URL
+    }
+  }
+
+  tags = {
+    project     = var.project.name
+    environment = var.project.environment
+  }
+}
+
+
+resource "aws_lambda_function" "goembedder" {
+  function_name    = "${var.project.name}-goembedder-${var.project.environment}"
+  filename         = "../../dist/goembedder-${var.project.environment}.zip"
+  handler          = "bootstrap"
+  timeout          = 60
+  role             = aws_iam_role.lambda_role.arn
+  runtime          = "provided.al2"
+  architectures    = ["arm64"]
+  # depends_on       = [aws_iam_role_policy_attachment.attach_iam_policy_to_iam_role]
+  source_code_hash = filebase64sha256("../../dist/goembedder-${var.project.environment}.zip")
+
+  environment {
+    variables = {
+      ENVIRONMENT : var.project.environment
     }
   }
 

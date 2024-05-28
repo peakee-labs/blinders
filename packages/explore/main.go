@@ -14,13 +14,27 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+var (
+	defaultLimit    = 5
+	vectorIndexName = "idx:match_vss"
+	vectorSize      = 1024 // size of embedding vector return from cohere model
+)
+
 type Explorer interface {
-	// Suggest returns list of users that maybe match with given user
-	Suggest(userID string) ([]matchingdb.MatchInfo, error)
+	// SuggestWithContext returns list of users that maybe match with given user
+	SuggestWithContext(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error)
 	// AddUserMatchInformation adds user match information to the database.
-	AddUserMatchInformation(info matchingdb.MatchInfo) (matchingdb.MatchInfo, error)
+	AddUserMatchInformation(info *matchingdb.MatchInfo) (*matchingdb.MatchInfo, error)
 	// AddEmbedding adds user embed vector to the vector database.
 	AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error
+	// UpdateEmbedding updates user embed vector to the vector database.
+	UpdateEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error
+	// SuggestRandom returns list of random 5 users that maybe match with given user
+	SuggestRandom(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error)
+	// GetMatchingProfile returns matching profile of given user
+	GetMatchingProfile(userID primitive.ObjectID) (*matchingdb.MatchInfo, error)
+	// UpdaterUserMatchInformation updates user match information to the database.
+	UpdaterUserMatchInformation(info *matchingdb.MatchInfo) (*matchingdb.MatchInfo, error)
 }
 
 type MongoExplorer struct {
@@ -34,11 +48,41 @@ func NewExplorer(
 	usersRepo *usersdb.UsersRepo,
 	redisClient *redis.Client,
 ) *MongoExplorer {
-	return &MongoExplorer{
+	explorer := &MongoExplorer{
 		MatchingRepo: matchingRepo,
 		UsersRepo:    usersRepo,
 		RedisClient:  redisClient,
 	}
+
+	err := redisClient.Do(context.Background(),
+		"FT.INFO",
+		vectorIndexName,
+	).Err()
+	if err == nil {
+		log.Println("explore: index exists for vector database")
+		return explorer
+	}
+
+	log.Printf("explore: cannot find index for vector database, creating new index, response from redis %v\n", err)
+	err = redisClient.Do(context.Background(),
+		"FT.CREATE",
+		vectorIndexName,
+		"ON", "JSON",
+		"PREFIX", 1, "match:",
+		"SCHEMA",
+		"$.id", "AS", "id", "TEXT",
+		"$.embed", "AS", "embed", "VECTOR",
+		"HNSW", 6,
+		"DIM", vectorSize,
+		"DISTANCE_METRIC", "L2",
+		"TYPE", "FLOAT32",
+	).Err()
+	if err != nil {
+		log.Println("explore: cannot create index for vector database, err:", err)
+		return nil
+	}
+
+	return explorer
 }
 
 /*
@@ -51,21 +95,11 @@ or users who are currently learning the same language as the current user.
 
 We will then use KNN-search in the filtered space to identify 5 users that may match with the current user.
 */
-func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
+func (m *MongoExplorer) SuggestWithContext(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	oid, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		log.Printf(
-			"explore: cannot parse object id with given hex string(%s), err: %v\n",
-			userID,
-			err,
-		)
-		return nil, err
-	}
-
-	user, err := m.UsersRepo.GetUserByID(oid)
+	user, err := m.UsersRepo.GetUserByID(userID)
 	if err != nil {
 		log.Println("explore: cannot get user by id, err:", err)
 		return nil, err
@@ -73,7 +107,7 @@ func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
 
 	// JSONGet return value wrapped in an array.
 	// at here, if there aren't entries in redis, the jsonStr will be empty, we could check it here then return
-	jsonStr, err := m.RedisClient.JSONGet(ctx, CreateMatchKeyWithUserID(userID), "$.embed").Result()
+	jsonStr, err := m.RedisClient.JSONGet(ctx, CreateMatchKeyWithUserID(userID.Hex()), "$.embed").Result()
 	if err != nil || jsonStr == "" {
 		log.Println("explore: cannot get explore entry in redis, err:", err)
 		return []matchingdb.MatchInfo{}, fmt.Errorf(
@@ -89,7 +123,7 @@ func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
 	embed := embedArr[0]
 
 	// exclude friends of current user
-	excludeFilter := userID
+	excludeFilter := userID.Hex()
 	for _, friendID := range user.FriendIDs {
 		excludeFilter += " | " + friendID.Hex()
 	}
@@ -115,7 +149,7 @@ func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
 	cmd := m.RedisClient.Do(ctx,
 		"FT.SEARCH",
 		"idx:match_vss",
-		fmt.Sprintf("%s=>[KNN 5 @embed $query_vector as vector_score]", prefilter),
+		fmt.Sprintf("%s=>[KNN %d @embed $query_vector as vector_score]", prefilter, defaultLimit),
 		"SORTBY", "vector_score",
 		"PARAMS", "2",
 		"query_vector", &embed,
@@ -127,18 +161,18 @@ func (m *MongoExplorer) Suggest(userID string) ([]matchingdb.MatchInfo, error) {
 		return nil, err
 	}
 
-	var res []matchingdb.MatchInfo
+	res := make([]matchingdb.MatchInfo, 0)
 	for _, doc := range cmd.Val().(map[any]any)["results"].([]any) {
 		userID := doc.(map[any]any)["extra_attributes"].(map[any]any)["id"].(string)
 		oid, err := primitive.ObjectIDFromHex(userID)
 		if err != nil {
 			return nil, err
 		}
-		user, err := m.MatchingRepo.GetMatchInfoByUserID(oid)
+		user, err := m.MatchingRepo.GetByUserID(oid)
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, user)
+		res = append(res, *user)
 	}
 
 	// TODO: After the suggestion process, mark these users as suggested to prevent them from being recommended in future suggestions.
@@ -155,27 +189,43 @@ to notify that a new user has been created. This allows the embedding service to
 in the vector database.
 */
 func (m *MongoExplorer) AddUserMatchInformation(
-	info matchingdb.MatchInfo,
-) (matchingdb.MatchInfo, error) {
+	info *matchingdb.MatchInfo,
+) (*matchingdb.MatchInfo, error) {
 	_, err := m.UsersRepo.GetUserByID(info.UserID)
 	if err != nil {
-		return matchingdb.MatchInfo{}, err
+		return nil, err
 	}
 
 	// duplicated match information will be handled by the repository since we have already indexed the collection with firebaseUID.
-	matchInfo, err := m.MatchingRepo.InsertNewRawMatchInfo(info)
+	info, err = m.MatchingRepo.InsertRaw(info)
 	if err != nil {
-		return matchingdb.MatchInfo{}, err
+		return nil, err
 	}
-	return matchInfo, nil
+
+	return info, nil
+}
+
+func (m *MongoExplorer) UpdaterUserMatchInformation(
+	info *matchingdb.MatchInfo,
+) (*matchingdb.MatchInfo, error) {
+	_, err := m.UsersRepo.GetUserByID(info.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	info, err = m.MatchingRepo.UpdateByUserID(info.UserID, info)
+	if err != nil {
+		return nil, err
+	}
+
+	return info, nil
 }
 
 func (m *MongoExplorer) AddEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error {
-	_, err := m.MatchingRepo.GetMatchInfoByUserID(userID)
+	_, err := m.MatchingRepo.GetByUserID(userID)
 	if err != nil {
 		return err
 	}
-	fmt.Println("checkpoint")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -185,4 +235,28 @@ func (m *MongoExplorer) AddEmbedding(userID primitive.ObjectID, embed EmbeddingV
 		map[string]any{"embed": embed, "id": userID},
 	).Err()
 	return err
+}
+
+func (m *MongoExplorer) UpdateEmbedding(userID primitive.ObjectID, embed EmbeddingVector) error {
+	_, err := m.MatchingRepo.GetByUserID(userID)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	err = m.RedisClient.JSONSet(
+		ctx, CreateMatchKeyWithUserID(userID.Hex()),
+		"$.embed",
+		embed,
+	).Err()
+	return err
+}
+
+func (m *MongoExplorer) SuggestRandom(userID primitive.ObjectID) ([]matchingdb.MatchInfo, error) {
+	return m.MatchingRepo.GetMatchingPool(userID, defaultLimit)
+}
+
+func (m *MongoExplorer) GetMatchingProfile(userID primitive.ObjectID) (*matchingdb.MatchInfo, error) {
+	return m.MatchingRepo.GetByUserID(userID)
 }

@@ -10,16 +10,16 @@
 
 # need to zip at the target directory with "."
 
-if [[ "$1" != "dev" && "$1" != "staging" && "$1" != "prod" ]]; 
-then
-    echo "Usage: $0 with one of 'dev|staging|prod'"
-    exit 1
+if [[ "$1" != "dev" && "$1" != "staging" && "$1" != "prod" ]]; then
+	echo "Usage: $0 with one of 'dev|staging|prod'"
+	exit 1
 fi
 
 rm -rf dist/connect*$1 dist/translate*$1 dist/authorizer*$1 \
-    dist/explore*$1 dist/disconnect*$1 dist/wschat*$1$1 \
-    dist/rest*$1 dist/notification*$1 dist/ws_authorizer*$1 \
-    dist/collecting-get*$1  dist/collecting-push*$1 
+	dist/explore*$1 dist/disconnect*$1 dist/wschat*$1$1 \
+	dist/rest*$1 dist/notification*$1 dist/ws_authorizer*$1 \
+	dist/collecting-get*$1 dist/collecting-push*$1 \
+	dist/gosuggest*$1 dist/goembedder*$1
 
 echo "cleaned previous build artifacts"
 
@@ -118,4 +118,13 @@ cp ./firebase.admin.$1.json ./dist/gosuggest-$1/firebase.admin.json
 echo "copied firebase.admin.json to gosuggest"
 cd ./dist/gosuggest-$1
 zip -r ../gosuggest-$1.zip .
+cd ../..
+
+
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/goembedder-$1/bootstrap ./functions/embedder
+echo "build goembedder lambda function completed"
+cp ./firebase.admin.$1.json ./dist/goembedder-$1/firebase.admin.json
+echo "copied firebase.admin.json to goembedder"
+cd ./dist/goembedder-$1
+zip -r ../goembedder-$1.zip .
 cd ../..

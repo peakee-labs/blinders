@@ -4,6 +4,7 @@ use (
 	./cli
 	./functions/authenticate
 	./functions/collecting
+	./functions/embedder
 	./functions/explore
 	./functions/gosuggest
 	./functions/practice
@@ -22,6 +23,7 @@ use (
 	./packages/utils
 	./services/collecting
 	./services/explore
+	./services/goembedder
 	./services/practice
 	./services/rest
 	./tests

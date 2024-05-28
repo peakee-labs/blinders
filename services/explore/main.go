@@ -12,6 +12,7 @@ import (
 	"blinders/packages/db/usersdb"
 	dbutils "blinders/packages/db/utils"
 	"blinders/packages/explore"
+	"blinders/packages/transport"
 	"blinders/packages/utils"
 	exploreapi "blinders/services/explore/api"
 
@@ -77,22 +78,32 @@ func init() {
 		redisClient,
 	)
 
-	embedderEndpoint := fmt.Sprintf(
-		"http://localhost:%s/embed",
-		os.Getenv("EMBEDDER_SERVICE_PORT"),
+	embedderEndpoint := fmt.Sprintf("http://localhost:%s/embedd", os.Getenv("EMBEDDER_SERVICE_PORT"))
+	fmt.Println("embedder endpoint: ", embedderEndpoint)
+
+	tp := transport.NewLocalTransportWithConsumers(
+		transport.ConsumerMap{
+			transport.Embed: embedderEndpoint,
+		},
 	)
-	service = exploreapi.NewService(core, redisClient, embedderEndpoint)
+
+	service = exploreapi.NewService(core, redisClient, tp)
 
 	manager = exploreapi.NewManager(app, authManager, usersRepo, service)
+
 	manager.App.Use(logger.New(), cors.New())
+	manager.InitRoute()
 
 	// Expose for local development
-	manager.App.Post("/explore", manager.Service.HandleAddUserMatch)
-	manager.InitRoute()
+	manager.App.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost",
+		AllowMethods: "POST,GET,OPTIONS,PUT,DELETE",
+	}))
+	manager.App.All("/explore", manager.Service.InternalHandleAddUserMatch)
 }
 
 func main() {
-	port := os.Getenv("EXPLORE_API_PORT")
+	port := os.Getenv("EXPLORE_SERVICE_PORT")
 	fmt.Println("listening on: ", port)
 	log.Panic(manager.App.Listen(":" + port))
 }

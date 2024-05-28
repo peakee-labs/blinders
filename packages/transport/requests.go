@@ -36,7 +36,7 @@ type EmbeddingRequest struct {
 	Payload string `json:"payload"`
 }
 type EmbeddingResponse struct {
-	Embedded []float32
+	Embedded []float32 `json:"embedded"`
 }
 
 /*

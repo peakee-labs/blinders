@@ -19,6 +19,7 @@ const (
 	CollectingPush Key = "collecting-push"
 	CollectingGet  Key = "collecting-get"
 	Suggest        Key = "suggest"
+	Embed          Key = "embed"
 )
 
 type ConsumerMap map[Key]string
