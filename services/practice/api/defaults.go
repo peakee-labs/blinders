@@ -241,42 +241,45 @@ var (
 		},
 	}
 	DefaultFlashcards = []practicedb.FlashCard{
-		// define 10 flashcard about startup terms
 		{
-			FrontText:   "Pivot",
-			FrontImgURL: "",
-			BackText:    "Re-evaluate model, target markets and revamps strategy",
-			BackImgURL:  "",
+			FrontText: "Friendship",
+			BackText:  "Tình bạn",
 		},
 		{
-			FrontText:   "MVP",
-			FrontImgURL: "",
-			BackText:    "Minimum Viable Product",
-			BackImgURL:  "",
+			FrontText: "Knowledge",
+			BackText:  "Kiến thức",
 		},
 		{
-			FrontText:   "Pitch Deck",
-			FrontImgURL: "",
-			BackText:    "A presentation often used to seek funding from investors",
-			BackImgURL:  "",
+			FrontText: "Courage",
+			BackText:  " Dũng cảm",
 		},
 		{
-			FrontText:   "IPO",
-			FrontImgURL: "",
-			BackText:    "Initial Public Offering",
-			BackImgURL:  "",
+			FrontText: "Wisdom",
+			BackText:  "Trí tuệ",
 		},
 		{
-			FrontText:   "Bootstrapping",
-			FrontImgURL: "",
-			BackText:    "Khởi động",
-			BackImgURL:  "",
+			FrontText: "Success",
+			BackText:  "Thành công",
 		},
 		{
-			FrontText:   "Acquisition",
-			FrontImgURL: "",
-			BackText:    "Sự mua lại",
-			BackImgURL:  "",
+			FrontText: "Integrity",
+			BackText:  "Chính trực",
+		},
+		{
+			FrontText: "Patience",
+			BackText:  "Kiên nhẫn",
+		},
+		{
+			FrontText: "Gratitude",
+			BackText:  "Biết ơn",
+		},
+		{
+			FrontText: "Perseverance",
+			BackText:  "Kiên trì",
+		},
+		{
+			FrontText: "Harmony",
+			BackText:  "Hòa hợp",
 		},
 	}
 )
