@@ -10,32 +10,26 @@ import (
 )
 
 type Service struct {
-	App                     *fiber.App
-	Auth                    auth.Manager
-	UserRepo                *usersdb.UsersRepo
-	Transport               transport.Transport
-	ConsumerMap             transport.ConsumerMap
-	FlashCardRepo           *practicedb.FlashCardsRepo
-	CollectionMetadatasRepo *practicedb.CollectionMetadatasRepo
+	App           *fiber.App
+	Auth          auth.Manager
+	UserRepo      *usersdb.UsersRepo
+	Transport     transport.Transport
+	FlashcardRepo *practicedb.FlashcardsRepo
 }
 
 func NewService(
 	app *fiber.App,
 	auth auth.Manager,
 	usersRepo *usersdb.UsersRepo,
-	flashCardsRepo *practicedb.FlashCardsRepo,
-	collectionMetadatasRepo *practicedb.CollectionMetadatasRepo,
+	flashcardsRepo *practicedb.FlashcardsRepo,
 	transport transport.Transport,
-	consumerMap transport.ConsumerMap,
 ) *Service {
 	return &Service{
-		App:                     app,
-		Auth:                    auth,
-		UserRepo:                usersRepo,
-		FlashCardRepo:           flashCardsRepo,
-		CollectionMetadatasRepo: collectionMetadatasRepo,
-		Transport:               transport,
-		ConsumerMap:             consumerMap,
+		App:           app,
+		Auth:          auth,
+		UserRepo:      usersRepo,
+		FlashcardRepo: flashcardsRepo,
+		Transport:     transport,
 	}
 }
 
@@ -44,23 +38,24 @@ func (s *Service) InitRoute() {
 	practiceRoute.Get("/ping", func(c *fiber.Ctx) error {
 		return c.SendString("hello from practice service")
 	})
-	practiceRoute.Get("/public/unit", s.HandleGetRandomLanguageUnit)
+
 	authorized := practiceRoute.Group("/", auth.FiberAuthMiddleware(s.Auth, s.UserRepo))
-	authorized.Get("/unit", s.HandleGetPracticeUnitFromAnalyzeExplainLog)
-	authorized.Get("/unit/flashcard", s.HandleGetPracticeFlashCard)
+	authorized.Get("/random-review", s.HandleGetRandomReview)
+	authorized.Get("/fast-review", s.HandleGetFastReviewFromExplainLog)
 
-	authorized.Get("/flashcards/collections", s.HandleGetFlashCardCollections)
-	authorized.Get("/flashcards/collections/default", s.HandleGetDefaultFlashcardCollection)
-	authorized.Get("/flashcards/collections/preview", s.HandleGetFlashCardCollectionsPreview)
-	authorized.Post("/flashcards/collections", s.HandleAddFlashCardCollection)
-	authorized.Get("/flashcards/collections/:id", s.HandleGetFlashCardCollectionByID)
-	// TODO: view status of collection APIs
-	authorized.Delete("/flashcards/collections/:id", s.HandleDeleteFlashCardCollection)
+	flashcards := authorized.Group("/flashcards")
+	flashcardCollections := flashcards.Group("/collections")
 
-	authorized.Get("/flashcards/:id", s.HandleGetFlashCardByID)
-	authorized.Put("/flashcards/:id", s.HandleUpdateFlashCard)
-	authorized.Delete("/flashcards/:id", s.HandleDeleteFlashCard)
+	flashcardCollections.Get("/", s.HandleGetFlashcardCollections)
+	flashcardCollections.Get("/default", s.HandleGetOrCreateDefaultFlashcardCollection)
+	flashcardCollections.Get("/:id", s.HandleGetFlashcardCollectionByID)
+	flashcardCollections.Post("/", s.HandleCreateFlashcardCollectionByID)
+	flashcardCollections.Put("/:id", s.HandleUpdateFlashcardCollectionByID)
+	flashcardCollections.Delete("/:id", s.HandleDeleteFlashcardCollectionByID)
 
-	authorized.Get("/flashcards", s.HandleGetFlashCards)
-	authorized.Post("/flashcards", s.HandleAddFlashCard)
+	flashcardCollections.Post("/:id", s.HandleAddFlashcardToCollection)
+	flashcardCollections.Put("/:id/:flashcardId", s.HandleUpdateFlashcardInCollection)
+	flashcardCollections.Delete("/:id/:flashcardId", s.HandleRemoveFlashcardFromCollection)
+
+	flashcards.Get("/sync-explain-logs", s.HandleSyncExplainLogs)
 }

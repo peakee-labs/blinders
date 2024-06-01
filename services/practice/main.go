@@ -43,32 +43,30 @@ func init() {
 	usersRepo := usersdb.NewUsersRepo(client.Database(dbName))
 
 	adminJSON, _ := utils.GetFile("firebase.admin.json")
-	authManager, _ := auth.NewFirebaseManager(adminJSON)
-
-	flashCardsRepo := practicedb.NewFlashCardRepo(client.Database(dbName))
-	collectionMetadataRepo := practicedb.NewCollectionMetadataRepo(client.Database(dbName))
-
+	auth, _ := auth.NewFirebaseManager(adminJSON)
+	flashcardsRepo := practicedb.NewFlashcardsRepo(client.Database(dbName))
+	transportConsumers := transport.ConsumerMap{
+		transport.Suggest: fmt.Sprintf(
+			"http://localhost:%s/",
+			os.Getenv("PYSUGGEST_SERVICE_PORT"),
+		), // python suggest service
+		transport.CollectingPush: fmt.Sprintf(
+			"http://localhost:%s/",
+			os.Getenv("COLLECTING_SERVICE_PORT"),
+		),
+		transport.CollectingGet: fmt.Sprintf(
+			"http://localhost:%s/",
+			os.Getenv("COLLECTING_SERVICE_PORT"),
+		),
+	}
+	transport := transport.NewLocalTransportWithConsumers(transportConsumers)
 	service = practiceapi.NewService(
 		app,
-		authManager,
+		auth,
 		usersRepo,
-		flashCardsRepo,
-		collectionMetadataRepo,
-		transport.NewLocalTransport(),
-		transport.ConsumerMap{
-			transport.Suggest: fmt.Sprintf(
-				"http://localhost:%s/",
-				os.Getenv("PYSUGGEST_SERVICE_PORT"),
-			), // python suggest service
-			transport.CollectingPush: fmt.Sprintf(
-				"http://localhost:%s/",
-				os.Getenv("COLLECTING_SERVICE_PORT"),
-			),
-			transport.CollectingGet: fmt.Sprintf(
-				"http://localhost:%s/",
-				os.Getenv("COLLECTING_SERVICE_PORT"),
-			),
-		})
+		flashcardsRepo,
+		transport,
+	)
 
 	service.App.Use(cors.New())
 	service.InitRoute()
