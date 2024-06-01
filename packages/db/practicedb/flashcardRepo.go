@@ -57,7 +57,7 @@ func (r *FlashcardsRepo) GetByUserID(
 		return nil, err
 	}
 
-	if collections == nil || len(collections) == 0 {
+	if len(collections) == 0 {
 		return nil, mongo.ErrNoDocuments
 	}
 
@@ -107,7 +107,7 @@ func (r *FlashcardsRepo) GetCollectionsMetadataByID(collectionID primitive.Objec
 		return nil, err
 	}
 
-	if collections == nil || len(collections) == 0 {
+	if len(collections) == 0 {
 		return nil, mongo.ErrNoDocuments
 	}
 
@@ -239,11 +239,11 @@ func (r *FlashcardsRepo) UpdateFlashCard(collectionID primitive.ObjectID, card F
 	return nil
 }
 
-func (r *FlashcardsRepo) DeleteFlashCard(collectionID primitive.ObjectID, cardId primitive.ObjectID) error {
+func (r *FlashcardsRepo) DeleteFlashCard(collectionID primitive.ObjectID, cardID primitive.ObjectID) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	update := bson.M{"$pull": bson.M{"flashcards": bson.M{"_id": cardId}}}
+	update := bson.M{"$pull": bson.M{"flashcards": bson.M{"_id": cardID}}}
 	cur, err := r.UpdateByID(ctx, collectionID, update)
 	if err != nil {
 		return err

@@ -18,10 +18,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var (
-	service *practiceapi.Service
-	err     error
-)
+var service *practiceapi.Service
 
 func init() {
 	environment := os.Getenv("ENVIRONMENT")

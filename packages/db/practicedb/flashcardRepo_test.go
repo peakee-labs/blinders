@@ -1,11 +1,12 @@
 package practicedb_test
 
 import (
-	"blinders/packages/db/practicedb"
-	dbutils "blinders/packages/db/utils"
 	"context"
 	"testing"
 	"time"
+
+	"blinders/packages/db/practicedb"
+	dbutils "blinders/packages/db/utils"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,9 +14,9 @@ import (
 )
 
 var (
-	mongoTestURL                  = "mongodb://localhost:27017"
-	mongoTestDBName               = "blinders-test"
-	client          *mongo.Client = nil
+	mongoTestURL    = "mongodb://localhost:27017"
+	mongoTestDBName = "blinders-test"
+	client          *mongo.Client
 )
 
 func TestInsertFlashcardCollection(t *testing.T) {

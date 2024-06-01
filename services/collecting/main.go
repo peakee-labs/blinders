@@ -14,10 +14,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var (
-	m   *core.Manager
-	err error
-)
+var m *core.Manager
 
 func init() {
 	environment := os.Getenv("ENVIRONMENT")

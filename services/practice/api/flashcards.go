@@ -1,10 +1,11 @@
 package practiceapi
 
 import (
-	"blinders/packages/auth"
-	"blinders/packages/db/practicedb"
 	"encoding/json"
 	"log"
+
+	"blinders/packages/auth"
+	"blinders/packages/db/practicedb"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -225,8 +226,9 @@ func (s Service) HandleAddFlashcardToCollection(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "user does not have permission to access this collection"})
 	}
 
-	practiceFlashcard := &practicedb.Flashcard{FrontText: cardBody.FrontText,
-		BackText: cardBody.BackText,
+	practiceFlashcard := &practicedb.Flashcard{
+		FrontText: cardBody.FrontText,
+		BackText:  cardBody.BackText,
 	}
 
 	practiceFlashcard, err = s.FlashcardRepo.AddFlashcardToCollection(collectionID, practiceFlashcard)

@@ -20,10 +20,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var (
-	manager *exploreapi.Manager
-	err     error
-)
+var manager *exploreapi.Manager
 
 func init() {
 	environment := os.Getenv("ENVIRONMENT")
