@@ -1,17 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"blinders/packages/db/collectingdb"
-	dbutils "blinders/packages/db/utils"
 	core "blinders/services/collecting/core"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
@@ -31,14 +34,20 @@ func init() {
 		log.Fatal("failed to load env", err)
 	}
 
-	collectingDB, err := dbutils.InitMongoDatabaseFromEnv("COLLECTING")
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	mongoURL := os.Getenv("MONGO_DATABASE_URL")
+	mongoDBName := os.Getenv("MONGO_DATABASE")
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURL))
 	if err != nil {
-		log.Fatal("failed to init practice db:", err)
+		log.Fatalln("failed to connect to mongo:", err)
 	}
+	db := client.Database(mongoDBName)
 
 	m = core.NewManager(
 		fiber.New(),
-		collectingdb.NewCollectingDB(collectingDB),
+		collectingdb.NewCollectingDB(db),
 	)
 
 	m.App.Use(cors.New())

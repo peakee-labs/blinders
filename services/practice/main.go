@@ -1,15 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
-	"sync"
+	"time"
 
 	"blinders/packages/auth"
 	"blinders/packages/db/practicedb"
 	"blinders/packages/db/usersdb"
-	dbutils "blinders/packages/db/utils"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
 	practiceapi "blinders/services/practice/api"
@@ -18,6 +18,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
@@ -37,32 +38,22 @@ func init() {
 		log.Fatal("failed to load env", err)
 	}
 
-	var usersDB *mongo.Database
-	var practiceDB *mongo.Database
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		usersDB, err = dbutils.InitMongoDatabaseFromEnv("USERS")
-		if err != nil {
-			log.Fatal("failed to init users db:", err)
-		}
-	}()
-	go func() {
-		defer wg.Done()
-		practiceDB, err = dbutils.InitMongoDatabaseFromEnv("PRACTICE")
-		if err != nil {
-			log.Fatal("failed to init practice db:", err)
-		}
-	}()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 
-	wg.Wait()
+	mongoURL := os.Getenv("MONGO_DATABASE_URL")
+	mongoDBName := os.Getenv("MONGO_DATABASE")
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURL))
+	if err != nil {
+		log.Fatalln("failed to connect to mongo:", err)
+	}
+	db := client.Database(mongoDBName)
 
-	usersRepo := usersdb.NewUsersRepo(usersDB)
+	usersRepo := usersdb.NewUsersRepo(db)
 
 	adminJSON, _ := utils.GetFile("firebase.admin.json")
 	auth, _ := auth.NewFirebaseManager(adminJSON)
-	flashcardsRepo := practicedb.NewFlashcardsRepo(practiceDB)
+	flashcardsRepo := practicedb.NewFlashcardsRepo(db)
 	transportConsumers := transport.ConsumerMap{
 		transport.Suggest: fmt.Sprintf(
 			"http://localhost:%s/",

@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	"blinders/packages/auth"
 	"blinders/packages/db/matchingdb"
 	"blinders/packages/db/usersdb"
-	dbutils "blinders/packages/db/utils"
 	"blinders/packages/explore"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
@@ -20,7 +18,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
@@ -43,30 +43,26 @@ func init() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	redisClient := utils.NewRedisClientFromEnv(ctx)
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPort := os.Getenv("REDIS_PORT")
+	redisUserName := os.Getenv("REDIS_USERNAME")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", redisHost, redisPort),
+		Username: redisUserName,
+		Password: redisPassword,
+	})
 
-	var usersDB *mongo.Database
-	var matchingDB *mongo.Database
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		usersDB, err = dbutils.InitMongoDatabaseFromEnv("USERS")
-		if err != nil {
-			log.Fatal("failed to init users db:", err)
-		}
-	}()
-	go func() {
-		defer wg.Done()
-		matchingDB, err = dbutils.InitMongoDatabaseFromEnv("MATCHING")
-		if err != nil {
-			log.Fatal("failed to init matching db:", err)
-		}
-	}()
-	wg.Wait()
+	mongoURL := os.Getenv("MONGO_DATABASE_URL")
+	mongoDBName := os.Getenv("MONGO_DATABASE")
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURL))
+	if err != nil {
+		log.Fatalln("failed to connect to mongo:", err)
+	}
+	db := client.Database(mongoDBName)
 
-	matchingRepo := matchingdb.NewMatchingRepo(matchingDB)
-	usersRepo := usersdb.NewUsersRepo(usersDB)
+	matchingRepo := matchingdb.NewMatchingRepo(db)
+	usersRepo := usersdb.NewUsersRepo(db)
 
 	embedderEndpoint := fmt.Sprintf("http://localhost:%s/embedd", os.Getenv("EMBEDDER_SERVICE_PORT"))
 	fmt.Println("embedder endpoint: ", embedderEndpoint)
