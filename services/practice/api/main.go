@@ -46,6 +46,8 @@ func (s *Service) InitRoute() {
 	flashcards := authorized.Group("/flashcards")
 	flashcardCollections := flashcards.Group("/collections")
 
+	flashcardCollections.Get("/", s.HandleGetFlashcardCollections)
+	flashcardCollections.Get("/default", s.HandleGetOrCreateDefaultFlashcardCollection)
 	flashcardCollections.Get("/:id", s.HandleGetFlashcardCollectionByID)
 	flashcardCollections.Post("/", s.HandleCreateFlashcardCollectionByID)
 	flashcardCollections.Put("/:id", s.HandleUpdateFlashcardCollectionByID)

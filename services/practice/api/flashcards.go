@@ -2,6 +2,14 @@ package practiceapi
 
 import "github.com/gofiber/fiber/v2"
 
+func (Service) HandleGetFlashcardCollections(_ *fiber.Ctx) error {
+	return nil
+}
+
+func (Service) HandleGetOrCreateDefaultFlashcardCollection(_ *fiber.Ctx) error {
+	return nil
+}
+
 func (Service) HandleGetFlashcardCollectionByID(_ *fiber.Ctx) error {
 	return nil
 }
