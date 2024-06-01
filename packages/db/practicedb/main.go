@@ -3,20 +3,17 @@ package practicedb
 import "go.mongodb.org/mongo-driver/mongo"
 
 const (
-	FlashCardColName         = "flashcards"
-	FlashCardMetadataColName = "flashcard-metadata"
+	FlashcardsColName = "flashcards"
 )
 
 type PracticeDB struct {
 	mongo.Database
-	FlashCardRepo          *FlashCardsRepo
-	CollectionMetadataRepo *CollectionMetadatasRepo
+	FlashcardsRepo *FlashcardsRepo
 }
 
 func NewPracticeDB(db *mongo.Database) *PracticeDB {
 	return &PracticeDB{
-		Database:               *db,
-		FlashCardRepo:          NewFlashCardRepo(db),
-		CollectionMetadataRepo: NewCollectionMetadataRepo(db),
+		Database:       *db,
+		FlashcardsRepo: NewFlashcardsRepo(db),
 	}
 }

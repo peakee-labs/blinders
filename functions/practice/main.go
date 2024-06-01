@@ -32,20 +32,17 @@ func init() {
 		log.Fatal(err)
 	}
 	usersRepo := usersdb.NewUsersRepo(usersDB)
-
 	practiceDB, err := dbutils.InitMongoDatabaseFromEnv("PRACTICE")
 	if err != nil {
 		log.Fatal(err)
 	}
-	flashCardsRepo := practicedb.NewFlashCardRepo(practiceDB)
-	collectionMetadatasRepo := practicedb.NewCollectionMetadataRepo(practiceDB)
+	flashcardsRepo := practicedb.NewFlashcardsRepo(practiceDB)
 
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	authManager, err := auth.NewFirebaseManager(adminConfig)
+	auth, err := auth.NewFirebaseManager(adminConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,19 +51,19 @@ func init() {
 	if err != nil {
 		log.Fatal("failed to load aws config:", err)
 	}
+	transportConsumers := transport.ConsumerMap{
+		transport.CollectingPush: os.Getenv("COLLECTING_PUSH_FUNCTION_NAME"),
+		transport.CollectingGet:  os.Getenv("COLLECTING_GET_FUNCTION_NAME"),
+	}
+	transport := transport.NewLambdaTransportWithConsumers(cfg, transportConsumers)
 
 	app := fiber.New(fiber.Config{})
 	api := practiceapi.NewService(
 		app,
-		authManager,
+		auth,
 		usersRepo,
-		flashCardsRepo,
-		collectionMetadatasRepo,
-		transport.NewLambdaTransport(cfg),
-		transport.ConsumerMap{
-			transport.CollectingPush: os.Getenv("COLLECTING_PUSH_FUNCTION_NAME"),
-			transport.CollectingGet:  os.Getenv("COLLECTING_GET_FUNCTION_NAME"),
-		},
+		flashcardsRepo,
+		transport,
 	)
 	api.App.Use(logger.New(logger.Config{Format: utils.DefaultGinLoggerFormat}))
 	api.App.Use(cors.New(cors.Config{

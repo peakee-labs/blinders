@@ -6,28 +6,29 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type FlashCard struct {
-	// ID of flashcard if from collecting event will be set to the event id, to avoid duplicate flashcard
+type FlashcardGenerationType string
+
+const (
+	ManualFlashcard         FlashcardGenerationType = "ManualFlashcard"
+	FromExplainLogFlashcard FlashcardGenerationType = "FromExplainLogFlashcard"
+)
+
+type FlashcardCollection struct {
 	dbutils.RawModel `json:",inline" bson:",inline"`
-	FrontText        string             `json:"frontText" bson:"frontText"`
-	FrontImgURL      string             `json:"frontImageUrl"`
-	BackText         string             `json:"backText" bson:"backText"`
-	BackImgURL       string             `json:"backImageURL" bson:"backImageURL"`
-	UserID           primitive.ObjectID `json:"userId" bson:"userId"`
-	CollectionID     primitive.ObjectID `json:"collectionId" bson:"collectionId"` // by default, the collectionId is the same as the userId as the user can have 1 default collection
+	Type             FlashcardGenerationType `json:"type"        bson:"type"`
+	Name             string                  `json:"name"        bson:"name"`
+	Description      string                  `json:"description" bson:"description"`
+	FlashCards       []*Flashcard            `json:"flashcards"  bson:"flashcards"`
+	UserID           primitive.ObjectID      `json:"userId"      bson:"userId"`
+	Metadata         any                     `json:"metadata"    bson:"metadata"`
 }
 
-type CardCollection struct {
-	ID         primitive.ObjectID `json:"id" bson:"_id"`
-	UserID     primitive.ObjectID `json:"userId" bson:"userId"`
-	FlashCards []*FlashCard       `json:"flashcards" bson:"flashcards"`
+type Flashcard struct {
+	dbutils.RawModel `       json:",inline"   bson:",inline"`
+	FrontText        string `json:"frontText" bson:"frontText"`
+	BackText         string `json:"backText"  bson:"backText"`
 }
 
-type CardCollectionMetadata struct {
-	dbutils.RawModel `json:",inline" bson:",inline"`
-	UserID           primitive.ObjectID   `json:"userId" bson:"userId"`
-	Name             string               `json:"name" bson:"name"`
-	Description      string               `json:"description" bson:"description"`
-	Total            []primitive.ObjectID `json:"total" bson:"total"`
-	Viewed           []primitive.ObjectID `json:"viewed" bson:"viewed"`
+type ExplainLogFlashcardMetadata struct {
+	ExplainLogID primitive.ObjectID `json:"explainLogId" bson:"explain_log_id"`
 }
