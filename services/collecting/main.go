@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"blinders/packages/db/collectingdb"
 	dbutils "blinders/packages/db/utils"
@@ -15,31 +14,31 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var m *core.Manager
+var (
+	m   *core.Manager
+	err error
+)
 
 func init() {
-	env := os.Getenv("ENVIRONMENT")
+	environment := os.Getenv("ENVIRONMENT")
+	log.Println("collecting api running on environment:", environment)
 	envFile := ".env"
-	if env != "" {
-		envFile = strings.ToLower(".env." + env)
+	if environment != "" {
+		envFile = fmt.Sprintf(".env.%s", environment)
 	}
-	log.Println("init service in environment", env, "loading env at", envFile)
+
 	if err := godotenv.Load(envFile); err != nil {
 		log.Fatal("failed to load env", err)
 	}
 
-	app := fiber.New()
-	url := os.Getenv("MONGO_DATABASE_URL")
-	dbName := os.Getenv("MONGO_DATABASE")
-
-	client, err := dbutils.InitMongoClient(url)
+	collectingDB, err := dbutils.InitMongoDatabaseFromEnv("COLLECTING")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("failed to init practice db:", err)
 	}
 
 	m = core.NewManager(
-		app,
-		collectingdb.NewCollectingDB(client.Database(dbName)),
+		fiber.New(),
+		collectingdb.NewCollectingDB(collectingDB),
 	)
 
 	m.App.Use(cors.New())
@@ -48,6 +47,7 @@ func init() {
 
 func main() {
 	port := os.Getenv("COLLECTING_SERVICE_PORT")
+	fmt.Println("launching collecting service on port", port)
 	err := m.App.Listen(fmt.Sprintf(":%s", port))
 	if err != nil {
 		log.Println("launch collecting service error", err)
