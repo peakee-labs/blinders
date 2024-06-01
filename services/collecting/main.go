@@ -1,20 +1,17 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"blinders/packages/db/collectingdb"
+	dbutils "blinders/packages/db/utils"
 	core "blinders/services/collecting/core"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
@@ -34,12 +31,9 @@ func init() {
 		log.Fatal("failed to load env", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
 	mongoURL := os.Getenv("MONGO_DATABASE_URL")
 	mongoDBName := os.Getenv("MONGO_DATABASE")
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURL))
+	client, err := dbutils.InitMongoClient(mongoURL)
 	if err != nil {
 		log.Fatalln("failed to connect to mongo:", err)
 	}

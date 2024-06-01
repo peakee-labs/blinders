@@ -1,15 +1,14 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"blinders/packages/auth"
 	"blinders/packages/db/matchingdb"
 	"blinders/packages/db/usersdb"
+	dbutils "blinders/packages/db/utils"
 	"blinders/packages/explore"
 	"blinders/packages/transport"
 	"blinders/packages/utils"
@@ -19,8 +18,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
@@ -40,9 +37,6 @@ func init() {
 		log.Fatal("failed to load env", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
 	redisHost := os.Getenv("REDIS_HOST")
 	redisPort := os.Getenv("REDIS_PORT")
 	redisUserName := os.Getenv("REDIS_USERNAME")
@@ -55,7 +49,7 @@ func init() {
 
 	mongoURL := os.Getenv("MONGO_DATABASE_URL")
 	mongoDBName := os.Getenv("MONGO_DATABASE")
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURL))
+	client, err := dbutils.InitMongoClient(mongoURL)
 	if err != nil {
 		log.Fatalln("failed to connect to mongo:", err)
 	}
