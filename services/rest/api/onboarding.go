@@ -52,22 +52,25 @@ func NewOnboardingService(
 func (s *OnboardingService) PostOnboardingForm() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
-		if !ok || userAuth == nil {
-			return ctx.Status(fiber.StatusInternalServerError).
-				JSON(fiber.Map{"error": "cannot get user"})
+		if !ok {
+			log.Fatalln("cannot get auth user")
 		}
 
 		var formValue OnboardingForm
 		if err := ctx.BodyParser(&formValue); err != nil {
+			log.Println("cannot parse form value", err)
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err})
 		}
+
 		uid, err := primitive.ObjectIDFromHex(userAuth.ID)
 		if err != nil {
+			log.Println("cannot get objectID from userID", err)
 			return ctx.Status(fiber.StatusBadRequest).
 				JSON(fiber.Map{"error": "cannot get objectID from userID " + err.Error()})
 		}
 		matchInfo, err := utils.JSONConvert[matchingdb.MatchInfo](formValue)
 		if err != nil {
+			log.Println("cannot unmarshal match info from form value", err)
 			return ctx.Status(fiber.StatusBadRequest).
 				JSON(fiber.Map{"error": "cannot unmarshal match info from form value" + err.Error()})
 		}
@@ -84,13 +87,18 @@ func (s *OnboardingService) PostOnboardingForm() fiber.Handler {
 		)
 		if err != nil {
 			log.Println("invoke explore error", err)
-			return ctx.SendStatus(http.StatusInternalServerError)
+			return ctx.SendStatus(http.StatusBadRequest)
 		}
 
-		res, err := utils.JSONConvert[transport.AddUserMatchInfoResponse](resBytes)
-		if err != nil || *res.Error != "" {
-			log.Println("explore response error", res.Error)
-			return ctx.SendStatus(http.StatusInternalServerError)
+		res, err := utils.ParseJSON[transport.AddUserMatchInfoResponse](resBytes)
+		if err != nil {
+			log.Println(string(resBytes))
+			log.Println("explore response error", err)
+			return ctx.SendStatus(http.StatusBadRequest)
+		}
+
+		if res != nil && res.Error != "" {
+			log.Println("from explore response error", res.Error)
 		}
 
 		return nil

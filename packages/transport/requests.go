@@ -47,7 +47,7 @@ type AddUserMatchInfoRequest struct {
 	Payload matchingdb.MatchInfo `json:"payload"`
 }
 type AddUserMatchInfoResponse struct {
-	Error *string `json:"error,omitempty"`
+	Error string `json:"error,omitempty"`
 }
 
 /*

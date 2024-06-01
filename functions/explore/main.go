@@ -84,7 +84,7 @@ func init() {
 	api.App.Use(logger.New(logger.Config{Format: utils.DefaultGinLoggerFormat}))
 	api.App.Use(cors.New(cors.Config{
 		AllowOrigins: utils.GetOriginsFromEnv(),
-		AllowMethods: "GET,OPTIONS",
+		AllowMethods: "GET,OPTIONS,POST",
 		AllowHeaders: "*",
 	}))
 	api.InitRoute()
@@ -103,15 +103,14 @@ func HandleRequest(ctx context.Context, req any) (any, error) {
 		req, err := utils.JSONConvert[transport.AddUserMatchInfoRequest](req)
 		if err != nil {
 			log.Println("can't parse match info from request: ", err)
-			return nil, fmt.Errorf("can not parse match info: %v", err)
+			return transport.AddUserMatchInfoResponse{
+				Error: fmt.Errorf("can not parse match info: %v", err).Error(),
+			}, nil
 		}
 
-		err = api.Service.AddUserMatch(&req.Payload)
-		if err != nil {
-			return nil, fmt.Errorf("can not add user match: %v", err)
-		}
-
-		return nil, nil
+		response, err := HandleInternalAddUserMatch(req)
+		fmt.Println("response from internal", response)
+		return response, err
 
 	default:
 		req, err := utils.JSONConvert[events.APIGatewayV2HTTPRequest](req)
@@ -122,6 +121,17 @@ func HandleRequest(ctx context.Context, req any) (any, error) {
 
 		return fiberLambda.ProxyWithContextV2(ctx, *req)
 	}
+}
+
+func HandleInternalAddUserMatch(req *transport.AddUserMatchInfoRequest) (transport.AddUserMatchInfoResponse, error) {
+	err := api.Service.AddUserMatch(&req.Payload)
+	if err != nil {
+		log.Println("can't add user match: ", err)
+	}
+
+	return transport.AddUserMatchInfoResponse{
+		Error: "",
+	}, nil
 }
 
 func main() {
