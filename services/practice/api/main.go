@@ -49,7 +49,7 @@ func (s *Service) InitRoute() {
 	flashcardCollections.Get("/", s.HandleGetFlashcardCollections)
 	flashcardCollections.Get("/default", s.HandleGetOrCreateDefaultFlashcardCollection)
 	flashcardCollections.Get("/:id", s.HandleGetFlashcardCollectionByID)
-	flashcardCollections.Post("/", s.HandleCreateFlashcardCollectionByID)
+	flashcardCollections.Post("/", s.HandleCreateFlashcardCollection)
 	flashcardCollections.Put("/:id", s.HandleUpdateFlashcardCollectionByID)
 	flashcardCollections.Delete("/:id", s.HandleDeleteFlashcardCollectionByID)
 
