@@ -1,8 +1,46 @@
 package practiceapi
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"log"
+
+	"blinders/packages/auth"
+
+	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+var CollectionKey = "collection"
 
 // TODO: if you want to check if a collection is own by a user or not, use this middleware after main handler instead
-func (Service) CheckFlashcardCollectionOwnership(_ *fiber.Ctx) error {
-	return nil
+func CheckFlashcardCollectionOwnership(s *Service, collectionParam string) fiber.Handler {
+	log.Println("applying middleware to check flashcard collection ownership with param", collectionParam)
+	return func(ctx *fiber.Ctx) error {
+		paramID := ctx.Params(collectionParam)
+		log.Println("received collection id:", paramID)
+		log.Println("available param: ", ctx.Route().Params)
+		collectionID, err := primitive.ObjectIDFromHex(paramID)
+		if err != nil {
+			log.Println("cannot parse collection id:", err)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot parse collection id"})
+		}
+
+		collection, err := s.FlashcardRepo.GetByID(collectionID)
+		if err != nil {
+			log.Println("cannot get flashcard collection:", err)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get flashcard collection"})
+		}
+
+		userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
+		if !ok {
+			log.Fatalln("cannot get user auth information")
+		}
+		userID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+
+		if collection.UserID != userID {
+			log.Println("user does not have permission to access this collection", err)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "user does not have permission to access this collection"})
+		}
+		ctx.Locals(CollectionKey, collection)
+		return ctx.Next()
+	}
 }

@@ -48,14 +48,16 @@ func (s *Service) InitRoute() {
 
 	flashcardCollections.Get("/", s.HandleGetFlashcardCollections)
 	flashcardCollections.Get("/default", s.HandleGetOrCreateDefaultFlashcardCollection)
-	flashcardCollections.Get("/:id", s.HandleGetFlashcardCollectionByID)
 	flashcardCollections.Post("/", s.HandleCreateFlashcardCollection)
-	flashcardCollections.Put("/:id", s.HandleUpdateFlashcardCollectionByID)
-	flashcardCollections.Delete("/:id", s.HandleDeleteFlashcardCollectionByID)
 
-	flashcardCollections.Post("/:id", s.HandleAddFlashcardToCollection)
-	flashcardCollections.Put("/:id/:flashcardId", s.HandleUpdateFlashcardInCollection)
-	flashcardCollections.Delete("/:id/:flashcardId", s.HandleRemoveFlashcardFromCollection)
+	validatedCollections := flashcardCollections.Group("/:id", CheckFlashcardCollectionOwnership(s, "id"))
+	validatedCollections.Get("/", s.HandleGetFlashcardCollectionByID)
+	validatedCollections.Put("/", s.HandleUpdateFlashcardCollectionByID)
+	validatedCollections.Delete("/", s.HandleDeleteFlashcardCollectionByID)
+
+	validatedCollections.Post("/", s.HandleAddFlashcardToCollection)
+	validatedCollections.Put("/:flashcardId", s.HandleUpdateFlashcardInCollection)
+	validatedCollections.Delete("/:flashcardId", s.HandleRemoveFlashcardFromCollection)
 
 	flashcards.Get("/sync-explain-logs", s.HandleSyncExplainLogs)
 }
