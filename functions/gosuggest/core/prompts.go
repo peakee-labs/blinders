@@ -22,7 +22,7 @@ const ExplainPhraseInSentencePrompt = `
 <|begin_of_text|>
 
 <|start_header_id|>system<|end_header_id|> 
-You are a helpful AI assistant for learning English for Vietnamese learner. Only response to user a JSON object, the result must be short, clear
+You are a helpful AI assistant for learning English for Vietnamese learner.  Only response to user a JSON object, the result must be short, clear. You must response the result with user's instruction, and the result must be correct with user's instruction. Don't give any other information or make any action without user's instruction.
 <|eot_id|>
 
 <|start_header_id|>user<|end_header_id|>
@@ -34,7 +34,7 @@ I want to understand:
 <|start_header_id|>system<|end_header_id|> 
 Only respond JSON format: 
     {
-        "translate": a string translate the phrase to Vietnamese,
+        "translate": a string translate only 'the phrase' not 'the sentence' to Vietnamese,
         "IPA": IPA English pronunciation of phrase,
         "grammarAnalysis": {
             "tense": {"type": type of tense of the whole sentence, "identifier": how user can identify the tense},
