@@ -21,6 +21,7 @@ const (
 
 	ExplainLogToFlashcardType FlashcardType = "ExplainLogFlashcard"
 	ManualFlashcardType       FlashcardType = "ManualFlashcard"
+	DefaultFlashcardType      FlashcardType = "ManualFlashcard"
 )
 
 type FlashcardCollection struct {
@@ -29,16 +30,16 @@ type FlashcardCollection struct {
 	Name             string             `json:"name"                 bson:"name"`
 	Description      string             `json:"description"          bson:"description"`
 	UserID           primitive.ObjectID `json:"userId"               bson:"userId"`
-	LastViewed       primitive.ObjectID `json:"lastViewed"           bson:"lastViewed"` // id of the last viewed flashcard
 	FlashCards       *[]*Flashcard      `json:"flashcards,omitempty" bson:"flashcards"`
 	Metadata         map[string]any     `json:"metadata,omitempty"   bson:"metadata,omitempty"`
 }
 
 type Flashcard struct {
-	dbutils.RawModel `               json:",inline"            bson:",inline"`
+	dbutils.RawModel `               json:",inline"           bson:",inline"`
 	Type             FlashcardType `json:"type"               bson:"type"`
 	FrontText        string        `json:"frontText"          bson:"frontText"`
 	BackText         string        `json:"backText"           bson:"backText"`
+	IsViewed         bool          `json:"isViewed"           bson:"isViewed"`
 	Metadata         any           `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 

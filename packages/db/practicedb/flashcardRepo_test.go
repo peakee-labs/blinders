@@ -399,14 +399,23 @@ func TestUpdateLastView(t *testing.T) {
 	for _, flashcard := range flashcards {
 		col, err := r.GetByID(insertedCollection.ID)
 		assert.NoError(t, err)
-		assert.NotEqual(t, col.LastViewed, flashcard.ID)
+		for _, card := range *col.FlashCards {
+			if card.ID == flashcard.ID {
+				assert.False(t, card.IsViewed)
+			}
+		}
 
 		err = r.UpdateLastView(insertedCollection.ID, flashcard.ID)
 		assert.Nil(t, err)
 
 		col, err = r.GetByID(insertedCollection.ID)
 		assert.NoError(t, err)
-		assert.Equal(t, col.LastViewed, flashcard.ID)
+
+		for _, card := range *col.FlashCards {
+			if card.ID == flashcard.ID {
+				assert.True(t, card.IsViewed)
+			}
+		}
 	}
 }
 

@@ -100,13 +100,23 @@ func (r *FlashcardsRepo) UpdateLastView(
 	collectionID,
 	flashcardID primitive.ObjectID,
 ) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	// updateOne documents that have the flashcards field contains document with _id is flashcardID, update the field isViewed of that sub-document to true
+	now := time.Now()
 	filter := bson.M{"_id": collectionID, "flashcards._id": flashcardID}
 	update := bson.M{"$set": bson.M{
-		"lastViewed": flashcardID,
-		"updatedAt":  primitive.NewDateTimeFromTime(time.Now()),
+		"flashcards.$.isViewed":  true,
+		"flashcards.$.updatedAt": primitive.NewDateTimeFromTime(now),
+		"updatedAt":              primitive.NewDateTimeFromTime(now),
 	}}
 
-	cur, err := r.UpdateOne(context.Background(), filter, update, options.Update().SetUpsert(false))
+	cur, err := r.UpdateOne(
+		ctx,
+		filter,
+		update,
+		options.Update().SetUpsert(false),
+	)
 	if err != nil {
 		return err
 	}
