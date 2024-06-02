@@ -37,9 +37,10 @@ func (s Service) HandleGetOrCreateDefaultFlashcardCollection(ctx *fiber.Ctx) err
 		log.Fatalln("cannot get user auth information")
 	}
 	userID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+	var collection *practicedb.FlashcardCollection
 
-	collection, err := s.FlashcardRepo.GetByID(userID)
-	if err != nil {
+	collections, err := s.FlashcardRepo.GetCollectionByType(userID, practicedb.DefaultFlashcard)
+	if err != nil || len(collections) == 0 {
 		log.Println("cannot get flashcard collections:", err)
 
 		collection = &practicedb.FlashcardCollection{
@@ -48,13 +49,13 @@ func (s Service) HandleGetOrCreateDefaultFlashcardCollection(ctx *fiber.Ctx) err
 			UserID:     userID,
 			FlashCards: &[]*practicedb.Flashcard{},
 		}
-		collection.SetID(userID)
-		collection.SetInitTimeByNow()
-		collection, err = s.FlashcardRepo.Insert(collection)
+		collection, err = s.FlashcardRepo.InsertRaw(collection)
 		if err != nil {
 			log.Println("cannot create default flashcard collection:", err)
 			return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"error": "cannot create default flashcard collection"})
 		}
+	} else {
+		collection = collections[0]
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(collection)
@@ -140,10 +141,6 @@ func (s Service) HandleDeleteFlashcardCollectionByID(ctx *fiber.Ctx) error {
 }
 
 // define one-time used type in the usage scope
-type (
-	AddFlashcardResponse struct{}
-)
-
 type AddFlashcardBody struct {
 	FrontText string
 	BackText  string
