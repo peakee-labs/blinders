@@ -12,7 +12,7 @@ import (
 var CollectionKey = "collection"
 
 // TODO: if you want to check if a collection is own by a user or not, use this middleware after main handler instead
-func CheckFlashcardCollectionOwnership(s *Service, collectionParam string) fiber.Handler {
+func (s Service) CheckFlashcardCollectionOwnership(collectionParam string) fiber.Handler {
 	log.Println("applying middleware to check flashcard collection ownership with param", collectionParam)
 	return func(ctx *fiber.Ctx) error {
 		paramID := ctx.Params(collectionParam)

@@ -51,7 +51,7 @@ func (s *Service) InitRoute() {
 	flashcardCollections.Get("/preview", s.HandleGetCollectionsPreview)
 	flashcardCollections.Post("/", s.HandleCreateFlashcardCollection)
 
-	validatedCollections := flashcardCollections.Group("/:id", CheckFlashcardCollectionOwnership(s, "id"))
+	validatedCollections := flashcardCollections.Group("/:id", s.CheckFlashcardCollectionOwnership("id"))
 	validatedCollections.Get("/", s.HandleGetFlashcardCollectionByID)
 	validatedCollections.Put("/", s.HandleUpdateFlashcardCollectionByID)
 	validatedCollections.Delete("/", s.HandleDeleteFlashcardCollectionByID)
