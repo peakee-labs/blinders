@@ -6,6 +6,7 @@ import (
 
 	"blinders/packages/auth"
 	"blinders/packages/db/practicedb"
+	"blinders/packages/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -45,7 +46,7 @@ func (s Service) HandleGetOrCreateDefaultFlashcardCollection(ctx *fiber.Ctx) err
 			Type:       practicedb.DefaultFlashcard,
 			Name:       "Default Collection",
 			UserID:     userID,
-			FlashCards: []*practicedb.Flashcard{},
+			FlashCards: &[]*practicedb.Flashcard{},
 		}
 		collection.SetID(userID)
 		collection.SetInitTimeByNow()
@@ -93,19 +94,30 @@ func (s Service) HandleCreateFlashcardCollection(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(inserted)
 }
 
+type UpdateFlashcardBody struct {
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Metadata    map[string]any `json:",inline,omitempty"`
+}
+
 func (s Service) HandleUpdateFlashcardCollectionByID(ctx *fiber.Ctx) error {
 	collection, ok := ctx.Locals(CollectionKey).(*practicedb.FlashcardCollection)
 	if !ok {
 		log.Fatalln("cannot get collection from context")
 	}
 
-	newCollection := new(practicedb.CollectionMetadata)
-	if err := json.Unmarshal(ctx.Body(), newCollection); err != nil {
+	newCollection, err := utils.ParseJSON[UpdateFlashcardBody](ctx.Body())
+	if err != nil {
 		log.Println("cannot unmarshal request body:", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot unmarshal request body"})
 	}
+	updateCollection := &practicedb.FlashcardCollection{
+		Name:        newCollection.Name,
+		Description: newCollection.Description,
+		Metadata:    newCollection.Metadata,
+	}
 
-	err := s.FlashcardRepo.UpdateCollectionMetadata(collection.ID, newCollection)
+	err = s.FlashcardRepo.UpdateCollectionMetadata(collection.ID, updateCollection)
 	if err != nil {
 		log.Println("cannot update collection metadata:", err)
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot update collection metadata"})
@@ -218,4 +230,19 @@ func (s Service) HandleRemoveFlashcardFromCollection(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.SendStatus(fiber.StatusOK)
+}
+
+func (s Service) HandleGetCollectionsPreview(ctx *fiber.Ctx) error {
+	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
+	if !ok {
+		log.Fatalln("cannot get user auth information")
+	}
+	userID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+	metadatas, err := s.FlashcardRepo.GetCollectionsMetadataByUserID(userID)
+	if err != nil {
+		log.Println("cannot get metadatas", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get collection preview"})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(metadatas)
 }

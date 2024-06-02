@@ -48,6 +48,7 @@ func (s *Service) InitRoute() {
 
 	flashcardCollections.Get("/", s.HandleGetFlashcardCollections)
 	flashcardCollections.Get("/default", s.HandleGetOrCreateDefaultFlashcardCollection)
+	flashcardCollections.Get("/preview", s.HandleGetCollectionsPreview)
 	flashcardCollections.Post("/", s.HandleCreateFlashcardCollection)
 
 	validatedCollections := flashcardCollections.Group("/:id", CheckFlashcardCollectionOwnership(s, "id"))

@@ -29,11 +29,14 @@ func (r *FlashcardsRepo) InsertRaw(collection *FlashcardCollection) (*FlashcardC
 
 	collection.SetID(primitive.NewObjectID())
 	collection.SetInitTimeByNow()
-	for idx, card := range collection.FlashCards {
+	flashcards := *collection.FlashCards
+	for idx, card := range flashcards {
 		card.SetID(primitive.NewObjectID())
 		card.SetInitTimeByNow()
-		collection.FlashCards[idx] = card
+		flashcards[idx] = card
 	}
+	collection.FlashCards = &flashcards
+
 	_, err := r.InsertOne(ctx, collection)
 	return collection, err
 }
@@ -86,7 +89,7 @@ func (r *FlashcardsRepo) UpdateLastView(
 	return nil
 }
 
-func (r *FlashcardsRepo) GetCollectionsMetadataByID(collectionID primitive.ObjectID) (*CollectionMetadata, error) {
+func (r *FlashcardsRepo) GetCollectionsMetadataByID(collectionID primitive.ObjectID) (*FlashcardCollection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	pipeline := []bson.M{
@@ -101,7 +104,7 @@ func (r *FlashcardsRepo) GetCollectionsMetadataByID(collectionID primitive.Objec
 	}
 	defer cur.Close(ctx)
 
-	collections := make([]*CollectionMetadata, 0)
+	collections := make([]*FlashcardCollection, 0)
 
 	if err := cur.All(ctx, &collections); err != nil {
 		return nil, err
@@ -114,7 +117,7 @@ func (r *FlashcardsRepo) GetCollectionsMetadataByID(collectionID primitive.Objec
 	return collections[0], nil
 }
 
-func (r *FlashcardsRepo) GetCollectionsMetadataByUserID(userID primitive.ObjectID) ([]*CollectionMetadata, error) {
+func (r *FlashcardsRepo) GetCollectionsMetadataByUserID(userID primitive.ObjectID) ([]*FlashcardCollection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	pipeline := []bson.M{
@@ -129,7 +132,7 @@ func (r *FlashcardsRepo) GetCollectionsMetadataByUserID(userID primitive.ObjectI
 	}
 	defer cur.Close(ctx)
 
-	collections := make([]*CollectionMetadata, 0)
+	collections := make([]*FlashcardCollection, 0)
 
 	if err := cur.All(ctx, &collections); err != nil {
 		return nil, err
@@ -140,7 +143,7 @@ func (r *FlashcardsRepo) GetCollectionsMetadataByUserID(userID primitive.ObjectI
 
 func (r *FlashcardsRepo) UpdateCollectionMetadata(
 	collectionID primitive.ObjectID,
-	metadata *CollectionMetadata,
+	metadata *FlashcardCollection,
 ) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()

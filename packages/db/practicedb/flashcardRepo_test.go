@@ -7,7 +7,6 @@ import (
 
 	"blinders/packages/db/practicedb"
 	dbutils "blinders/packages/db/utils"
-	"blinders/packages/utils"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -29,7 +28,7 @@ func TestInsertFlashcardCollection(t *testing.T) {
 		UserID: primitive.NewObjectID(),
 		Name:   "test collection",
 		Type:   "DefaultFlashcard",
-		FlashCards: []*practicedb.Flashcard{
+		FlashCards: &[]*practicedb.Flashcard{
 			{
 				FrontText: "front text",
 				BackText:  "back text",
@@ -45,7 +44,8 @@ func TestInsertFlashcardCollection(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, insertedCollection)
 
-	assert.Equal(t, len(collection.FlashCards), len(insertedCollection.FlashCards))
+	assert.NotNil(t, insertedCollection.FlashCards)
+	assert.Equal(t, len(*collection.FlashCards), len(*insertedCollection.FlashCards))
 	assert.NotNil(t, insertedCollection.ID)
 	assert.False(t, insertedCollection.ID.IsZero())
 	assert.Equal(t, collection.UserID, insertedCollection.UserID)
@@ -56,7 +56,8 @@ func TestInsertFlashcardCollection(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, gotCollection)
 
-	assert.Equal(t, len(collection.FlashCards), len(gotCollection.FlashCards))
+	assert.NotNil(t, gotCollection.FlashCards)
+	assert.Equal(t, len(*collection.FlashCards), len(*gotCollection.FlashCards))
 	assert.Equal(t, insertedCollection.UserID, gotCollection.UserID)
 	assert.Equal(t, insertedCollection.Name, gotCollection.Name)
 	assert.Equal(t, insertedCollection.Type, gotCollection.Type)
@@ -71,14 +72,14 @@ func TestGetByUserID(t *testing.T) {
 		UserID:     primitive.NewObjectID(),
 		Name:       "test collection",
 		Type:       "DefaultFlashcard",
-		FlashCards: []*practicedb.Flashcard{},
+		FlashCards: &[]*practicedb.Flashcard{},
 	}
 
 	insertedCollection, err := r.InsertRaw(&collection)
 	assert.NoError(t, err)
 	assert.NotNil(t, insertedCollection)
 
-	assert.Equal(t, len(collection.FlashCards), len(insertedCollection.FlashCards))
+	assert.Equal(t, len(*collection.FlashCards), len(*insertedCollection.FlashCards))
 	assert.NotNil(t, insertedCollection.ID)
 	assert.False(t, insertedCollection.ID.IsZero())
 	assert.Equal(t, collection.UserID, insertedCollection.UserID)
@@ -91,7 +92,7 @@ func TestGetByUserID(t *testing.T) {
 	assert.Equal(t, 1, len(collections))
 	gotCollection := collections[0]
 
-	assert.Equal(t, len(collection.FlashCards), len(gotCollection.FlashCards))
+	assert.Equal(t, len(*collection.FlashCards), len(*gotCollection.FlashCards))
 	assert.Equal(t, insertedCollection.UserID, gotCollection.UserID)
 	assert.Equal(t, insertedCollection.Name, gotCollection.Name)
 	assert.Equal(t, insertedCollection.Type, gotCollection.Type)
@@ -114,13 +115,13 @@ func TestGetCollectionMetadataByUserID(t *testing.T) {
 			UserID:     userID,
 			Name:       "test collection1",
 			Type:       "DefaultFlashcard",
-			FlashCards: []*practicedb.Flashcard{},
+			FlashCards: &[]*practicedb.Flashcard{},
 		},
 		{
 			UserID:     userID,
 			Name:       "test collection2",
 			Type:       "DefaultFlashcard",
-			FlashCards: []*practicedb.Flashcard{},
+			FlashCards: &[]*practicedb.Flashcard{},
 		},
 	}
 
@@ -159,13 +160,13 @@ func TestUpdateCollectionMetadata(t *testing.T) {
 			UserID:     userID,
 			Name:       "test collection",
 			Type:       "DefaultFlashcard",
-			FlashCards: []*practicedb.Flashcard{},
+			FlashCards: &[]*practicedb.Flashcard{},
 		},
 		{
 			UserID:     userID,
 			Name:       "test collection",
 			Type:       "DefaultFlashcard",
-			FlashCards: []*practicedb.Flashcard{},
+			FlashCards: &[]*practicedb.Flashcard{},
 		},
 	}
 
@@ -177,11 +178,10 @@ func TestUpdateCollectionMetadata(t *testing.T) {
 	}
 
 	updateCollectionID := collections[0].ID
-	update, err := utils.BSONConvert[practicedb.CollectionMetadata](collections[0])
-	assert.NoError(t, err)
+	update := collections[0]
 
 	update.Name = "updated collection"
-	err = r.UpdateCollectionMetadata(updateCollectionID, update)
+	err := r.UpdateCollectionMetadata(updateCollectionID, update)
 	assert.NoError(t, err)
 
 	updatedCollection, err := r.GetCollectionsMetadataByID(updateCollectionID)
@@ -205,7 +205,7 @@ func TestAddFlashcardToCollection(t *testing.T) {
 		UserID:     primitive.NewObjectID(),
 		Name:       "test collection",
 		Type:       "DefaultFlashcard",
-		FlashCards: []*practicedb.Flashcard{},
+		FlashCards: &[]*practicedb.Flashcard{},
 	}
 
 	insertedCollection, err := r.InsertRaw(&collection)
@@ -232,8 +232,9 @@ func TestAddFlashcardToCollection(t *testing.T) {
 	updatedCollection, err := r.GetByID(insertedCollection.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, updatedCollection)
+	assert.NotNil(t, updatedCollection.FlashCards)
 
-	for _, card := range updatedCollection.FlashCards {
+	for _, card := range *updatedCollection.FlashCards {
 		for _, flashcard := range flashcards {
 			if card.ID == flashcard.ID {
 				assert.Equal(t, flashcard.FrontText, card.FrontText)
@@ -253,7 +254,7 @@ func TestGetFlashCardByID(t *testing.T) {
 		UserID:     primitive.NewObjectID(),
 		Name:       "test collection",
 		Type:       "DefaultFlashcard",
-		FlashCards: []*practicedb.Flashcard{},
+		FlashCards: &[]*practicedb.Flashcard{},
 	}
 
 	insertedCollection, err := r.InsertRaw(&collection)
@@ -286,7 +287,7 @@ func TestUpdateFlashCardByID(t *testing.T) {
 		UserID:     primitive.NewObjectID(),
 		Name:       "test collection",
 		Type:       "DefaultFlashcard",
-		FlashCards: []*practicedb.Flashcard{},
+		FlashCards: &[]*practicedb.Flashcard{},
 	}
 
 	insertedCollection, err := r.InsertRaw(&collection)
@@ -332,7 +333,7 @@ func TestDeleteFlashcard(t *testing.T) {
 		UserID:     primitive.NewObjectID(),
 		Name:       "test collection",
 		Type:       "DefaultFlashcard",
-		FlashCards: []*practicedb.Flashcard{},
+		FlashCards: &[]*practicedb.Flashcard{},
 	}
 
 	insertedCollection, err := r.InsertRaw(&collection)
@@ -351,7 +352,7 @@ func TestDeleteFlashcard(t *testing.T) {
 	updatedCollection, err := r.GetByID(insertedCollection.ID)
 	assert.Nil(t, err)
 	assert.NotNil(t, insertedFlashcard)
-	assert.Equal(t, len(insertedCollection.FlashCards)+1, len(updatedCollection.FlashCards))
+	assert.Equal(t, len(*insertedCollection.FlashCards)+1, len(*updatedCollection.FlashCards))
 
 	err = r.DeleteFlashCard(insertedCollection.ID, insertedFlashcard.ID)
 	assert.Nil(t, err)
@@ -370,7 +371,7 @@ func TestUpdateLastView(t *testing.T) {
 		UserID:     primitive.NewObjectID(),
 		Name:       "test collection",
 		Type:       "DefaultFlashcard",
-		FlashCards: []*practicedb.Flashcard{},
+		FlashCards: &[]*practicedb.Flashcard{},
 	}
 
 	insertedCollection, err := r.InsertRaw(&collection)

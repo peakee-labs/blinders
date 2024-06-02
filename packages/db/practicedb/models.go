@@ -15,13 +15,14 @@ const (
 )
 
 type FlashcardCollection struct {
-	dbutils.RawModel `                        json:",inline"     bson:",inline"`
-	Type             FlashcardGenerationType `json:"type"        bson:"type"`
-	Name             string                  `json:"name"        bson:"name"`
-	Description      string                  `json:"description" bson:"description"`
-	UserID           primitive.ObjectID      `json:"userId"      bson:"userId"`
+	dbutils.RawModel `                        json:",inline"               bson:",inline"`
+	Type             FlashcardGenerationType `json:"type"                  bson:"type"`
+	Name             string                  `json:"name"                  bson:"name"`
+	Description      string                  `json:"description"           bson:"description"`
+	UserID           primitive.ObjectID      `json:"userId"                bson:"userId"`
 	LastViewed       primitive.ObjectID      `json:"lastViewed"  bson:"lastViewed"` // id of the last viewed flashcard
-	FlashCards       []*Flashcard            `json:"flashcards"  bson:"flashcards"`
+	FlashCards       *[]*Flashcard           `json:"flashcards,omitempty"  bson:"flashcards"`
+	Metadata         map[string]any          `json:"metadata,omitempty"    bson:"metadata,omiempty"`
 }
 
 type Flashcard struct {
@@ -32,13 +33,4 @@ type Flashcard struct {
 
 type ExplainLogFlashcardMetadata struct {
 	ExplainLogID primitive.ObjectID `json:"explainLogId" bson:"explain_log_id"`
-}
-
-type CollectionMetadata struct {
-	dbutils.RawModel `                        json:",inline"     bson:",inline"`
-	Type             FlashcardGenerationType `json:"type"        bson:"type"`
-	Name             string                  `json:"name"        bson:"name"`
-	Description      string                  `json:"description" bson:"description"`
-	UserID           primitive.ObjectID      `json:"userId"      bson:"userId"`
-	LastViewed       primitive.ObjectID      `json:"lastViewed"  bson:"lastViewed"` // id of the last viewed flashcard
 }
