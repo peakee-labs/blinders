@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	"blinders/packages/auth"
@@ -20,53 +19,33 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var (
-	manager *exploreapi.Manager
-	err     error
-)
+var manager *exploreapi.Manager
 
 func init() {
-	environment := os.Getenv("ENVIRONMENT")
-	log.Println("explore api running on environment:", environment)
+	env := os.Getenv("ENVIRONMENT")
 	envFile := ".env"
-	if environment != "" {
-		envFile = fmt.Sprintf(".env.%s", environment)
+	if env != "" {
+		envFile = fmt.Sprintf(".env.%s", env)
 	}
-
 	if err := godotenv.Load(envFile); err != nil {
 		log.Fatal("failed to load env", err)
 	}
+	log.Println("explore api running on environment:", env)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	redisClient := utils.NewRedisClientFromEnv(ctx)
 
-	var usersDB *mongo.Database
-	var matchingDB *mongo.Database
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		usersDB, err = dbutils.InitMongoDatabaseFromEnv("USERS")
-		if err != nil {
-			log.Fatal("failed to init users db:", err)
-		}
-	}()
-	go func() {
-		defer wg.Done()
-		matchingDB, err = dbutils.InitMongoDatabaseFromEnv("MATCHING")
-		if err != nil {
-			log.Fatal("failed to init matching db:", err)
-		}
-	}()
-	wg.Wait()
+	db, err := dbutils.InitMongoDatabaseFromEnv()
+	if err != nil {
+		log.Fatal("failed to connect to mongo:", err)
+	}
 
-	matchingRepo := matchingdb.NewMatchingRepo(matchingDB)
-	usersRepo := usersdb.NewUsersRepo(usersDB)
+	matchingRepo := matchingdb.NewMatchingRepo(db)
+	usersRepo := usersdb.NewUsersRepo(db)
 
 	embedderEndpoint := fmt.Sprintf("http://localhost:%s/embedd", os.Getenv("EMBEDDER_SERVICE_PORT"))
 	fmt.Println("embedder endpoint: ", embedderEndpoint)

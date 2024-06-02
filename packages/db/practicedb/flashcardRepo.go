@@ -12,93 +12,101 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type FlashCardsRepo struct {
-	dbutils.SingleCollectionRepo[*FlashCard]
+type FlashcardsRepo struct {
+	dbutils.SingleCollectionRepo[*FlashcardCollection]
 }
 
-func NewFlashCardRepo(db *mongo.Database) *FlashCardsRepo {
-	col := db.Collection(FlashCardColName)
-	return &FlashCardsRepo{SingleCollectionRepo: dbutils.SingleCollectionRepo[*FlashCard]{Collection: col}}
+func NewFlashcardsRepo(db *mongo.Database) *FlashcardsRepo {
+	col := db.Collection(FlashcardsColName)
+	return &FlashcardsRepo{
+		SingleCollectionRepo: dbutils.SingleCollectionRepo[*FlashcardCollection]{Collection: col},
+	}
 }
 
-func (r *FlashCardsRepo) AddFlashCardsOfCollection(cards []*FlashCard) (*CardCollection, error) {
+func (r *FlashcardsRepo) InsertRaw(collection *FlashcardCollection) (*FlashcardCollection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	collectionOID := primitive.NewObjectID()
-	docs := make([]interface{}, len(cards))
-
-	for idx, card := range cards {
-		card.CollectionID = collectionOID
+	collection.SetID(primitive.NewObjectID())
+	collection.SetInitTimeByNow()
+	flashcards := *collection.FlashCards
+	for idx, card := range flashcards {
 		card.SetID(primitive.NewObjectID())
-		docs[idx] = card
+		card.SetInitTimeByNow()
+		flashcards[idx] = card
 	}
+	collection.FlashCards = &flashcards
 
-	_, err := r.InsertMany(ctx, docs)
-	if err != nil {
-		return nil, err
-	}
-	return &CardCollection{
-		ID:         collectionOID,
-		UserID:     cards[0].UserID,
-		FlashCards: cards,
-	}, nil
+	_, err := r.InsertOne(ctx, collection)
+	return collection, err
 }
 
-func (r *FlashCardsRepo) GetFlashCardByUserID(userID primitive.ObjectID) ([]FlashCard, error) {
+func (r *FlashcardsRepo) GetCollectionByID(collectionID primitive.ObjectID) (*FlashcardCollection, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	var obj *FlashcardCollection
+	err := r.FindOne(ctx, bson.M{"_id": collectionID}).Decode(&obj)
+
+	return obj, err
+}
+
+func (r *FlashcardsRepo) GetCollectionByType(userID primitive.ObjectID, typ FlashcardGenerationType) ([]*FlashcardCollection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
+	filter := bson.M{"userId": userID, "type": typ}
+
+	cur, err := r.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	collections := make([]*FlashcardCollection, 0)
+	if err := cur.All(ctx, &collections); err != nil {
+		return nil, err
+	}
+	return collections, nil
+}
+
+func (r *FlashcardsRepo) GetByUserID(
+	userID primitive.ObjectID,
+) ([]*FlashcardCollection, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	// find and sort by field "updatedAt"
 	filter := bson.M{"userId": userID}
-
-	cur, err := r.Find(ctx, filter)
+	cur, err := r.Find(ctx, filter, options.Find().SetSort(bson.M{"updatedAt": -1}))
 	if err != nil {
 		return nil, err
 	}
+	defer cur.Close(ctx)
 
-	cards := make([]FlashCard, 0)
-	err = cur.All(ctx, &cards)
-	return cards, err
-}
-
-func (r *FlashCardsRepo) GetFlashCardsByCollectionID(collectionID primitive.ObjectID) ([]*FlashCard, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	filter := bson.M{"collectionId": collectionID}
-	cur, err := r.Find(ctx, filter)
-	if err != nil {
+	collections := make([]*FlashcardCollection, 0)
+	if err := cur.All(ctx, &collections); err != nil {
 		return nil, err
 	}
-	cards := make([]*FlashCard, 0)
-	err = cur.All(ctx, &cards)
-	return cards, err
-}
 
-func (r *FlashCardsRepo) GetFlashCardCollectionByID(collectionID primitive.ObjectID) (*CardCollection, error) {
-	cards, err := r.GetFlashCardsByCollectionID(collectionID)
-	if err != nil {
-		return nil, err
-	}
-	if len(cards) == 0 {
+	if len(collections) == 0 {
 		return nil, mongo.ErrNoDocuments
 	}
-	// since all cards in a collection have the same userID, we can just get the userID from the first card
-	userOID := cards[0].UserID
 
-	return &CardCollection{
-		ID:         collectionID,
-		UserID:     userOID,
-		FlashCards: cards,
-	}, err
+	return collections, nil
 }
 
-func (r *FlashCardsRepo) UpdateFlashCard(cardID primitive.ObjectID, newCard *FlashCard) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
+func (r *FlashcardsRepo) UpdateLastView(
+	collectionID,
+	flashcardID primitive.ObjectID,
+) error {
+	filter := bson.M{"_id": collectionID, "flashcards._id": flashcardID}
+	update := bson.M{"$set": bson.M{
+		"lastViewed": flashcardID,
+		"updatedAt":  primitive.NewDateTimeFromTime(time.Now()),
+	}}
 
-	filter := bson.M{"_id": cardID}
-	cur, err := r.ReplaceOne(ctx, filter, newCard, options.Replace().SetUpsert(false))
+	cur, err := r.UpdateOne(context.Background(), filter, update, options.Update().SetUpsert(false))
 	if err != nil {
 		return err
 	}
@@ -110,64 +118,172 @@ func (r *FlashCardsRepo) UpdateFlashCard(cardID primitive.ObjectID, newCard *Fla
 	return nil
 }
 
-func (r *FlashCardsRepo) DeleteFlashCardByID(cardID primitive.ObjectID) error {
+func (r *FlashcardsRepo) GetCollectionsMetadataByID(collectionID primitive.ObjectID) (*FlashcardCollection, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	pipeline := []bson.M{
+		{"$match": bson.M{"_id": collectionID}},
+		{"$project": bson.M{"flashcards": 0}},
+		{"$sort": bson.M{"updatedAt": -1}},
+	}
+
+	cur, err := r.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	collections := make([]*FlashcardCollection, 0)
+
+	if err := cur.All(ctx, &collections); err != nil {
+		return nil, err
+	}
+
+	if len(collections) == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
+
+	return collections[0], nil
+}
+
+func (r *FlashcardsRepo) GetCollectionsMetadataByUserID(userID primitive.ObjectID) ([]*FlashcardCollection, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	pipeline := []bson.M{
+		{"$match": bson.M{"userId": userID}},
+		{"$project": bson.M{"flashcards": 0}},
+		{"$sort": bson.M{"updatedAt": -1}},
+	}
+
+	cur, err := r.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	collections := make([]*FlashcardCollection, 0)
+
+	if err := cur.All(ctx, &collections); err != nil {
+		return nil, err
+	}
+
+	return collections, nil
+}
+
+func (r *FlashcardsRepo) UpdateCollectionMetadata(
+	collectionID primitive.ObjectID,
+	metadata *FlashcardCollection,
+) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	filter := bson.M{"_id": cardID}
-	cur, err := r.DeleteOne(ctx, filter)
+	filter := bson.M{"_id": collectionID}
+	update := bson.M{"$set": bson.M{
+		"name":        metadata.Name,
+		"description": metadata.Description,
+		"updatedAt":   primitive.NewDateTimeFromTime(time.Now()),
+	}}
+
+	cur, err := r.UpdateOne(ctx, filter, update, options.Update().SetUpsert(false))
 	if err != nil {
 		return err
 	}
 
-	if cur.DeletedCount == 0 {
+	if cur.MatchedCount == 0 {
+		return mongo.ErrNoDocuments
+	}
+	return nil
+}
+
+func (r *FlashcardsRepo) AddFlashcardToCollection(
+	collectionID primitive.ObjectID,
+	flashcard *Flashcard,
+) (*Flashcard, error) {
+	flashcard.SetID(primitive.NewObjectID())
+	flashcard.SetInitTimeByNow()
+
+	cur, err := r.Collection.UpdateByID(context.Background(), collectionID, bson.M{
+		"$push": bson.M{"flashcards": flashcard},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if cur.MatchedCount == 0 || cur.ModifiedCount == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
+
+	return flashcard, nil
+}
+
+func (r *FlashcardsRepo) GetFlashcardByID(collectionID primitive.ObjectID, cardID primitive.ObjectID) (*Flashcard, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"_id": collectionID}},
+		{"$unwind": "$flashcards"},
+		{"$replaceRoot": bson.M{"newRoot": "$flashcards"}},
+		{"$match": bson.M{"_id": cardID}},
+	}
+
+	cur, err := r.Collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	flashcards := make([]*Flashcard, 0)
+	if err := cur.All(ctx, &flashcards); err != nil {
+		return nil, err
+	}
+
+	if len(flashcards) == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
+
+	return flashcards[0], nil
+}
+
+func (r *FlashcardsRepo) UpdateFlashCard(collectionID primitive.ObjectID, card Flashcard) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	card.SetUpdatedAtByNow()
+
+	filter := bson.M{"_id": collectionID, "flashcards._id": card.ID}
+	// explain the below update query?
+	update := bson.M{"$set": bson.M{
+		"flashcards.$.frontText": card.FrontText,
+		"flashcards.$.backText":  card.BackText,
+		"flashcards.$.updatedAt": card.UpdatedAt,
+	}}
+
+	cur, err := r.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	if cur.MatchedCount == 0 {
 		return mongo.ErrNoDocuments
 	}
 
 	return nil
 }
 
-func (r *FlashCardsRepo) GetFlashCardCollectionsByUserID(userID primitive.ObjectID) ([]*CardCollection, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	pipeline := []bson.M{
-		{
-			"$match": bson.M{"userId": userID},
-		},
-		{
-			"$group": bson.M{
-				"_id":        "$collectionId",
-				"flashcards": bson.M{"$push": "$$ROOT"},
-			},
-		},
-		{
-			"$addFields": bson.M{
-				"userId": userID,
-			},
-		},
-	}
-	cur, err := r.Aggregate(ctx, pipeline)
-	if err != nil {
-		return nil, err
-	}
-
-	collections := make([]*CardCollection, 0)
-	err = cur.All(ctx, &collections)
-	return collections, err
-}
-
-func (r *FlashCardsRepo) DeleteCardCollectionByID(collectionID primitive.ObjectID) error {
+func (r *FlashcardsRepo) DeleteFlashCard(collectionID primitive.ObjectID, cardID primitive.ObjectID) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	filter := bson.M{"collectionId": collectionID}
-	cur, err := r.DeleteMany(ctx, filter)
+	update := bson.M{"$pull": bson.M{"flashcards": bson.M{"_id": cardID}}}
+	cur, err := r.UpdateByID(ctx, collectionID, update)
 	if err != nil {
 		return err
 	}
 
-	if cur.DeletedCount == 0 {
+	if cur.MatchedCount == 0 || cur.ModifiedCount == 0 {
 		return mongo.ErrNoDocuments
 	}
+
 	return nil
 }

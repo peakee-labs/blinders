@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"blinders/packages/auth"
 	"blinders/packages/db/practicedb"
@@ -23,52 +22,49 @@ var service *practiceapi.Service
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
+	log.Println("practice api running on environment:", env)
 	envFile := ".env"
 	if env != "" {
-		envFile = ".env." + strings.ToLower(env)
+		envFile = fmt.Sprintf(".env.%s", env)
 	}
-	log.Println("init service in environment", env, "loading env at", envFile)
+
 	if err := godotenv.Load(envFile); err != nil {
 		log.Fatal("failed to load env", err)
 	}
 
-	app := fiber.New()
-
-	dbName := os.Getenv("MONGO_DATABASE")
-	url := os.Getenv("MONGO_DATABASE_URL")
-	client, err := dbutils.InitMongoClient(url)
+	db, err := dbutils.InitMongoDatabaseFromEnv()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("failed to connect to mongo:", err)
 	}
-	usersRepo := usersdb.NewUsersRepo(client.Database(dbName))
+
+	usersRepo := usersdb.NewUsersRepo(db)
 
 	adminJSON, _ := utils.GetFile("firebase.admin.json")
-	authManager, _ := auth.NewFirebaseManager(adminJSON)
-
-	flashCardsRepo := practicedb.NewFlashCardRepo(client.Database(dbName))
-	collectionMetadataRepo := practicedb.NewCollectionMetadataRepo(client.Database(dbName))
-
+	auth, _ := auth.NewFirebaseManager(adminJSON)
+	flashcardsRepo := practicedb.NewFlashcardsRepo(db)
+	transportConsumers := transport.ConsumerMap{
+		transport.Suggest: fmt.Sprintf(
+			"http://localhost:%s/",
+			os.Getenv("PYSUGGEST_SERVICE_PORT"),
+		), // python suggest service
+		transport.CollectingPush: fmt.Sprintf(
+			"http://localhost:%s/",
+			os.Getenv("COLLECTING_SERVICE_PORT"),
+		),
+		transport.CollectingGet: fmt.Sprintf(
+			"http://localhost:%s/",
+			os.Getenv("COLLECTING_SERVICE_PORT"),
+		),
+	}
+	transport := transport.NewLocalTransportWithConsumers(transportConsumers)
+	app := fiber.New()
 	service = practiceapi.NewService(
 		app,
-		authManager,
+		auth,
 		usersRepo,
-		flashCardsRepo,
-		collectionMetadataRepo,
-		transport.NewLocalTransport(),
-		transport.ConsumerMap{
-			transport.Suggest: fmt.Sprintf(
-				"http://localhost:%s/",
-				os.Getenv("PYSUGGEST_SERVICE_PORT"),
-			), // python suggest service
-			transport.CollectingPush: fmt.Sprintf(
-				"http://localhost:%s/",
-				os.Getenv("COLLECTING_SERVICE_PORT"),
-			),
-			transport.CollectingGet: fmt.Sprintf(
-				"http://localhost:%s/",
-				os.Getenv("COLLECTING_SERVICE_PORT"),
-			),
-		})
+		flashcardsRepo,
+		transport,
+	)
 
 	service.App.Use(cors.New())
 	service.InitRoute()
@@ -76,6 +72,7 @@ func init() {
 
 func main() {
 	port := os.Getenv("PRACTICE_SERVICE_PORT")
+	log.Println("listening on: ", port)
 	err := service.App.Listen(fmt.Sprintf(":%s", port))
 	if err != nil {
 		log.Println("launch practice service error", err)

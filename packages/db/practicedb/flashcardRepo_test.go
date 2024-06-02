@@ -2,7 +2,6 @@ package practicedb_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -12,163 +11,426 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
-	mongoTestURL = "mongodb://localhost:27017"
-	mongoTestDB  = "blinder-test"
+	mongoTestURL    = "mongodb://localhost:27017"
+	mongoTestDBName = "blinders-test"
+	client          *mongo.Client
 )
 
-func TestFlashCardsRepo(t *testing.T) {
-	repo := GetTestFlashCardsRepo(t)
+func TestInsertFlashcardCollection(t *testing.T) {
+	t.Parallel()
+	r := GetFlashcardTestRepo(t)
+	defer CleanRepo(t, r)
 
-	var (
-		userID       = primitive.NewObjectID()
-		collectionID = primitive.NewObjectID()
-	)
-
-	card := &practicedb.FlashCard{
-		RawModel: dbutils.RawModel{
-			ID: primitive.NewObjectID(),
+	collection := practicedb.FlashcardCollection{
+		UserID: primitive.NewObjectID(),
+		Name:   "test collection",
+		Type:   "DefaultFlashcard",
+		FlashCards: &[]*practicedb.Flashcard{
+			{
+				FrontText: "front text",
+				BackText:  "back text",
+			},
+			{
+				FrontText: "front text 1",
+				BackText:  "back text 1",
+			},
 		},
-		UserID:       userID,
-		CollectionID: collectionID,
-		FrontText:    "Front of the card",
-		BackText:     "Back of the card",
 	}
 
-	insertedCard, err := repo.Insert(card)
+	insertedCollection, err := r.InsertRaw(&collection)
+	assert.NoError(t, err)
+	assert.NotNil(t, insertedCollection)
+
+	assert.NotNil(t, insertedCollection.FlashCards)
+	assert.Equal(t, len(*collection.FlashCards), len(*insertedCollection.FlashCards))
+	assert.NotNil(t, insertedCollection.ID)
+	assert.False(t, insertedCollection.ID.IsZero())
+	assert.Equal(t, collection.UserID, insertedCollection.UserID)
+	assert.Equal(t, collection.Name, insertedCollection.Name)
+	assert.Equal(t, collection.Type, insertedCollection.Type)
+
+	gotCollection, err := r.GetByID(insertedCollection.ID)
 	assert.Nil(t, err)
+	assert.NotNil(t, gotCollection)
 
-	foundCard, err := repo.GetByID(insertedCard.ID)
-	assert.Nil(t, err)
-	assert.Equal(t, *insertedCard, *foundCard)
-
-	foundWithUserID, err := repo.GetFlashCardByUserID(userID)
-	assert.Nil(t, err)
-	assert.Contains(t, foundWithUserID, *insertedCard)
-
-	foundWithCollectionID, err := repo.GetFlashCardsByCollectionID(collectionID)
-	assert.Nil(t, err)
-	assert.Contains(t, foundWithCollectionID, *insertedCard)
-
-	collection, err := repo.GetFlashCardCollectionByID(collectionID)
-	assert.Nil(t, err)
-	assert.Contains(t, collection.FlashCards, *insertedCard)
-	assert.Equal(t, collection.ID, collectionID)
-
-	newCard := &practicedb.FlashCard{
-		RawModel: dbutils.RawModel{
-			ID: insertedCard.ID,
-		},
-		UserID:       insertedCard.UserID,
-		CollectionID: insertedCard.CollectionID,
-		FrontText:    "Updated front of the card",
-		BackText:     "Updated back of the card",
-	}
-	err = repo.UpdateFlashCard(insertedCard.ID, newCard)
-	assert.Nil(t, err)
-
-	err = repo.UpdateFlashCard(primitive.NilObjectID, newCard)
-	assert.NotNil(t, err)
-
-	updatedCard, err := repo.GetByID(insertedCard.ID)
-	assert.Nil(t, err)
-	assert.Equal(t, *newCard, *updatedCard)
-
-	err = repo.DeleteFlashCardByID(insertedCard.ID)
-	assert.Nil(t, err)
-
-	deletedCard, err := repo.GetByID(insertedCard.ID)
-	assert.NotNil(t, err)
-	assert.Nil(t, deletedCard)
-	CleanRepo(t, repo.Collection)
+	assert.NotNil(t, gotCollection.FlashCards)
+	assert.Equal(t, len(*collection.FlashCards), len(*gotCollection.FlashCards))
+	assert.Equal(t, insertedCollection.UserID, gotCollection.UserID)
+	assert.Equal(t, insertedCollection.Name, gotCollection.Name)
+	assert.Equal(t, insertedCollection.Type, gotCollection.Type)
 }
 
-func TestGetFlashCardCollectionsByUserID(t *testing.T) {
-	repo := GetTestFlashCardsRepo(t) // Assuming you have a function to create a new repo
+func TestGetByUserID(t *testing.T) {
+	t.Parallel()
+	r := GetFlashcardTestRepo(t)
+	defer CleanRepo(t, r)
+
+	collection := practicedb.FlashcardCollection{
+		UserID:     primitive.NewObjectID(),
+		Name:       "test collection",
+		Type:       "DefaultFlashcard",
+		FlashCards: &[]*practicedb.Flashcard{},
+	}
+
+	insertedCollection, err := r.InsertRaw(&collection)
+	assert.NoError(t, err)
+	assert.NotNil(t, insertedCollection)
+
+	assert.Equal(t, len(*collection.FlashCards), len(*insertedCollection.FlashCards))
+	assert.NotNil(t, insertedCollection.ID)
+	assert.False(t, insertedCollection.ID.IsZero())
+	assert.Equal(t, collection.UserID, insertedCollection.UserID)
+	assert.Equal(t, collection.Name, insertedCollection.Name)
+	assert.Equal(t, collection.Type, insertedCollection.Type)
+
+	collections, err := r.GetByUserID(insertedCollection.UserID)
+	assert.Nil(t, err)
+	assert.NotNil(t, collection)
+	assert.Equal(t, 1, len(collections))
+	gotCollection := collections[0]
+
+	assert.Equal(t, len(*collection.FlashCards), len(*gotCollection.FlashCards))
+	assert.Equal(t, insertedCollection.UserID, gotCollection.UserID)
+	assert.Equal(t, insertedCollection.Name, gotCollection.Name)
+	assert.Equal(t, insertedCollection.Type, gotCollection.Type)
+
+	invalidUserID := primitive.NewObjectID()
+	invalidCollections, err := r.GetByUserID(invalidUserID)
+	assert.NotNil(t, err)
+	assert.Nil(t, invalidCollections)
+}
+
+func TestGetCollectionMetadataByUserID(t *testing.T) {
+	t.Parallel()
+	r := GetFlashcardTestRepo(t)
+	defer CleanRepo(t, r)
+
 	userID := primitive.NewObjectID()
 
-	collectionsID := []primitive.ObjectID{
-		primitive.NewObjectID(),
-		primitive.NewObjectID(),
-		primitive.NewObjectID(),
+	collections := []*practicedb.FlashcardCollection{
+		{
+			UserID:     userID,
+			Name:       "test collection1",
+			Type:       "DefaultFlashcard",
+			FlashCards: &[]*practicedb.Flashcard{},
+		},
+		{
+			UserID:     userID,
+			Name:       "test collection2",
+			Type:       "DefaultFlashcard",
+			FlashCards: &[]*practicedb.Flashcard{},
+		},
 	}
 
-	cards := []practicedb.FlashCard{}
-
-	for i := 0; i < 100; i++ {
-		card := &practicedb.FlashCard{
-			UserID:       userID,
-			CollectionID: collectionsID[i%len(collectionsID)],
-			FrontText:    fmt.Sprintf("sample front text %d", i),
-			BackText:     fmt.Sprintf("sample back text %d", i),
-		}
-		insertedCard, err := repo.InsertRaw(card)
+	for idx, collection := range collections {
+		insertedCollection, err := r.InsertRaw(collection)
 		assert.NoError(t, err)
-		assert.NotNil(t, insertedCard)
-		assert.NotNil(t, insertedCard.ID)
-		cards = append(cards, *insertedCard)
+		assert.NotNil(t, insertedCollection)
+		collections[idx] = insertedCollection
 	}
 
-	result, err := repo.GetFlashCardCollectionsByUserID(userID)
+	metadatas, err := r.GetCollectionsMetadataByUserID(userID)
 	assert.NoError(t, err)
+	assert.NotNil(t, metadatas)
 
-	// Verify that the returned collections are the ones we used
-	assert.Equal(t, len(collectionsID), len(result))
-	for _, collection := range result {
-		assert.Contains(t, collectionsID, collection.ID)
-		assert.Equal(t, userID, collection.UserID)
-		for _, card := range collection.FlashCards {
-			assert.Contains(t, cards, card)
-		}
-	}
-
-	// verify that the card belongs to correct collection
-	for _, card := range cards {
-		for _, collection := range result {
-			if collection.ID == card.CollectionID {
-				assert.Contains(t, collection.FlashCards, card)
-			} else {
-				assert.NotContains(t, collection.FlashCards, card)
+	for _, metadata := range metadatas {
+		assert.Equal(t, userID, metadata.UserID)
+		for _, collection := range collections {
+			if collection.ID == metadata.ID {
+				assert.Equal(t, collection.Name, metadata.Name)
+				assert.Equal(t, collection.Type, metadata.Type)
+				break
 			}
 		}
 	}
-
-	deleteCollection := collectionsID[0]
-	// verify that delete collection works
-	err = repo.DeleteCardCollectionByID(deleteCollection)
-	assert.Nil(t, err)
-
-	// verify that delete not existed collection works
-	err = repo.DeleteCardCollectionByID(deleteCollection)
-	assert.NotNil(t, err)
-
-	// verify that the collection is deleted
-	collection, err := repo.GetFlashCardCollectionByID(deleteCollection)
-	assert.NotNil(t, err)
-	assert.Nil(t, collection)
-
-	collectionID := collectionsID[1]
-	collectionCards, err := repo.GetFlashCardsByCollectionID(collectionID)
-	assert.Nil(t, err)
-
-	for _, card := range collectionCards {
-		assert.Contains(t, cards, card)
-		assert.Equal(t, card.CollectionID, collectionID)
-	}
-	CleanRepo(t, repo.Collection)
 }
 
-func GetTestFlashCardsRepo(t *testing.T) *practicedb.FlashCardsRepo {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func TestUpdateCollectionMetadata(t *testing.T) {
+	t.Parallel()
+	r := GetFlashcardTestRepo(t)
+	defer CleanRepo(t, r)
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoTestURL))
+	userID := primitive.NewObjectID()
+
+	collections := []*practicedb.FlashcardCollection{
+		{
+			UserID:     userID,
+			Name:       "test collection",
+			Type:       "DefaultFlashcard",
+			FlashCards: &[]*practicedb.Flashcard{},
+		},
+		{
+			UserID:     userID,
+			Name:       "test collection",
+			Type:       "DefaultFlashcard",
+			FlashCards: &[]*practicedb.Flashcard{},
+		},
+	}
+
+	for idx, collection := range collections {
+		insertedCollection, err := r.InsertRaw(collection)
+		assert.NoError(t, err)
+		assert.NotNil(t, insertedCollection)
+		collections[idx] = insertedCollection
+	}
+
+	updateCollectionID := collections[0].ID
+	update := collections[0]
+
+	update.Name = "updated collection"
+	err := r.UpdateCollectionMetadata(updateCollectionID, update)
+	assert.NoError(t, err)
+
+	updatedCollection, err := r.GetCollectionsMetadataByID(updateCollectionID)
+	assert.NoError(t, err)
+	assert.Equal(t, update.Name, updatedCollection.Name)
+	assert.Equal(t, update.Type, updatedCollection.Type)
+	assert.Equal(t, update.UserID, updatedCollection.UserID)
+	assert.LessOrEqual(t, update.UpdatedAt, updatedCollection.UpdatedAt)
+
+	invalidCollectionID := primitive.NewObjectID()
+	err = r.UpdateCollectionMetadata(invalidCollectionID, update)
+	assert.Error(t, err)
+}
+
+func TestAddFlashcardToCollection(t *testing.T) {
+	t.Parallel()
+	r := GetFlashcardTestRepo(t)
+	defer CleanRepo(t, r)
+
+	collection := practicedb.FlashcardCollection{
+		UserID:     primitive.NewObjectID(),
+		Name:       "test collection",
+		Type:       "DefaultFlashcard",
+		FlashCards: &[]*practicedb.Flashcard{},
+	}
+
+	insertedCollection, err := r.InsertRaw(&collection)
+	assert.NoError(t, err)
+	assert.NotNil(t, insertedCollection)
+
+	flashcards := []*practicedb.Flashcard{
+		{
+			FrontText: "front text",
+			BackText:  "back text",
+		},
+		{
+			FrontText: "front text",
+			BackText:  "back text",
+		},
+	}
+
+	for _, flashcard := range flashcards {
+		insertedFlashcard, err := r.AddFlashcardToCollection(insertedCollection.ID, flashcard)
+		assert.Nil(t, err)
+		assert.NotNil(t, insertedFlashcard)
+	}
+
+	updatedCollection, err := r.GetByID(insertedCollection.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, updatedCollection)
+	assert.NotNil(t, updatedCollection.FlashCards)
+
+	for _, card := range *updatedCollection.FlashCards {
+		for _, flashcard := range flashcards {
+			if card.ID == flashcard.ID {
+				assert.Equal(t, flashcard.FrontText, card.FrontText)
+				assert.Equal(t, flashcard.BackText, card.BackText)
+				break
+			}
+		}
+	}
+}
+
+func TestGetFlashCardByID(t *testing.T) {
+	t.Parallel()
+	r := GetFlashcardTestRepo(t)
+	defer CleanRepo(t, r)
+
+	collection := practicedb.FlashcardCollection{
+		UserID:     primitive.NewObjectID(),
+		Name:       "test collection",
+		Type:       "DefaultFlashcard",
+		FlashCards: &[]*practicedb.Flashcard{},
+	}
+
+	insertedCollection, err := r.InsertRaw(&collection)
+	assert.NoError(t, err)
+	assert.NotNil(t, insertedCollection)
+
+	flashcard := practicedb.Flashcard{
+		FrontText: "front text",
+		BackText:  "back text",
+	}
+
+	insertedFlashcard, err := r.AddFlashcardToCollection(insertedCollection.ID, &flashcard)
+	assert.Nil(t, err)
+	assert.NotNil(t, insertedFlashcard)
+
+	gotFlashcard, err := r.GetFlashcardByID(insertedCollection.ID, flashcard.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, insertedCollection)
+
+	assert.Equal(t, insertedFlashcard.FrontText, gotFlashcard.FrontText)
+	assert.Equal(t, insertedFlashcard.BackText, gotFlashcard.BackText)
+}
+
+func TestUpdateFlashCardByID(t *testing.T) {
+	t.Parallel()
+	r := GetFlashcardTestRepo(t)
+	defer CleanRepo(t, r)
+
+	collection := practicedb.FlashcardCollection{
+		UserID:     primitive.NewObjectID(),
+		Name:       "test collection",
+		Type:       "DefaultFlashcard",
+		FlashCards: &[]*practicedb.Flashcard{},
+	}
+
+	insertedCollection, err := r.InsertRaw(&collection)
+	assert.NoError(t, err)
+	assert.NotNil(t, insertedCollection)
+
+	flashcard := &practicedb.Flashcard{
+		FrontText: "front text",
+		BackText:  "back text",
+	}
+
+	insertedFlashcard, err := r.AddFlashcardToCollection(insertedCollection.ID, flashcard)
+	assert.Nil(t, err)
+	assert.NotNil(t, insertedFlashcard)
+
+	gotFlashcard, err := r.GetFlashcardByID(insertedCollection.ID, flashcard.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, insertedCollection)
+
+	update := *gotFlashcard
+
+	update.FrontText = "new front text"
+	update.BackText = "new back text"
+
+	err = r.UpdateFlashCard(insertedCollection.ID, update)
 	assert.Nil(t, err)
 
-	db := client.Database(mongoTestDB)
+	updatedFlashcard, err := r.GetFlashcardByID(insertedCollection.ID, update.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, updatedFlashcard)
 
-	return practicedb.NewFlashCardRepo(db)
+	assert.Equal(t, update.FrontText, updatedFlashcard.FrontText)
+	assert.Equal(t, update.BackText, updatedFlashcard.BackText)
+	assert.LessOrEqual(t, update.UpdatedAt.Time(), updatedFlashcard.UpdatedAt.Time())
+}
+
+func TestDeleteFlashcard(t *testing.T) {
+	t.Parallel()
+	r := GetFlashcardTestRepo(t)
+	defer CleanRepo(t, r)
+
+	collection := practicedb.FlashcardCollection{
+		UserID:     primitive.NewObjectID(),
+		Name:       "test collection",
+		Type:       "DefaultFlashcard",
+		FlashCards: &[]*practicedb.Flashcard{},
+	}
+
+	insertedCollection, err := r.InsertRaw(&collection)
+	assert.NoError(t, err)
+	assert.NotNil(t, insertedCollection)
+
+	flashcard := &practicedb.Flashcard{
+		FrontText: "front text",
+		BackText:  "back text",
+	}
+
+	insertedFlashcard, err := r.AddFlashcardToCollection(insertedCollection.ID, flashcard)
+	assert.Nil(t, err)
+	assert.NotNil(t, insertedFlashcard)
+
+	updatedCollection, err := r.GetByID(insertedCollection.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, insertedFlashcard)
+	assert.Equal(t, len(*insertedCollection.FlashCards)+1, len(*updatedCollection.FlashCards))
+
+	err = r.DeleteFlashCard(insertedCollection.ID, insertedFlashcard.ID)
+	assert.Nil(t, err)
+
+	failed, err := r.GetFlashcardByID(insertedCollection.ID, insertedFlashcard.ID)
+	assert.NotNil(t, err)
+	assert.Nil(t, failed)
+}
+
+func TestUpdateLastView(t *testing.T) {
+	t.Parallel()
+	r := GetFlashcardTestRepo(t)
+	defer CleanRepo(t, r)
+
+	collection := practicedb.FlashcardCollection{
+		UserID:     primitive.NewObjectID(),
+		Name:       "test collection",
+		Type:       "DefaultFlashcard",
+		FlashCards: &[]*practicedb.Flashcard{},
+	}
+
+	insertedCollection, err := r.InsertRaw(&collection)
+	assert.NoError(t, err)
+	assert.NotNil(t, insertedCollection)
+
+	flashcards := []*practicedb.Flashcard{
+		{
+			FrontText: "front text",
+			BackText:  "back text",
+		},
+		{
+			FrontText: "another front text",
+			BackText:  "another back text",
+		},
+	}
+
+	for idx, flashcard := range flashcards {
+		insertedFlashcard, err := r.AddFlashcardToCollection(insertedCollection.ID, flashcard)
+		assert.Nil(t, err)
+		assert.NotNil(t, insertedFlashcard)
+		flashcards[idx] = insertedFlashcard
+	}
+
+	for _, flashcard := range flashcards {
+		col, err := r.GetByID(insertedCollection.ID)
+		assert.NoError(t, err)
+		assert.NotEqual(t, col.LastViewed, flashcard.ID)
+
+		err = r.UpdateLastView(insertedCollection.ID, flashcard.ID)
+		assert.Nil(t, err)
+
+		col, err = r.GetByID(insertedCollection.ID)
+		assert.NoError(t, err)
+		assert.Equal(t, col.LastViewed, flashcard.ID)
+	}
+}
+
+func GetFlashcardTestRepo(t *testing.T) *practicedb.FlashcardsRepo {
+	t.Helper()
+	if client == nil {
+		var err error
+		client, err = dbutils.InitMongoClient(mongoTestURL)
+		assert.NoError(t, err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	err := client.Ping(ctx, nil)
+	assert.NoError(t, err)
+
+	return practicedb.NewFlashcardsRepo(client.Database(mongoTestDBName))
+}
+
+func CleanRepo(t *testing.T, repo *practicedb.FlashcardsRepo) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	err := repo.Collection.Drop(ctx)
+	assert.NoError(t, err)
 }
