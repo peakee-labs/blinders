@@ -43,12 +43,23 @@ func (s Service) HandleGetOrCreateDefaultFlashcardCollection(ctx *fiber.Ctx) err
 	if err != nil || len(collections) == 0 {
 		log.Println("cannot get flashcard collections:", err)
 
+		flashcards := make([]*practicedb.Flashcard, len(DefaultFlashcards))
+		for i, card := range DefaultFlashcards {
+			flashcards[i] = &practicedb.Flashcard{
+				Type:      practicedb.DefaultFlashcardType,
+				FrontText: card.FrontText,
+				BackText:  card.BackText,
+				IsViewed:  false,
+			}
+		}
+
 		collection = &practicedb.FlashcardCollection{
 			Type:       practicedb.DefaultCollectionType,
 			Name:       "Default Collection",
 			UserID:     userID,
-			FlashCards: &[]*practicedb.Flashcard{},
+			FlashCards: &flashcards,
 		}
+
 		collection, err = s.FlashcardRepo.InsertRaw(collection)
 		if err != nil {
 			log.Println("cannot create default flashcard collection:", err)
