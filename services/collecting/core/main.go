@@ -77,6 +77,7 @@ func (s Service) HandleGetRequest(request transport.Request) (any, error) {
 		}
 
 		return s.TranslateLogsRepo.GetLogWithSmallestGetCountByUserID(userID)
+
 	case transport.GetExplainLog:
 		request, err := utils.JSONConvert[transport.GetCollectingLogRequest](
 			request,
@@ -99,7 +100,7 @@ func (s Service) HandleGetRequest(request transport.Request) (any, error) {
 		)
 		if err != nil {
 			log.Println("invalid GetCollectingLogRequest", err)
-			return nil, fmt.Errorf("invalid GetCollectingLogRequest, err: %v\n", err)
+			return nil, fmt.Errorf("invalid GetCollectingLogRequest")
 		}
 
 		userID, err := primitive.ObjectIDFromHex(request.Payload.UserID)

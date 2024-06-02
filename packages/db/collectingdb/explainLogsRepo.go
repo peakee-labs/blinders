@@ -71,14 +71,18 @@ func (r ExplainLogsRepo) GetLogWithPagination(
 	}
 
 	pipeline := []bson.M{
-		{"$match": bson.M{
-			"userId": userID,
-			"createdAt": bson.M{
-				"$gt":  primitive.NewDateTimeFromTime(opt.From),
-				"$lte": primitive.NewDateTimeFromTime(opt.To)},
+		{
+			"$match": bson.M{
+				"userId": userID,
+				"createdAt": bson.M{
+					"$gt":  primitive.NewDateTimeFromTime(opt.From),
+					"$lte": primitive.NewDateTimeFromTime(opt.To),
+				},
+			},
 		},
+		{
+			"$sort": bson.M{"createdAt": 1},
 		},
-		{"$sort": bson.M{"createdAt": 1}},
 	}
 
 	if opt.Limit > 0 {

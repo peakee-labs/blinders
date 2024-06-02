@@ -35,6 +35,7 @@ func TestGetExplainLogWithSmallestGetCount(t *testing.T) {
 	assert.Equal(t, log.Request.Text, "hello2")
 	assert.Equal(t, log.GetCount, 1)
 }
+
 func TestGetExplainLogWithPagination(t *testing.T) {
 	userID := primitive.NewObjectID()
 	logs := []*ExplainLog{
