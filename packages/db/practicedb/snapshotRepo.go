@@ -1,9 +1,10 @@
 package practicedb
 
 import (
-	dbutils "blinders/packages/db/utils"
 	"context"
 	"time"
+
+	dbutils "blinders/packages/db/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -51,7 +52,7 @@ func (r SnapshotsRepo) UpdateSnapshot(updateSnapshot *PracticeSnapshot) (*Practi
 	}
 	update := bson.M{
 		"$set": bson.M{
-			"currnet":   updateSnapshot.Current,
+			"current":   updateSnapshot.Current,
 			"updatedAt": updateSnapshot.UpdatedAt,
 		},
 	}

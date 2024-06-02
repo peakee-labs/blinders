@@ -84,6 +84,18 @@ func (s Service) HandleSyncExplainLogs(ctx *fiber.Ctx) error {
 		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "cannot sync explain logs"})
 	}
 
+	if len(logsResponse.Logs) == 0 {
+		return ctx.Status(http.StatusOK).JSON(
+			practicedb.FlashcardCollection{
+				Type:        practicedb.FromExplainLogCollectionType,
+				Name:        "From Explain Log",
+				Description: "Flashcards generated from explain logs",
+				UserID:      userID,
+				FlashCards:  &[]*practicedb.Flashcard{},
+			},
+		)
+	}
+
 	// generate flashcard collection from logs
 	flashcards := make([]*practicedb.Flashcard, len(logsResponse.Logs))
 	for i, log := range logsResponse.Logs {
@@ -91,7 +103,7 @@ func (s Service) HandleSyncExplainLogs(ctx *fiber.Ctx) error {
 			Type:      practicedb.ExplainLogToFlashcardType,
 			FrontText: log.Request.Text,
 			BackText:  log.Response.Translate,
-			Metadata: practicedb.ExplainLogFlashcardMetadata{
+			Metadata: &practicedb.ExplainLogFlashcardMetadata{
 				ExplainLogID: log.ID,
 			},
 		}

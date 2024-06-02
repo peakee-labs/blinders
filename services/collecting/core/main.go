@@ -110,7 +110,7 @@ func (s Service) HandleGetRequest(request transport.Request) (any, error) {
 
 		logs, pagination, err := s.ExplainLogsRepo.GetLogWithPagination(
 			userID,
-			*request.Payload.PagintionInfo,
+			request.Payload.PagintionInfo,
 		)
 		if err != nil {
 			log.Println("can not get explain log", err)
