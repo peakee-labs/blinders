@@ -116,6 +116,7 @@ func TestGetByUserID(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, invalidCollections)
 }
+
 func TestGetCollectionByType(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
