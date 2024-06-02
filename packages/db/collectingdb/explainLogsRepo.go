@@ -58,40 +58,51 @@ type Pagination struct {
 
 func (r ExplainLogsRepo) GetLogWithPagination(
 	userID primitive.ObjectID,
-	opt ...Pagination,
+	opt *Pagination,
 ) ([]*ExplainLog, *Pagination, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	var pipeline []bson.M
-
-	if len(opt) > 0 {
-		option := opt[0]
-		pipeline = []bson.M{
-			{"$match": bson.M{
-				"userId": userID,
-				"createdAt": bson.M{
-					"$gte": primitive.NewDateTimeFromTime(option.From),
-					"$lte": primitive.NewDateTimeFromTime(option.To)},
-			},
-			},
-			{"$sort": bson.M{"createdAt": 1}},
-			{"$limit": option.Limit},
-		}
-	} else {
-		pipeline = []bson.M{
-			{"$match": bson.M{"userId": userID}},
-			{"$sort": bson.M{"createdAt": 1}},
+	if opt == nil {
+		opt = &Pagination{
+			From:  time.Time{},
+			To:    time.Now(),
+			Limit: 0,
 		}
 	}
 
-	cursor, err := r.Collection.Aggregate(ctx, pipeline)
+	pipeline := []bson.M{
+		{"$match": bson.M{
+			"userId": userID,
+			"createdAt": bson.M{
+				"$gt":  primitive.NewDateTimeFromTime(opt.From),
+				"$lte": primitive.NewDateTimeFromTime(opt.To)},
+		},
+		},
+		{"$sort": bson.M{"createdAt": 1}},
+	}
+
+	if opt.Limit > 0 {
+		pipeline = append(pipeline, bson.M{"$limit": opt.Limit})
+	}
+
+	cur, err := r.Collection.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, nil, fmt.Errorf("can not get explain log")
 	}
+	defer cur.Close(ctx)
 
-	var logs []*ExplainLog
-	if err = cursor.All(ctx, &logs); err != nil {
+	logs := make([]*ExplainLog, 0)
+	if err = cur.All(ctx, &logs); err != nil {
 		return nil, nil, fmt.Errorf("can not get explain log")
+	}
+
+	// maybe user already fetched all logs
+	if len(logs) == 0 {
+		return logs, &Pagination{
+			From:  opt.From,
+			To:    opt.To,
+			Limit: opt.Limit,
+		}, nil
 	}
 
 	return logs, &Pagination{

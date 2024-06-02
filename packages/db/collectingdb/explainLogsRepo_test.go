@@ -71,7 +71,7 @@ func TestGetExplainLogWithPagination(t *testing.T) {
 		To:    time.Now(),
 	}
 
-	logs, newPag, err := explainLogRepo.GetLogWithPagination(userID, opt)
+	logs, newPag, err := explainLogRepo.GetLogWithPagination(userID, &opt)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(logs))
 	assert.Equal(t, insertedLogs[0].Request, logs[0].Request)
@@ -86,7 +86,7 @@ func TestGetExplainLogWithPagination(t *testing.T) {
 		To:    time.Now(),
 	}
 
-	logs, newPag, err = explainLogRepo.GetLogWithPagination(userID, opt)
+	logs, newPag, err = explainLogRepo.GetLogWithPagination(userID, &opt)
 	assert.Nil(t, err)
 	assert.Equal(t, len(insertedLogs), len(logs))
 
@@ -98,13 +98,13 @@ func TestGetExplainLogWithPagination(t *testing.T) {
 	assert.Equal(t, insertedLogs[len(insertedLogs)-1].CreatedAt.Time(), newPag.To)
 
 	// get logs from the second log
-	fromSecond := insertedLogs[1].CreatedAt.Time()
+	fromSecond := insertedLogs[0].CreatedAt.Time()
 	opt = Pagination{
 		Limit: len(insertedLogs) + 1,
 		From:  fromSecond,
 		To:    time.Now(),
 	}
-	logs, newPag, err = explainLogRepo.GetLogWithPagination(userID, opt)
+	logs, newPag, err = explainLogRepo.GetLogWithPagination(userID, &opt)
 	assert.Nil(t, err)
 	assert.Equal(t, len(insertedLogs)-1, len(logs))
 
@@ -112,11 +112,11 @@ func TestGetExplainLogWithPagination(t *testing.T) {
 		assert.Equal(t, insertedLogs[idx+1].Request, log.Request)
 		assert.Equal(t, insertedLogs[idx+1].Response, log.Response)
 	}
-	assert.Equal(t, fromSecond, newPag.From)
+	assert.Equal(t, insertedLogs[1].CreatedAt.Time(), newPag.From)
 	assert.Equal(t, insertedLogs[len(insertedLogs)-1].CreatedAt.Time(), newPag.To)
 
 	// get with empty pagination
-	logs, newPag, err = explainLogRepo.GetLogWithPagination(userID)
+	logs, newPag, err = explainLogRepo.GetLogWithPagination(userID, nil)
 	assert.Nil(t, err)
 	assert.Equal(t, len(insertedLogs), len(logs))
 
