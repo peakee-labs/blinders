@@ -15,14 +15,14 @@ const (
 )
 
 type FlashcardCollection struct {
-	dbutils.RawModel `                        json:",inline"               bson:",inline"`
-	Type             FlashcardGenerationType `json:"type"                  bson:"type"`
-	Name             string                  `json:"name"                  bson:"name"`
-	Description      string                  `json:"description"           bson:"description"`
-	UserID           primitive.ObjectID      `json:"userId"                bson:"userId"`
-	LastViewed       primitive.ObjectID      `json:"lastViewed"  bson:"lastViewed"` // id of the last viewed flashcard
-	FlashCards       *[]*Flashcard           `json:"flashcards,omitempty"  bson:"flashcards"`
-	Metadata         map[string]any          `json:"metadata,omitempty"    bson:"metadata,omiempty"`
+	dbutils.RawModel `                        json:",inline"              bson:",inline"`
+	Type             FlashcardGenerationType `json:"type"                 bson:"type"`
+	Name             string                  `json:"name"                 bson:"name"`
+	Description      string                  `json:"description"          bson:"description"`
+	UserID           primitive.ObjectID      `json:"userId"               bson:"userId"`
+	LastViewed       primitive.ObjectID      `json:"lastViewed"           bson:"lastViewed"` // id of the last viewed flashcard
+	FlashCards       *[]*Flashcard           `json:"flashcards,omitempty" bson:"flashcards"`
+	Metadata         map[string]any          `json:"metadata,omitempty"   bson:"metadata,omiempty"`
 }
 
 type Flashcard struct {
