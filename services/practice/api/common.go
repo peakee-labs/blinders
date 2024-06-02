@@ -22,7 +22,7 @@ func CheckFlashcardCollectionOwnership(s *Service, collectionParam string) fiber
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot parse collection id"})
 		}
 
-		collection, err := s.FlashcardRepo.GetByID(collectionID)
+		collection, err := s.FlashcardRepo.GetCollectionByID(collectionID)
 		if err != nil {
 			log.Println("cannot get flashcard collection:", err)
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get flashcard collection"})
