@@ -92,6 +92,36 @@ func (s Service) HandleGetRequest(request transport.Request) (any, error) {
 		}
 
 		return s.ExplainLogsRepo.GetLogWithSmallestGetCountByUserID(userID)
+
+	case transport.GetExplainLogBatch:
+		request, err := utils.JSONConvert[transport.GetCollectingLogRequest](
+			request,
+		)
+		if err != nil {
+			log.Println("invalid GetCollectingLogRequest", err)
+			return nil, fmt.Errorf("invalid GetCollectingLogRequest, err: %v\n", err)
+		}
+
+		userID, err := primitive.ObjectIDFromHex(request.Payload.UserID)
+		if err != nil {
+			log.Println("invalid user id", err)
+			return nil, fmt.Errorf("invalid user id")
+		}
+
+		logs, pagination, err := s.ExplainLogsRepo.GetLogWithPagination(
+			userID,
+			*request.Payload.PagintionInfo,
+		)
+		if err != nil {
+			log.Println("can not get explain log", err)
+			return nil, fmt.Errorf("can not get explain log, err: %v", err)
+		}
+
+		return transport.GetExplainLogBatchResponse{
+			Logs:          logs,
+			PagintionInfo: *pagination,
+		}, nil
+
 	default:
 		log.Printf("request type mismatch: %v\n", request.Type)
 		return nil, fmt.Errorf("request type mismatch")

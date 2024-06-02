@@ -20,10 +20,11 @@ type (
 )
 
 const (
-	Embedding        RequestType = "EMBEDDING"
-	AddUserMatchInfo RequestType = "ADD_USER_MATCH_INFO"
-	GetTranslateLog  RequestType = "GET_TRANSLATE_LOG"
-	GetExplainLog    RequestType = "GET_EXPLAIN_LOG"
+	Embedding          RequestType = "EMBEDDING"
+	AddUserMatchInfo   RequestType = "ADD_USER_MATCH_INFO"
+	GetTranslateLog    RequestType = "GET_TRANSLATE_LOG"
+	GetExplainLog      RequestType = "GET_EXPLAIN_LOG"
+	GetExplainLogBatch RequestType = "GET_EXPLAIN_LOG_BATCH"
 )
 
 /*
@@ -59,7 +60,8 @@ type GetCollectingLogRequest struct {
 }
 
 type GetCollectingLogPayload struct {
-	UserID string `json:"userId"`
+	UserID        string                   `json:"userId"`
+	PagintionInfo *collectingdb.Pagination `json:"paginationInfo,omitempty"`
 }
 
 type GetTranslateLogResponse struct {
@@ -68,4 +70,9 @@ type GetTranslateLogResponse struct {
 
 type GetExplainLogResponse struct {
 	collectingdb.ExplainLog
+}
+
+type GetExplainLogBatchResponse struct {
+	Logs          []*collectingdb.ExplainLog `json:"explainsLog"`
+	PagintionInfo collectingdb.Pagination    `json:"paginationInfo"`
 }
