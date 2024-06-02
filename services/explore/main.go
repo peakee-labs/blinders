@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"blinders/packages/auth"
 	"blinders/packages/db/matchingdb"
@@ -17,40 +19,30 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
-	"github.com/redis/go-redis/v9"
 )
 
 var manager *exploreapi.Manager
 
 func init() {
-	environment := os.Getenv("ENVIRONMENT")
-	log.Println("explore api running on environment:", environment)
+	env := os.Getenv("ENVIRONMENT")
 	envFile := ".env"
-	if environment != "" {
-		envFile = fmt.Sprintf(".env.%s", environment)
+	if env != "" {
+		envFile = fmt.Sprintf(".env.%s", env)
 	}
-
 	if err := godotenv.Load(envFile); err != nil {
 		log.Fatal("failed to load env", err)
 	}
+	log.Println("explore api running on environment:", env)
 
-	redisHost := os.Getenv("REDIS_HOST")
-	redisPort := os.Getenv("REDIS_PORT")
-	redisUserName := os.Getenv("REDIS_USERNAME")
-	redisPassword := os.Getenv("REDIS_PASSWORD")
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", redisHost, redisPort),
-		Username: redisUserName,
-		Password: redisPassword,
-	})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 
-	mongoURL := os.Getenv("MONGO_DATABASE_URL")
-	mongoDBName := os.Getenv("MONGO_DATABASE")
-	client, err := dbutils.InitMongoClient(mongoURL)
+	redisClient := utils.NewRedisClientFromEnv(ctx)
+
+	db, err := dbutils.InitMongoDatabaseFromEnv()
 	if err != nil {
-		log.Fatalln("failed to connect to mongo:", err)
+		log.Fatal("failed to connect to mongo:", err)
 	}
-	db := client.Database(mongoDBName)
 
 	matchingRepo := matchingdb.NewMatchingRepo(db)
 	usersRepo := usersdb.NewUsersRepo(db)

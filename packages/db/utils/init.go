@@ -73,9 +73,11 @@ type MongoInfo struct {
 }
 
 func GetMongoInfoFromEnv(prefix ...string) MongoInfo {
-	var url string
-	var dbName string
-	var pf string
+	var (
+		url    string
+		dbName string
+		pf     string
+	)
 	if len(prefix) > 0 && prefix[0] != "" {
 		pf = prefix[0] + "_"
 	}

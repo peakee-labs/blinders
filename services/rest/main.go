@@ -28,24 +28,20 @@ func init() {
 	if env != "" {
 		envFile = ".env." + strings.ToLower(env)
 	}
-	log.Println("init service in environment", env, "loading env at", envFile)
+
 	if err := godotenv.Load(envFile); err != nil {
 		log.Fatal("failed to load env", err)
 	}
+	log.Println("rest api running on environment:", env)
 
-	log.Println("rest api running on environment:", os.Getenv("ENVIRONMENT"))
-
-	app := fiber.New()
-
-	dbName := os.Getenv("MONGO_DATABASE")
-	url := os.Getenv("MONGO_DATABASE_URL")
-	client, err := dbutils.InitMongoClient(url)
+	db, err := dbutils.InitMongoDatabaseFromEnv()
 	if err != nil {
 		log.Fatal(err)
 	}
-	usersDB := usersdb.NewUsersDB(client.Database(dbName))
-	chatDB := chatdb.NewChatDB(client.Database(dbName))
-	matchingRepo := matchingdb.NewMatchingRepo(client.Database(dbName))
+
+	usersDB := usersdb.NewUsersDB(db)
+	chatDB := chatdb.NewChatDB(db)
+	matchingRepo := matchingdb.NewMatchingRepo(db)
 
 	adminJSON, _ := utils.GetFile("firebase.admin.json")
 	auth, _ := auth.NewFirebaseManager(adminJSON)
@@ -56,6 +52,7 @@ func init() {
 		transport.Explore:      "explore_service_id",
 	}
 
+	app := fiber.New()
 	apiManager = *restapi.NewManager(
 		app,
 		auth,

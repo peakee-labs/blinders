@@ -21,24 +21,21 @@ import (
 var service *practiceapi.Service
 
 func init() {
-	environment := os.Getenv("ENVIRONMENT")
-	log.Println("practice api running on environment:", environment)
+	env := os.Getenv("ENVIRONMENT")
+	log.Println("practice api running on environment:", env)
 	envFile := ".env"
-	if environment != "" {
-		envFile = fmt.Sprintf(".env.%s", environment)
+	if env != "" {
+		envFile = fmt.Sprintf(".env.%s", env)
 	}
 
 	if err := godotenv.Load(envFile); err != nil {
 		log.Fatal("failed to load env", err)
 	}
 
-	mongoURL := os.Getenv("MONGO_DATABASE_URL")
-	mongoDBName := os.Getenv("MONGO_DATABASE")
-	client, err := dbutils.InitMongoClient(mongoURL)
+	db, err := dbutils.InitMongoDatabaseFromEnv()
 	if err != nil {
-		log.Fatalln("failed to connect to mongo:", err)
+		log.Fatal("failed to connect to mongo:", err)
 	}
-	db := client.Database(mongoDBName)
 
 	usersRepo := usersdb.NewUsersRepo(db)
 

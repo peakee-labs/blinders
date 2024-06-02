@@ -27,14 +27,10 @@ func init() {
 	if err := godotenv.Load(envFile); err != nil {
 		log.Fatal("failed to load env", err)
 	}
-
-	mongoURL := os.Getenv("MONGO_DATABASE_URL")
-	mongoDBName := os.Getenv("MONGO_DATABASE")
-	client, err := dbutils.InitMongoClient(mongoURL)
+	db, err := dbutils.InitMongoDatabaseFromEnv()
 	if err != nil {
 		log.Fatalln("failed to connect to mongo:", err)
 	}
-	db := client.Database(mongoDBName)
 
 	m = core.NewManager(
 		fiber.New(),
