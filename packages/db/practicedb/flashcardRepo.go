@@ -41,6 +41,35 @@ func (r *FlashcardsRepo) InsertRaw(collection *FlashcardCollection) (*FlashcardC
 	return collection, err
 }
 
+func (r *FlashcardsRepo) GetCollectionByID(collectionID primitive.ObjectID) (*FlashcardCollection, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	var obj *FlashcardCollection
+	err := r.FindOne(ctx, bson.M{"_id": collectionID}).Decode(&obj)
+
+	return obj, err
+}
+
+func (r *FlashcardsRepo) GetCollectionByType(userID primitive.ObjectID, typ FlashcardGenerationType) ([]*FlashcardCollection, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	filter := bson.M{"userId": userID, "type": typ}
+
+	cur, err := r.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	collections := make([]*FlashcardCollection, 0)
+	if err := cur.All(ctx, &collections); err != nil {
+		return nil, err
+	}
+	return collections, nil
+}
+
 func (r *FlashcardsRepo) GetByUserID(
 	userID primitive.ObjectID,
 ) ([]*FlashcardCollection, error) {
