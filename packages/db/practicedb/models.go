@@ -25,13 +25,15 @@ const (
 )
 
 type FlashcardCollection struct {
-	dbutils.RawModel `                   json:",inline"              bson:",inline"`
-	Type             CollectionType     `json:"type"                 bson:"type"`
-	Name             string             `json:"name"                 bson:"name"`
-	Description      string             `json:"description"          bson:"description"`
-	UserID           primitive.ObjectID `json:"userId"               bson:"userId"`
-	FlashCards       *[]*Flashcard      `json:"flashcards,omitempty" bson:"flashcards"`
-	Metadata         map[string]any     `json:"metadata,omitempty"   bson:"metadata,omitempty"`
+	dbutils.RawModel `                   json:",inline"                bson:",inline"`
+	Type             CollectionType       `json:"type"                 bson:"type"`
+	Name             string               `json:"name"                 bson:"name"`
+	Description      string               `json:"description"          bson:"description"`
+	Viewed           []primitive.ObjectID `json:"viewed"               bson:"viewed"`
+	Total            []primitive.ObjectID `json:"total"                bson:"total"`
+	UserID           primitive.ObjectID   `json:"userId"               bson:"userId"`
+	FlashCards       *[]*Flashcard        `json:"flashcards,omitempty" bson:"flashcards"`
+	Metadata         map[string]any       `json:"metadata,omitempty"   bson:"metadata,omitempty"`
 }
 
 type Flashcard struct {
@@ -39,8 +41,8 @@ type Flashcard struct {
 	Type             FlashcardType `json:"type"               bson:"type"`
 	FrontText        string        `json:"frontText"          bson:"frontText"`
 	BackText         string        `json:"backText"           bson:"backText"`
-	IsViewed         bool          `json:"isViewed"           bson:"isViewed"`
 	Metadata         any           `json:"metadata,omitempty" bson:"metadata,omitempty"`
+	// IsViewed         bool          `json:"isViewed"           bson:"isViewed"`
 }
 
 type ExplainLogFlashcardMetadata struct {

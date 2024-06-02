@@ -49,7 +49,6 @@ func (s Service) HandleGetOrCreateDefaultFlashcardCollection(ctx *fiber.Ctx) err
 				Type:      practicedb.DefaultFlashcardType,
 				FrontText: card.FrontText,
 				BackText:  card.BackText,
-				IsViewed:  false,
 			}
 		}
 
@@ -253,4 +252,27 @@ func (s Service) HandleGetCollectionsPreview(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(metadatas)
+}
+
+func (s Service) HandleUpdateFlashcardViewStatus(ctx *fiber.Ctx) error {
+	collection, ok := ctx.Locals(CollectionKey).(*practicedb.FlashcardCollection)
+	if !ok {
+		log.Fatalln("cannot get collection from context")
+	}
+
+	paramID := ctx.Params("flashcardId")
+	cardID, err := primitive.ObjectIDFromHex(paramID)
+	if err != nil {
+		log.Println("flashcardID is invalid", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "flashcardID is invalid"})
+	}
+	viewStatus := ctx.QueryBool("viewed", true)
+
+	err = s.FlashcardRepo.UpdateFlashcardViewStatus(collection.ID, cardID, viewStatus)
+	if err != nil {
+		log.Println("cannot update flashcard view status", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot update flashcard view status"})
+	}
+
+	return ctx.SendStatus(fiber.StatusOK)
 }

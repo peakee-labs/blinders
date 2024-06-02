@@ -103,7 +103,6 @@ func (s Service) HandleSyncExplainLogs(ctx *fiber.Ctx) error {
 			Type:      practicedb.ExplainLogToFlashcardType,
 			FrontText: log.Request.Text,
 			BackText:  log.Response.Translate,
-			IsViewed:  false,
 			Metadata: &practicedb.ExplainLogFlashcardMetadata{
 				ExplainLogID: log.ID,
 			},

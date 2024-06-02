@@ -60,6 +60,7 @@ func (s *Service) InitRoute() {
 	validatedCollections.Delete("/", s.HandleDeleteFlashcardCollectionByID)
 
 	validatedCollections.Post("/", s.HandleAddFlashcardToCollection)
+	validatedCollections.Put("/:flashcardId/status", s.HandleUpdateFlashcardViewStatus)
 	validatedCollections.Put("/:flashcardId", s.HandleUpdateFlashcardInCollection)
 	validatedCollections.Delete("/:flashcardId", s.HandleRemoveFlashcardFromCollection)
 
