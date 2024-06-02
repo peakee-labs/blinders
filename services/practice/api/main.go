@@ -15,6 +15,7 @@ type Service struct {
 	UserRepo      *usersdb.UsersRepo
 	Transport     transport.Transport
 	FlashcardRepo *practicedb.FlashcardsRepo
+	SnapshotRepo  *practicedb.SnapshotsRepo
 }
 
 func NewService(
@@ -22,6 +23,7 @@ func NewService(
 	auth auth.Manager,
 	usersRepo *usersdb.UsersRepo,
 	flashcardsRepo *practicedb.FlashcardsRepo,
+	snapshotRepo *practicedb.SnapshotsRepo,
 	transport transport.Transport,
 ) *Service {
 	return &Service{
@@ -29,6 +31,7 @@ func NewService(
 		Auth:          auth,
 		UserRepo:      usersRepo,
 		FlashcardRepo: flashcardsRepo,
+		SnapshotRepo:  snapshotRepo,
 		Transport:     transport,
 	}
 }

@@ -38,6 +38,7 @@ func init() {
 	}
 
 	usersRepo := usersdb.NewUsersRepo(db)
+	snapshotRepo := practicedb.NewSnapshotsRepo(db)
 
 	adminJSON, _ := utils.GetFile("firebase.admin.json")
 	auth, _ := auth.NewFirebaseManager(adminJSON)
@@ -63,6 +64,7 @@ func init() {
 		auth,
 		usersRepo,
 		flashcardsRepo,
+		snapshotRepo,
 		transport,
 	)
 

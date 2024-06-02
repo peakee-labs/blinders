@@ -39,12 +39,12 @@ func (s Service) HandleGetOrCreateDefaultFlashcardCollection(ctx *fiber.Ctx) err
 	userID, _ := primitive.ObjectIDFromHex(userAuth.ID)
 	var collection *practicedb.FlashcardCollection
 
-	collections, err := s.FlashcardRepo.GetCollectionByType(userID, practicedb.DefaultFlashcard)
+	collections, err := s.FlashcardRepo.GetCollectionByType(userID, practicedb.DefaultCollectionType)
 	if err != nil || len(collections) == 0 {
 		log.Println("cannot get flashcard collections:", err)
 
 		collection = &practicedb.FlashcardCollection{
-			Type:       practicedb.DefaultFlashcard,
+			Type:       practicedb.DefaultCollectionType,
 			Name:       "Default Collection",
 			UserID:     userID,
 			FlashCards: &[]*practicedb.Flashcard{},
@@ -83,7 +83,7 @@ func (s Service) HandleCreateFlashcardCollection(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot unmarshal request body"})
 	}
 
-	collection.Type = practicedb.ManualFlashcard
+	collection.Type = practicedb.ManualCollectionType
 	collection.UserID = userID
 
 	inserted, err := s.FlashcardRepo.InsertRaw(collection)
