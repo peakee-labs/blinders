@@ -7,6 +7,7 @@ import (
 
 	"blinders/packages/db/practicedb"
 	dbutils "blinders/packages/db/utils"
+	"blinders/packages/utils"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -25,12 +26,19 @@ func TestInsertFlashcardCollection(t *testing.T) {
 	defer CleanRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
-		CollectionMetadata: practicedb.CollectionMetadata{
-			UserID: primitive.NewObjectID(),
-			Name:   "test collection",
-			Type:   "DefaultFlashcard",
+		UserID: primitive.NewObjectID(),
+		Name:   "test collection",
+		Type:   "DefaultFlashcard",
+		FlashCards: []*practicedb.Flashcard{
+			{
+				FrontText: "front text",
+				BackText:  "back text",
+			},
+			{
+				FrontText: "front text 1",
+				BackText:  "back text 1",
+			},
 		},
-		FlashCards: []*practicedb.Flashcard{},
 	}
 
 	insertedCollection, err := r.InsertRaw(&collection)
@@ -60,11 +68,9 @@ func TestGetByUserID(t *testing.T) {
 	defer CleanRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
-		CollectionMetadata: practicedb.CollectionMetadata{
-			UserID: primitive.NewObjectID(),
-			Name:   "test collection",
-			Type:   "DefaultFlashcard",
-		},
+		UserID:     primitive.NewObjectID(),
+		Name:       "test collection",
+		Type:       "DefaultFlashcard",
 		FlashCards: []*practicedb.Flashcard{},
 	}
 
@@ -105,19 +111,15 @@ func TestGetCollectionMetadataByUserID(t *testing.T) {
 
 	collections := []*practicedb.FlashcardCollection{
 		{
-			CollectionMetadata: practicedb.CollectionMetadata{
-				UserID: userID,
-				Name:   "test collection1",
-				Type:   "DefaultFlashcard",
-			},
+			UserID:     userID,
+			Name:       "test collection1",
+			Type:       "DefaultFlashcard",
 			FlashCards: []*practicedb.Flashcard{},
 		},
 		{
-			CollectionMetadata: practicedb.CollectionMetadata{
-				UserID: userID,
-				Name:   "test collection2",
-				Type:   "DefaultFlashcard",
-			},
+			UserID:     userID,
+			Name:       "test collection2",
+			Type:       "DefaultFlashcard",
 			FlashCards: []*practicedb.Flashcard{},
 		},
 	}
@@ -154,19 +156,15 @@ func TestUpdateCollectionMetadata(t *testing.T) {
 
 	collections := []*practicedb.FlashcardCollection{
 		{
-			CollectionMetadata: practicedb.CollectionMetadata{
-				UserID: userID,
-				Name:   "test collection",
-				Type:   "DefaultFlashcard",
-			},
+			UserID:     userID,
+			Name:       "test collection",
+			Type:       "DefaultFlashcard",
 			FlashCards: []*practicedb.Flashcard{},
 		},
 		{
-			CollectionMetadata: practicedb.CollectionMetadata{
-				UserID: userID,
-				Name:   "test collection",
-				Type:   "DefaultFlashcard",
-			},
+			UserID:     userID,
+			Name:       "test collection",
+			Type:       "DefaultFlashcard",
 			FlashCards: []*practicedb.Flashcard{},
 		},
 	}
@@ -179,10 +177,11 @@ func TestUpdateCollectionMetadata(t *testing.T) {
 	}
 
 	updateCollectionID := collections[0].ID
-	update := collections[0].CollectionMetadata
+	update, err := utils.BSONConvert[practicedb.CollectionMetadata](collections[0])
+	assert.NoError(t, err)
 
 	update.Name = "updated collection"
-	err := r.UpdateCollectionMetadata(updateCollectionID, &update)
+	err = r.UpdateCollectionMetadata(updateCollectionID, update)
 	assert.NoError(t, err)
 
 	updatedCollection, err := r.GetCollectionsMetadataByID(updateCollectionID)
@@ -191,6 +190,10 @@ func TestUpdateCollectionMetadata(t *testing.T) {
 	assert.Equal(t, update.Type, updatedCollection.Type)
 	assert.Equal(t, update.UserID, updatedCollection.UserID)
 	assert.LessOrEqual(t, update.UpdatedAt, updatedCollection.UpdatedAt)
+
+	invalidCollectionID := primitive.NewObjectID()
+	err = r.UpdateCollectionMetadata(invalidCollectionID, update)
+	assert.Error(t, err)
 }
 
 func TestAddFlashcardToCollection(t *testing.T) {
@@ -199,11 +202,9 @@ func TestAddFlashcardToCollection(t *testing.T) {
 	defer CleanRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
-		CollectionMetadata: practicedb.CollectionMetadata{
-			UserID: primitive.NewObjectID(),
-			Name:   "test collection",
-			Type:   "DefaultFlashcard",
-		},
+		UserID:     primitive.NewObjectID(),
+		Name:       "test collection",
+		Type:       "DefaultFlashcard",
 		FlashCards: []*practicedb.Flashcard{},
 	}
 
@@ -249,11 +250,9 @@ func TestGetFlashCardByID(t *testing.T) {
 	defer CleanRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
-		CollectionMetadata: practicedb.CollectionMetadata{
-			UserID: primitive.NewObjectID(),
-			Name:   "test collection",
-			Type:   "DefaultFlashcard",
-		},
+		UserID:     primitive.NewObjectID(),
+		Name:       "test collection",
+		Type:       "DefaultFlashcard",
 		FlashCards: []*practicedb.Flashcard{},
 	}
 
@@ -284,11 +283,9 @@ func TestUpdateFlashCardByID(t *testing.T) {
 	defer CleanRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
-		CollectionMetadata: practicedb.CollectionMetadata{
-			UserID: primitive.NewObjectID(),
-			Name:   "test collection",
-			Type:   "DefaultFlashcard",
-		},
+		UserID:     primitive.NewObjectID(),
+		Name:       "test collection",
+		Type:       "DefaultFlashcard",
 		FlashCards: []*practicedb.Flashcard{},
 	}
 
@@ -332,11 +329,9 @@ func TestDeleteFlashcard(t *testing.T) {
 	defer CleanRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
-		CollectionMetadata: practicedb.CollectionMetadata{
-			UserID: primitive.NewObjectID(),
-			Name:   "test collection",
-			Type:   "DefaultFlashcard",
-		},
+		UserID:     primitive.NewObjectID(),
+		Name:       "test collection",
+		Type:       "DefaultFlashcard",
 		FlashCards: []*practicedb.Flashcard{},
 	}
 
@@ -372,11 +367,9 @@ func TestUpdateLastView(t *testing.T) {
 	defer CleanRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
-		CollectionMetadata: practicedb.CollectionMetadata{
-			UserID: primitive.NewObjectID(),
-			Name:   "test collection",
-			Type:   "DefaultFlashcard",
-		},
+		UserID:     primitive.NewObjectID(),
+		Name:       "test collection",
+		Type:       "DefaultFlashcard",
 		FlashCards: []*practicedb.Flashcard{},
 	}
 

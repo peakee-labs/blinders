@@ -42,11 +42,9 @@ func (s Service) HandleGetOrCreateDefaultFlashcardCollection(ctx *fiber.Ctx) err
 		log.Println("cannot get flashcard collections:", err)
 
 		collection = &practicedb.FlashcardCollection{
-			CollectionMetadata: practicedb.CollectionMetadata{
-				Type:   practicedb.DefaultFlashcard,
-				Name:   "Default Collection",
-				UserID: userID,
-			},
+			Type:       practicedb.DefaultFlashcard,
+			Name:       "Default Collection",
+			UserID:     userID,
 			FlashCards: []*practicedb.Flashcard{},
 		}
 		collection.SetID(userID)
