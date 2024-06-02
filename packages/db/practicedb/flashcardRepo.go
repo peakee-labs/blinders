@@ -51,7 +51,7 @@ func (r *FlashcardsRepo) GetCollectionByID(collectionID primitive.ObjectID) (*Fl
 	return obj, err
 }
 
-func (r *FlashcardsRepo) GetCollectionByType(userID primitive.ObjectID, typ FlashcardGenerationType) ([]*FlashcardCollection, error) {
+func (r *FlashcardsRepo) GetCollectionByType(userID primitive.ObjectID, typ CollectionType) ([]*FlashcardCollection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 

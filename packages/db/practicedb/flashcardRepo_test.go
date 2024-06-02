@@ -22,7 +22,7 @@ var (
 func TestInsertFlashcardCollection(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID: primitive.NewObjectID(),
@@ -66,7 +66,7 @@ func TestInsertFlashcardCollection(t *testing.T) {
 func TestGetByUserID(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID:     primitive.NewObjectID(),
@@ -106,7 +106,7 @@ func TestGetByUserID(t *testing.T) {
 func TestGetCollectionMetadataByUserID(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	userID := primitive.NewObjectID()
 
@@ -151,7 +151,7 @@ func TestGetCollectionMetadataByUserID(t *testing.T) {
 func TestUpdateCollectionMetadata(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	userID := primitive.NewObjectID()
 
@@ -199,7 +199,7 @@ func TestUpdateCollectionMetadata(t *testing.T) {
 func TestAddFlashcardToCollection(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID:     primitive.NewObjectID(),
@@ -248,7 +248,7 @@ func TestAddFlashcardToCollection(t *testing.T) {
 func TestGetFlashCardByID(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID:     primitive.NewObjectID(),
@@ -281,7 +281,7 @@ func TestGetFlashCardByID(t *testing.T) {
 func TestUpdateFlashCardByID(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID:     primitive.NewObjectID(),
@@ -327,7 +327,7 @@ func TestUpdateFlashCardByID(t *testing.T) {
 func TestDeleteFlashcard(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID:     primitive.NewObjectID(),
@@ -365,7 +365,7 @@ func TestDeleteFlashcard(t *testing.T) {
 func TestUpdateLastView(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID:     primitive.NewObjectID(),
@@ -426,7 +426,7 @@ func GetFlashcardTestRepo(t *testing.T) *practicedb.FlashcardsRepo {
 	return practicedb.NewFlashcardsRepo(client.Database(mongoTestDBName))
 }
 
-func CleanRepo(t *testing.T, repo *practicedb.FlashcardsRepo) {
+func CleanFlashcardRepo(t *testing.T, repo *practicedb.FlashcardsRepo) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
