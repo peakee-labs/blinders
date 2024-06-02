@@ -16,8 +16,6 @@ func CheckFlashcardCollectionOwnership(s *Service, collectionParam string) fiber
 	log.Println("applying middleware to check flashcard collection ownership with param", collectionParam)
 	return func(ctx *fiber.Ctx) error {
 		paramID := ctx.Params(collectionParam)
-		log.Println("received collection id:", paramID)
-		log.Println("available param: ", ctx.Route().Params)
 		collectionID, err := primitive.ObjectIDFromHex(paramID)
 		if err != nil {
 			log.Println("cannot parse collection id:", err)
