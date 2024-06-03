@@ -162,5 +162,4 @@ func (r ExplainLogsRepo) GetNumberOfExplainLog(
 	}
 
 	return count[0].Number, nil
-
 }
