@@ -17,7 +17,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func (s Service) HandleSyncExplainLogs(ctx *fiber.Ctx) error {
+func (s Service) HandleCreateFlashcardFromExplainLog(ctx *fiber.Ctx) error {
 	limit := ctx.QueryInt("limit", 15)
 	if limit == 0 {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid limit"})
@@ -85,15 +85,7 @@ func (s Service) HandleSyncExplainLogs(ctx *fiber.Ctx) error {
 	}
 
 	if len(logsResponse.Logs) == 0 {
-		return ctx.Status(http.StatusOK).JSON(
-			practicedb.FlashcardCollection{
-				Type:        practicedb.FromExplainLogCollectionType,
-				Name:        "From Explain Log",
-				Description: "Flashcards generated from explain logs",
-				UserID:      userID,
-				FlashCards:  &[]*practicedb.Flashcard{},
-			},
-		)
+		return ctx.SendStatus(http.StatusOK)
 	}
 
 	// generate flashcard collection from logs
@@ -123,14 +115,77 @@ func (s Service) HandleSyncExplainLogs(ctx *fiber.Ctx) error {
 		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "cannot insert flashcard collection"})
 	}
 
-	go func() {
-		snapshot.Current = primitive.NewDateTimeFromTime(logsResponse.PagintionInfo.To)
-
-		_, err := s.SnapshotRepo.UpdateSnapshot(snapshot)
-		if err != nil {
-			log.Println("cannot insert snapshot:", err)
-		}
-	}()
+	snapshot.Current = primitive.NewDateTimeFromTime(logsResponse.PagintionInfo.To)
+	_, err = s.SnapshotRepo.UpdateSnapshot(snapshot)
+	if err != nil {
+		log.Println("cannot insert snapshot:", err)
+	}
 
 	return ctx.Status(http.StatusOK).JSON(insertedCollection)
+}
+
+func (s Service) HandleFetchExplainMetadata(ctx *fiber.Ctx) error {
+	authUser, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
+	if !ok {
+		log.Fatalln("cannot get user auth information")
+	}
+	userID, _ := primitive.ObjectIDFromHex(authUser.ID)
+
+	snapshot, err := s.SnapshotRepo.GetSnapshotOfUserByType(
+		userID,
+		practicedb.ExplainLogToFlashcardSnapshotType,
+	)
+	if err != nil {
+		if err != mongo.ErrNoDocuments {
+			log.Println("cannot get snapshot:", err)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot get snapshot"})
+		}
+
+		snapshot = &practicedb.PracticeSnapshot{
+			Type:    practicedb.ExplainLogToFlashcardSnapshotType,
+			UserID:  userID,
+			Current: primitive.NewDateTimeFromTime(time.Time{}),
+		}
+
+		snapshot, err = s.SnapshotRepo.InsertRaw(snapshot)
+		if err != nil {
+			log.Println("cannot insert snapshot:", err)
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot insert snapshot"})
+		}
+	}
+
+	snapshotTime := snapshot.Current.Time()
+
+	request := transport.GetCollectingLogRequest{
+		Request: transport.Request{Type: transport.FetchExplainLogInformation},
+		Payload: transport.GetCollectingLogPayload{
+			UserID: authUser.ID,
+			PagintionInfo: &collectingdb.Pagination{
+				From: snapshotTime,
+				To:   time.Now(),
+			},
+		},
+	}
+
+	reqBytes, _ := json.Marshal(request)
+	response, err := s.Transport.Request(
+		ctx.Context(),
+		s.Transport.ConsumerID(transport.CollectingGet),
+		reqBytes,
+	)
+	if err != nil {
+		log.Println("cannot fetch explain log batch:", err)
+		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "cannot fetch explain logs"})
+	}
+
+	informationResponse, err := utils.ParseJSON[transport.FetchExplainLogInformationResponse](response)
+	if err != nil {
+		log.Println("cannot parse explain log batch:", err)
+		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "cannot fetch explain logs"})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"count": informationResponse.NumLog,
+		"from":  snapshotTime,
+	})
 }

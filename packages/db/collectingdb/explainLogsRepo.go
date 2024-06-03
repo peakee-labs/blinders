@@ -115,3 +115,52 @@ func (r ExplainLogsRepo) GetLogWithPagination(
 		Limit: len(logs),
 	}, nil
 }
+
+func (r ExplainLogsRepo) GetNumberOfExplainLog(
+	userID primitive.ObjectID,
+	from time.Time,
+	to time.Time,
+) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"userId": userID,
+				"createdAt": bson.M{
+					"$gt":  primitive.NewDateTimeFromTime(from),
+					"$lte": primitive.NewDateTimeFromTime(to),
+				},
+			},
+		},
+		{
+			"$count": "count",
+		},
+	}
+
+	type Count struct {
+		Number int `bson:"count"`
+	}
+
+	cur, err := r.Collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		log.Println("can not get explain log number:", err)
+		return 0, fmt.Errorf("can not get explain log number")
+	}
+	defer cur.Close(ctx)
+
+	count := make([]Count, 0)
+	if err := cur.All(ctx, &count); err != nil {
+		log.Println("can not parse explain log number:", err)
+		return 0, fmt.Errorf("can not parse explain log number")
+	}
+
+	if len(count) == 0 {
+		log.Println("no explain log found")
+		return 0, nil
+	}
+
+	return count[0].Number, nil
+
+}

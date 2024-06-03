@@ -64,5 +64,7 @@ func (s *Service) InitRoute() {
 	validatedCollections.Put("/:flashcardId", s.HandleUpdateFlashcardInCollection)
 	validatedCollections.Delete("/:flashcardId", s.HandleRemoveFlashcardFromCollection)
 
-	flashcards.Get("/sync-explain-logs", s.HandleSyncExplainLogs)
+	explainLog := authorized.Group("/explain-log")
+	explainLog.Get("/", s.HandleFetchExplainMetadata)
+	explainLog.Get("/flashcard", s.HandleCreateFlashcardFromExplainLog)
 }

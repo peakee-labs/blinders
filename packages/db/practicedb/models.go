@@ -42,7 +42,6 @@ type Flashcard struct {
 	FrontText        string        `json:"frontText"          bson:"frontText"`
 	BackText         string        `json:"backText"           bson:"backText"`
 	Metadata         any           `json:"metadata,omitempty" bson:"metadata,omitempty"`
-	// IsViewed         bool          `json:"isViewed"           bson:"isViewed"`
 }
 
 type ExplainLogFlashcardMetadata struct {
