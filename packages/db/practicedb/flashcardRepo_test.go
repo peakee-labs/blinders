@@ -22,12 +22,14 @@ var (
 func TestInsertFlashcardCollection(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID: primitive.NewObjectID(),
 		Name:   "test collection",
 		Type:   "DefaultFlashcard",
+		Total:  []primitive.ObjectID{},
+		Viewed: []primitive.ObjectID{},
 		FlashCards: &[]*practicedb.Flashcard{
 			{
 				FrontText: "front text",
@@ -61,18 +63,30 @@ func TestInsertFlashcardCollection(t *testing.T) {
 	assert.Equal(t, insertedCollection.UserID, gotCollection.UserID)
 	assert.Equal(t, insertedCollection.Name, gotCollection.Name)
 	assert.Equal(t, insertedCollection.Type, gotCollection.Type)
+
+	gotCollection, err = r.GetCollectionByID(insertedCollection.ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, gotCollection)
+
+	assert.NotNil(t, gotCollection.FlashCards)
+	assert.Equal(t, len(*collection.FlashCards), len(*gotCollection.FlashCards))
+	assert.Equal(t, insertedCollection.UserID, gotCollection.UserID)
+	assert.Equal(t, insertedCollection.Name, gotCollection.Name)
+	assert.Equal(t, insertedCollection.Type, gotCollection.Type)
 }
 
 func TestGetByUserID(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID:     primitive.NewObjectID(),
 		Name:       "test collection",
 		Type:       "DefaultFlashcard",
 		FlashCards: &[]*practicedb.Flashcard{},
+		Total:      []primitive.ObjectID{},
+		Viewed:     []primitive.ObjectID{},
 	}
 
 	insertedCollection, err := r.InsertRaw(&collection)
@@ -103,10 +117,10 @@ func TestGetByUserID(t *testing.T) {
 	assert.Nil(t, invalidCollections)
 }
 
-func TestGetCollectionMetadataByUserID(t *testing.T) {
+func TestGetCollectionByType(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	userID := primitive.NewObjectID()
 
@@ -116,12 +130,73 @@ func TestGetCollectionMetadataByUserID(t *testing.T) {
 			Name:       "test collection1",
 			Type:       "DefaultFlashcard",
 			FlashCards: &[]*practicedb.Flashcard{},
+			Total:      []primitive.ObjectID{},
+			Viewed:     []primitive.ObjectID{},
 		},
 		{
 			UserID:     userID,
 			Name:       "test collection2",
 			Type:       "DefaultFlashcard",
 			FlashCards: &[]*practicedb.Flashcard{},
+			Total:      []primitive.ObjectID{},
+			Viewed:     []primitive.ObjectID{},
+		},
+		{
+			UserID:     userID,
+			Name:       "test collection3",
+			Type:       "CustomFlashcard",
+			FlashCards: &[]*practicedb.Flashcard{},
+			Total:      []primitive.ObjectID{},
+			Viewed:     []primitive.ObjectID{},
+		},
+	}
+
+	for idx, collection := range collections {
+		insertedCollection, err := r.InsertRaw(collection)
+		assert.NoError(t, err)
+		assert.NotNil(t, insertedCollection)
+		collections[idx] = insertedCollection
+	}
+
+	defaultCollections, err := r.GetCollectionByType(userID, "DefaultFlashcard")
+	assert.NoError(t, err)
+	assert.NotNil(t, defaultCollections)
+	assert.Equal(t, 2, len(defaultCollections))
+
+	customCollections, err := r.GetCollectionByType(userID, "CustomFlashcard")
+	assert.NoError(t, err)
+	assert.NotNil(t, customCollections)
+	assert.Equal(t, 1, len(customCollections))
+
+	invalidCollections, err := r.GetCollectionByType(userID, "InvalidType")
+	assert.NoError(t, err)
+	assert.NotNil(t, invalidCollections)
+	assert.Equal(t, 0, len(invalidCollections))
+}
+
+func TestGetCollectionMetadataByUserID(t *testing.T) {
+	t.Parallel()
+	r := GetFlashcardTestRepo(t)
+	defer CleanFlashcardRepo(t, r)
+
+	userID := primitive.NewObjectID()
+
+	collections := []*practicedb.FlashcardCollection{
+		{
+			UserID:     userID,
+			Name:       "test collection1",
+			Type:       "DefaultFlashcard",
+			FlashCards: &[]*practicedb.Flashcard{},
+			Total:      []primitive.ObjectID{},
+			Viewed:     []primitive.ObjectID{},
+		},
+		{
+			UserID:     userID,
+			Name:       "test collection2",
+			Type:       "DefaultFlashcard",
+			FlashCards: &[]*practicedb.Flashcard{},
+			Total:      []primitive.ObjectID{},
+			Viewed:     []primitive.ObjectID{},
 		},
 	}
 
@@ -151,7 +226,7 @@ func TestGetCollectionMetadataByUserID(t *testing.T) {
 func TestUpdateCollectionMetadata(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	userID := primitive.NewObjectID()
 
@@ -161,12 +236,16 @@ func TestUpdateCollectionMetadata(t *testing.T) {
 			Name:       "test collection",
 			Type:       "DefaultFlashcard",
 			FlashCards: &[]*practicedb.Flashcard{},
+			Total:      []primitive.ObjectID{},
+			Viewed:     []primitive.ObjectID{},
 		},
 		{
 			UserID:     userID,
 			Name:       "test collection",
 			Type:       "DefaultFlashcard",
 			FlashCards: &[]*practicedb.Flashcard{},
+			Total:      []primitive.ObjectID{},
+			Viewed:     []primitive.ObjectID{},
 		},
 	}
 
@@ -199,13 +278,15 @@ func TestUpdateCollectionMetadata(t *testing.T) {
 func TestAddFlashcardToCollection(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID:     primitive.NewObjectID(),
 		Name:       "test collection",
 		Type:       "DefaultFlashcard",
 		FlashCards: &[]*practicedb.Flashcard{},
+		Total:      []primitive.ObjectID{},
+		Viewed:     []primitive.ObjectID{},
 	}
 
 	insertedCollection, err := r.InsertRaw(&collection)
@@ -248,13 +329,15 @@ func TestAddFlashcardToCollection(t *testing.T) {
 func TestGetFlashCardByID(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID:     primitive.NewObjectID(),
 		Name:       "test collection",
 		Type:       "DefaultFlashcard",
 		FlashCards: &[]*practicedb.Flashcard{},
+		Total:      []primitive.ObjectID{},
+		Viewed:     []primitive.ObjectID{},
 	}
 
 	insertedCollection, err := r.InsertRaw(&collection)
@@ -281,7 +364,7 @@ func TestGetFlashCardByID(t *testing.T) {
 func TestUpdateFlashCardByID(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID:     primitive.NewObjectID(),
@@ -327,13 +410,15 @@ func TestUpdateFlashCardByID(t *testing.T) {
 func TestDeleteFlashcard(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID:     primitive.NewObjectID(),
 		Name:       "test collection",
 		Type:       "DefaultFlashcard",
 		FlashCards: &[]*practicedb.Flashcard{},
+		Total:      []primitive.ObjectID{},
+		Viewed:     []primitive.ObjectID{},
 	}
 
 	insertedCollection, err := r.InsertRaw(&collection)
@@ -365,13 +450,15 @@ func TestDeleteFlashcard(t *testing.T) {
 func TestUpdateLastView(t *testing.T) {
 	t.Parallel()
 	r := GetFlashcardTestRepo(t)
-	defer CleanRepo(t, r)
+	defer CleanFlashcardRepo(t, r)
 
 	collection := practicedb.FlashcardCollection{
 		UserID:     primitive.NewObjectID(),
 		Name:       "test collection",
 		Type:       "DefaultFlashcard",
 		FlashCards: &[]*practicedb.Flashcard{},
+		Total:      []primitive.ObjectID{},
+		Viewed:     []primitive.ObjectID{},
 	}
 
 	insertedCollection, err := r.InsertRaw(&collection)
@@ -399,14 +486,21 @@ func TestUpdateLastView(t *testing.T) {
 	for _, flashcard := range flashcards {
 		col, err := r.GetByID(insertedCollection.ID)
 		assert.NoError(t, err)
-		assert.NotEqual(t, col.LastViewed, flashcard.ID)
+		assert.NotContains(t, col.Viewed, flashcard.ID)
 
-		err = r.UpdateLastView(insertedCollection.ID, flashcard.ID)
+		err = r.UpdateFlashcardViewStatus(insertedCollection.ID, flashcard.ID, true)
 		assert.Nil(t, err)
 
 		col, err = r.GetByID(insertedCollection.ID)
 		assert.NoError(t, err)
-		assert.Equal(t, col.LastViewed, flashcard.ID)
+		assert.Contains(t, col.Viewed, flashcard.ID)
+
+		err = r.UpdateFlashcardViewStatus(insertedCollection.ID, flashcard.ID, false)
+		assert.Nil(t, err)
+
+		col, err = r.GetByID(insertedCollection.ID)
+		assert.NoError(t, err)
+		assert.NotContains(t, col.Viewed, flashcard.ID)
 	}
 }
 
@@ -426,7 +520,7 @@ func GetFlashcardTestRepo(t *testing.T) *practicedb.FlashcardsRepo {
 	return practicedb.NewFlashcardsRepo(client.Database(mongoTestDBName))
 }
 
-func CleanRepo(t *testing.T, repo *practicedb.FlashcardsRepo) {
+func CleanFlashcardRepo(t *testing.T, repo *practicedb.FlashcardsRepo) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()

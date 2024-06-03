@@ -29,13 +29,21 @@ func (r *FlashcardsRepo) InsertRaw(collection *FlashcardCollection) (*FlashcardC
 
 	collection.SetID(primitive.NewObjectID())
 	collection.SetInitTimeByNow()
+
 	flashcards := *collection.FlashCards
+	total := make([]primitive.ObjectID, len(flashcards))
 	for idx, card := range flashcards {
 		card.SetID(primitive.NewObjectID())
 		card.SetInitTimeByNow()
 		flashcards[idx] = card
+		total[idx] = card.ID
 	}
+
 	collection.FlashCards = &flashcards
+	collection.Total = total
+	if collection.Viewed == nil {
+		collection.Viewed = []primitive.ObjectID{}
+	}
 
 	_, err := r.InsertOne(ctx, collection)
 	return collection, err
@@ -51,7 +59,7 @@ func (r *FlashcardsRepo) GetCollectionByID(collectionID primitive.ObjectID) (*Fl
 	return obj, err
 }
 
-func (r *FlashcardsRepo) GetCollectionByType(userID primitive.ObjectID, typ FlashcardGenerationType) ([]*FlashcardCollection, error) {
+func (r *FlashcardsRepo) GetCollectionByType(userID primitive.ObjectID, typ CollectionType) ([]*FlashcardCollection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -96,17 +104,37 @@ func (r *FlashcardsRepo) GetByUserID(
 	return collections, nil
 }
 
-func (r *FlashcardsRepo) UpdateLastView(
+func (r *FlashcardsRepo) UpdateFlashcardViewStatus(
 	collectionID,
 	flashcardID primitive.ObjectID,
+	viewStatus bool,
 ) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	now := time.Now()
+
 	filter := bson.M{"_id": collectionID, "flashcards._id": flashcardID}
 	update := bson.M{"$set": bson.M{
-		"lastViewed": flashcardID,
-		"updatedAt":  primitive.NewDateTimeFromTime(time.Now()),
+		"flashcards.$.updatedAt": primitive.NewDateTimeFromTime(now),
+		"updatedAt":              primitive.NewDateTimeFromTime(now),
 	}}
 
-	cur, err := r.UpdateOne(context.Background(), filter, update, options.Update().SetUpsert(false))
+	if viewStatus {
+		update["$addToSet"] = bson.M{
+			"viewed": flashcardID,
+		}
+	} else {
+		update["$pull"] = bson.M{
+			"viewed": flashcardID,
+		}
+	}
+
+	cur, err := r.UpdateOne(
+		ctx,
+		filter,
+		update,
+		options.Update().SetUpsert(false),
+	)
 	if err != nil {
 		return err
 	}
@@ -201,10 +229,13 @@ func (r *FlashcardsRepo) AddFlashcardToCollection(
 ) (*Flashcard, error) {
 	flashcard.SetID(primitive.NewObjectID())
 	flashcard.SetInitTimeByNow()
+	update := bson.M{
+		"$push":     bson.M{"flashcards": flashcard},
+		"$set":      bson.M{"updatedAt": primitive.NewDateTimeFromTime(time.Now())},
+		"$addToSet": bson.M{"total": flashcard.ID},
+	}
 
-	cur, err := r.Collection.UpdateByID(context.Background(), collectionID, bson.M{
-		"$push": bson.M{"flashcards": flashcard},
-	})
+	cur, err := r.Collection.UpdateByID(context.Background(), collectionID, update)
 	if err != nil {
 		return nil, err
 	}
@@ -257,6 +288,7 @@ func (r *FlashcardsRepo) UpdateFlashCard(collectionID primitive.ObjectID, card F
 		"flashcards.$.frontText": card.FrontText,
 		"flashcards.$.backText":  card.BackText,
 		"flashcards.$.updatedAt": card.UpdatedAt,
+		"updatedAt":              primitive.NewDateTimeFromTime(time.Now()),
 	}}
 
 	cur, err := r.UpdateOne(ctx, filter, update)
@@ -275,7 +307,14 @@ func (r *FlashcardsRepo) DeleteFlashCard(collectionID primitive.ObjectID, cardID
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	update := bson.M{"$pull": bson.M{"flashcards": bson.M{"_id": cardID}}}
+	update := bson.M{
+		"$pull": bson.M{
+			"flashcards": bson.M{"_id": cardID},
+			"viewed":     cardID,
+			"total":      cardID,
+		},
+		"$set": bson.M{"updatedAt": primitive.NewDateTimeFromTime(time.Now())},
+	}
 	cur, err := r.UpdateByID(ctx, collectionID, update)
 	if err != nil {
 		return err

@@ -37,6 +37,7 @@ func init() {
 		log.Fatal(err)
 	}
 	flashcardsRepo := practicedb.NewFlashcardsRepo(practiceDB)
+	snapshotRepo := practicedb.NewSnapshotsRepo(practiceDB)
 
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {
@@ -63,6 +64,7 @@ func init() {
 		auth,
 		usersRepo,
 		flashcardsRepo,
+		snapshotRepo,
 		transport,
 	)
 	api.App.Use(logger.New(logger.Config{Format: utils.DefaultGinLoggerFormat}))

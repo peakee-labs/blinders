@@ -39,16 +39,26 @@ func (s Service) HandleGetOrCreateDefaultFlashcardCollection(ctx *fiber.Ctx) err
 	userID, _ := primitive.ObjectIDFromHex(userAuth.ID)
 	var collection *practicedb.FlashcardCollection
 
-	collections, err := s.FlashcardRepo.GetCollectionByType(userID, practicedb.DefaultFlashcard)
+	collections, err := s.FlashcardRepo.GetCollectionByType(userID, practicedb.DefaultCollectionType)
 	if err != nil || len(collections) == 0 {
 		log.Println("cannot get flashcard collections:", err)
 
+		flashcards := make([]*practicedb.Flashcard, len(DefaultFlashcards))
+		for i, card := range DefaultFlashcards {
+			flashcards[i] = &practicedb.Flashcard{
+				Type:      practicedb.DefaultFlashcardType,
+				FrontText: card.FrontText,
+				BackText:  card.BackText,
+			}
+		}
+
 		collection = &practicedb.FlashcardCollection{
-			Type:       practicedb.DefaultFlashcard,
+			Type:       practicedb.DefaultCollectionType,
 			Name:       "Default Collection",
 			UserID:     userID,
-			FlashCards: &[]*practicedb.Flashcard{},
+			FlashCards: &flashcards,
 		}
+
 		collection, err = s.FlashcardRepo.InsertRaw(collection)
 		if err != nil {
 			log.Println("cannot create default flashcard collection:", err)
@@ -83,7 +93,7 @@ func (s Service) HandleCreateFlashcardCollection(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot unmarshal request body"})
 	}
 
-	collection.Type = practicedb.ManualFlashcard
+	collection.Type = practicedb.ManualCollectionType
 	collection.UserID = userID
 
 	inserted, err := s.FlashcardRepo.InsertRaw(collection)
@@ -242,4 +252,27 @@ func (s Service) HandleGetCollectionsPreview(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(metadatas)
+}
+
+func (s Service) HandleUpdateFlashcardViewStatus(ctx *fiber.Ctx) error {
+	collection, ok := ctx.Locals(CollectionKey).(*practicedb.FlashcardCollection)
+	if !ok {
+		log.Fatalln("cannot get collection from context")
+	}
+
+	paramID := ctx.Params("flashcardId")
+	cardID, err := primitive.ObjectIDFromHex(paramID)
+	if err != nil {
+		log.Println("flashcardID is invalid", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "flashcardID is invalid"})
+	}
+	viewStatus := ctx.QueryBool("viewed", true)
+
+	err = s.FlashcardRepo.UpdateFlashcardViewStatus(collection.ID, cardID, viewStatus)
+	if err != nil {
+		log.Println("cannot update flashcard view status", err)
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot update flashcard view status"})
+	}
+
+	return ctx.SendStatus(fiber.StatusOK)
 }
