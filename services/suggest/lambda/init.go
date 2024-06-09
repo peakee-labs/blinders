@@ -1,12 +1,11 @@
 package main
 
 import (
+	"blinders/packages/transport"
 	"context"
 	"log"
 	"os"
 	"time"
-
-	"blinders/packages/transport"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 )
