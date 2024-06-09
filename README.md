@@ -1,5 +1,5 @@
 <h1 align="center">Blinders</h1>
-<p align="center">Monorepo, microservices backend for a language learning platform - Peakee.</p>
+<p align="center">Monorepo, serverless, microservices backend for a language learning platform - Peakee.</p>
 <p align="center">Golang, Python, Langchain, AWS, Terraform, Firebase, MongoDB</p>
 
 ## System Architecture
