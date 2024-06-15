@@ -26,5 +26,6 @@ use (
 	./services/practice
 	./services/rest
 	./services/suggest
+	./services/translate
 	./tests
 )

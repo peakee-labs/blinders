@@ -23,10 +23,10 @@ rm -rf dist/connect*$1 dist/translate*$1 dist/authorizer*$1 \
 
 echo "cleaned previous build artifacts"
 
-GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/translate-$1/bootstrap ./functions/translate
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 GOFLAGS=-trimpath go build -mod=readonly -ldflags='-s -w' -o ./dist/translate-$1/bootstrap ./services/translate/lambda
 echo "build translate lambda function completed"
-cp ./firebase.admin.$1.json ./dist/translate-$1/firebase.admin.json
-echo "copied firebase.admin.json to translate"
+# cp ./firebase.admin.$1.json ./dist/translate-$1/firebase.admin.json
+# echo "copied firebase.admin.json to translate"
 cd ./dist/translate-$1
 zip -r ../translate-$1.zip .
 cd ../..
