@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"blinders/functions/suggest/core"
 	"blinders/packages/auth"
 	"blinders/packages/db/collectingdb"
 	"blinders/packages/db/usersdb"
 	dbutils "blinders/packages/db/utils"
 	"blinders/packages/transport"
+	"blinders/services/suggest/core"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"

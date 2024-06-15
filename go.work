@@ -6,7 +6,6 @@ use (
 	./functions/collecting
 	./functions/embedder
 	./functions/explore
-	./functions/gosuggest
 	./functions/practice
 	./functions/rest
 	./functions/translate
@@ -26,5 +25,7 @@ use (
 	./services/goembedder
 	./services/practice
 	./services/rest
+	./services/suggest
+	./services/translate
 	./tests
 )

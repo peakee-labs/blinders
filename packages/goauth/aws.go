@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"log"
+	"net/http"
 	"strings"
 
 	"blinders/packages/db/usersdb"
@@ -34,7 +35,7 @@ func LambdaAuthMiddleware(
 			auth, ok := event.Headers["authorization"]
 			if !ok {
 				return events.APIGatewayV2HTTPResponse{
-					StatusCode: 400,
+					StatusCode: http.StatusUnauthorized,
 					Body:       "missing authorization header",
 					Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
 				}, nil
@@ -53,7 +54,7 @@ func LambdaAuthMiddleware(
 			if err != nil {
 				log.Println("failed to verify jwt:", err)
 				return events.APIGatewayV2HTTPResponse{
-					StatusCode: 400,
+					StatusCode: http.StatusUnauthorized,
 					Body:       "failed to verify jwt",
 					Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
 				}, nil
@@ -65,7 +66,7 @@ func LambdaAuthMiddleware(
 				if err != nil {
 					log.Println("failed to get user:", err)
 					return events.APIGatewayV2HTTPResponse{
-						StatusCode: 400,
+						StatusCode: http.StatusUnauthorized,
 						Body:       "failed to get user",
 						Headers:    map[string]string{"Access-Control-Allow-Origin": "*"},
 					}, nil
