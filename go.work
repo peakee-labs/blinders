@@ -3,14 +3,15 @@ go 1.22.1
 use (
 	./cli
 	./packages/apigateway
+	./packages/auth
 	./packages/db
 	./packages/explore
-	./packages/auth
 	./packages/session
 	./packages/suggest
 	./packages/translate
 	./packages/transport
 	./packages/utils
+	./server
 	./services/auth
 	./services/collecting
 	./services/embedder
