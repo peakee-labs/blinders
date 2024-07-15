@@ -22,7 +22,7 @@ resource "aws_instance" "database" {
 
   provisioner "local-exec" {
     command = <<EOT
-    ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ../ec2_mongodb.ansible.yml \
+    ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ../ansible/ec2_mongodb.ansible.yml \
      -u ec2-user -i '${self.public_ip},' \
      --key-file ./tf_ec2_key.pem \
      --extra-vars 'mongodb_admin_username=${var.mongodb_admin_username} \
@@ -32,7 +32,7 @@ resource "aws_instance" "database" {
 
   provisioner "local-exec" {
     command = <<EOT
-    ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ../ec2_redis_stack.ansible.yml \
+    ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ../ansible/ec2_redis_stack.ansible.yml \
      -u ec2-user -i '${self.public_ip},' \
      --key-file ./tf_ec2_key.pem \
      --extra-vars 'redis_default_password=${var.redis_default_password}'
