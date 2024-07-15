@@ -14,7 +14,6 @@ use (
 	./packages/db
 	./packages/explore
 	./packages/goauth
-	./packages/interfaces
 	./packages/session
 	./packages/suggest
 	./packages/translate

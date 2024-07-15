@@ -8,7 +8,7 @@ packages = [{ include = "blinders" }]           # make build backend success
 
 [tool.poetry.dependencies]
 python = "^3.10"
-blinders-dictionary-core = { path = "../../packages/dictionary", develop = true }
+blinders-dictionary-core = { path = "../../pypackages/dictionary", develop = true }
 
 
 [build-system]
