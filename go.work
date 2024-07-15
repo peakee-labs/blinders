@@ -5,7 +5,7 @@ use (
 	./packages/apigateway
 	./packages/db
 	./packages/explore
-	./packages/goauth
+	./packages/auth
 	./packages/session
 	./packages/suggest
 	./packages/translate
