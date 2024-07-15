@@ -6,8 +6,10 @@ import (
 	"os"
 
 	"blinders/packages/db/collectingdb"
-	dbutils "blinders/packages/db/utils"
 	"blinders/packages/transport"
+
+	dbutils "blinders/packages/db/utils"
+
 	collecting "blinders/services/collecting/core"
 
 	"github.com/aws/aws-lambda-go/lambda"

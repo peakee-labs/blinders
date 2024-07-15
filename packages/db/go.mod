@@ -3,7 +3,7 @@ module blinders/packages/db
 go 1.22.0
 
 require (
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/mongo-driver v1.14.0
 )
 

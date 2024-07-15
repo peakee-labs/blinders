@@ -2,14 +2,6 @@ go 1.22.1
 
 use (
 	./cli
-	./functions/authenticate
-	./functions/collecting
-	./functions/embedder
-	./functions/explore
-	./functions/practice
-	./functions/rest
-	./functions/translate
-	./functions/websocket
 	./packages/apigateway
 	./packages/db
 	./packages/explore
@@ -19,12 +11,14 @@ use (
 	./packages/translate
 	./packages/transport
 	./packages/utils
+	./services/auth
 	./services/collecting
+	./services/embedder
 	./services/explore
-	./services/goembedder
 	./services/practice
 	./services/rest
 	./services/suggest
 	./services/translate
+	./services/websocket
 	./tests
 )

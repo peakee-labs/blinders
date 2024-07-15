@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/redis/go-redis/v9 v9.5.1
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/mongo-driver v1.14.0
 )
 

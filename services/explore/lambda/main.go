@@ -123,7 +123,9 @@ func HandleRequest(ctx context.Context, req any) (any, error) {
 	}
 }
 
-func HandleInternalAddUserMatch(req *transport.AddUserMatchInfoRequest) (transport.AddUserMatchInfoResponse, error) {
+func HandleInternalAddUserMatch(
+	req *transport.AddUserMatchInfoRequest,
+) (transport.AddUserMatchInfoResponse, error) {
 	err := api.Service.AddUserMatch(&req.Payload)
 	if err != nil {
 		log.Println("can't add user match: ", err)
