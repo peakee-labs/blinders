@@ -1,82 +1,38 @@
-package main
+package practice
 
 import (
-	"fmt"
-	"log"
-	"os"
-
-	"blinders/packages/auth"
-	"blinders/packages/db/practicedb"
-	"blinders/packages/db/usersdb"
-	dbutils "blinders/packages/db/utils"
-	"blinders/packages/transport"
-	"blinders/packages/utils"
-	practiceapi "blinders/services/practice/api"
+	"blinders/services/practice/repo"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var service *practiceapi.Service
-
-func init() {
-	env := os.Getenv("ENVIRONMENT")
-	log.Println("practice api running on environment:", env)
-	envFile := ".env"
-	if env != "" {
-		envFile = fmt.Sprintf(".env.%s", env)
-	}
-
-	if err := godotenv.Load(envFile); err != nil {
-		log.Fatal("failed to load env", err)
-	}
-
-	db, err := dbutils.InitMongoDatabaseFromEnv()
-	if err != nil {
-		log.Fatal("failed to connect to mongo:", err)
-	}
-
-	usersRepo := usersdb.NewUsersRepo(db)
-	snapshotRepo := practicedb.NewSnapshotsRepo(db)
-
-	adminJSON, _ := utils.GetFile("firebase.admin.json")
-	auth, _ := auth.NewFirebaseManager(adminJSON)
-	flashcardsRepo := practicedb.NewFlashcardsRepo(db)
-	transportConsumers := transport.ConsumerMap{
-		transport.Suggest: fmt.Sprintf(
-			"http://localhost:%s/",
-			os.Getenv("PYSUGGEST_SERVICE_PORT"),
-		), // python suggest service
-		transport.CollectingPush: fmt.Sprintf(
-			"http://localhost:%s/",
-			os.Getenv("COLLECTING_SERVICE_PORT"),
-		),
-		transport.CollectingGet: fmt.Sprintf(
-			"http://localhost:%s/",
-			os.Getenv("COLLECTING_SERVICE_PORT"),
-		),
-	}
-	transport := transport.NewLocalTransportWithConsumers(transportConsumers)
-	app := fiber.New()
-	service = practiceapi.NewService(
-		app,
-		auth,
-		usersRepo,
-		flashcardsRepo,
-		snapshotRepo,
-		transport,
-	)
-
-	service.App.Use(cors.New())
-	service.InitRoute()
+type Service struct {
+	FlashcardRepo *repo.FlashcardsRepo
+	SnapshotRepo  *repo.SnapshotsRepo
 }
 
-func main() {
-	port := os.Getenv("PRACTICE_SERVICE_PORT")
-	log.Println("listening on: ", port)
-	err := service.App.Listen(fmt.Sprintf(":%s", port))
-	if err != nil {
-		log.Println("launch practice service error", err)
+func NewService(mongoDB *mongo.Database) *Service {
+	return &Service{
+		FlashcardRepo: repo.NewFlashcardsRepo(mongoDB),
+		SnapshotRepo:  repo.NewSnapshotsRepo(mongoDB),
 	}
+}
+
+func (s *Service) InitFiberRoutes(r fiber.Router) {
+	flashcards := r.Group("/flashcards")
+	flashcardCollections := flashcards.Group("/collections")
+
+	flashcardCollections.Get("/", s.HandleGetFlashcardCollections)
+	flashcardCollections.Post("/", s.HandleCreateFlashcardCollection)
+
+	validatedCollection := flashcardCollections.Group("/:id", s.ValidateOwnership("id"))
+	validatedCollection.Get("/", s.HandleGetFlashcardCollectionByID)
+	validatedCollection.Put("/", s.HandleUpdateFlashcardCollectionByID)
+	validatedCollection.Delete("/", s.HandleDeleteFlashcardCollectionByID)
+	validatedCollection.Post("/", s.HandleAddFlashcardToCollection)
+
+	validatedCollection.Put("/:flashcardId/status", s.HandleUpdateFlashcardViewStatus)
+	validatedCollection.Put("/:flashcardId", s.HandleUpdateFlashcardInCollection)
+	validatedCollection.Delete("/:flashcardId", s.HandleRemoveFlashcardFromCollection)
 }

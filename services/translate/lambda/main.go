@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"blinders/packages/translate"
+	"blinders/services/translate"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"blinders/packages/db/usersdb"
+	usersrepo "blinders/services/users/repo"
 
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -27,7 +27,7 @@ func LambdaLoggingMiddleware() LambdaMiddleware {
 
 func LambdaAuthMiddleware(
 	m Manager,
-	userRepo *usersdb.UsersRepo,
+	userRepo *usersrepo.UsersRepo,
 	options ...MiddlewareOptions,
 ) LambdaMiddleware {
 	return func(next LambdaHandler) LambdaHandler {
@@ -82,7 +82,7 @@ func LambdaAuthMiddleware(
 
 func LambdaAuthMiddlewareFromChan(
 	mCh chan Manager,
-	userRepoCh chan *usersdb.UsersRepo,
+	userRepoCh chan *usersrepo.UsersRepo,
 	options ...MiddlewareOptions,
 ) LambdaMiddleware {
 	return func(next LambdaHandler) LambdaHandler {

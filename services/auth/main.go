@@ -8,16 +8,16 @@ import (
 	"strings"
 
 	"blinders/packages/auth"
-	"blinders/packages/db/usersdb"
-	dbutils "blinders/packages/db/utils"
+	dbutils "blinders/packages/dbutils"
 	"blinders/packages/utils"
+	usersrepo "blinders/services/users/repo"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
 var (
 	authManager *auth.FirebaseManager
-	usersRepo   *usersdb.UsersRepo
+	usersRepo   *usersrepo.UsersRepo
 )
 
 func init() {
@@ -28,7 +28,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	usersRepo = usersdb.NewUsersRepo(usersDB)
+	usersRepo = usersrepo.NewUsersRepo(usersDB)
 
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {

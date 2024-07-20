@@ -10,8 +10,7 @@ import (
 
 	wschat "blinders/functions/websocket/chat/core"
 	"blinders/packages/apigateway"
-	"blinders/packages/db/chatdb"
-	dbutils "blinders/packages/db/utils"
+	dbutils "blinders/packages/dbutils"
 	"blinders/packages/session"
 	"blinders/packages/utils"
 
@@ -26,17 +25,18 @@ func init() {
 	redisClient := utils.NewRedisClientFromEnv(context.Background())
 	sessionManager := session.NewManager(redisClient)
 
-	chatDB, err := dbutils.InitMongoDatabaseFromEnv("CHAT")
+	mongoDB, err := dbutils.InitMongoDatabaseFromEnv()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	wschat.InitChatApp(sessionManager, chatdb.NewChatDB(chatDB))
+	wschat.InitChatApp(sessionManager, mongoDB)
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		log.Fatal("failed to load aws config:", err)
 	}
+
 	cer := apigateway.CustomEndpointResolve{
 		Domain:     os.Getenv("API_GATEWAY_DOMAIN"),
 		PathPrefix: os.Getenv("API_GATEWAY_PATH_PREFIX"),

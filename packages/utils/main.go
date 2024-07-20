@@ -1,3 +1,3 @@
 package utils
 
-const DefaultGinLoggerFormat = "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n"
+const DefaultFiberLoggerFormat = "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n"

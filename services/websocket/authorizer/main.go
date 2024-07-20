@@ -6,9 +6,9 @@ import (
 	"log"
 
 	"blinders/packages/auth"
-	"blinders/packages/db/usersdb"
-	dbutils "blinders/packages/db/utils"
+	dbutils "blinders/packages/dbutils"
 	"blinders/packages/utils"
+	usersrepo "blinders/services/users/repo"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -21,15 +21,15 @@ type APIGatewayWebsocketProxyRequest struct {
 
 var (
 	authManager auth.Manager
-	userRepo    *usersdb.UsersRepo
+	userRepo    *usersrepo.UsersRepo
 )
 
 func init() {
-	usersDB, err := dbutils.InitMongoDatabaseFromEnv("USERS")
+	mongoDB, err := dbutils.InitMongoDatabaseFromEnv()
 	if err != nil {
 		log.Fatal(err)
 	}
-	userRepo = usersdb.NewUsersRepo(usersDB)
+	userRepo = usersrepo.NewUsersRepo(mongoDB)
 
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {

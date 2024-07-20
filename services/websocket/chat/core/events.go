@@ -1,6 +1,6 @@
 package wschat
 
-import "blinders/packages/db/chatdb"
+import chatrepo "blinders/services/chat/repo"
 
 type ChatEventType string
 
@@ -31,14 +31,14 @@ type UserSendMessagePayload struct {
 
 type ServerAckSendMessagePayload struct {
 	ChatEvent `json:",inline"`
-	ResolveID string         `json:"resolveId"` // send ack response to sender
-	Message   chatdb.Message `json:"message,omitempty"`
-	Error     AckError       `json:"error,omitempty"`
+	ResolveID string           `json:"resolveId"` // send ack response to sender
+	Message   chatrepo.Message `json:"message,omitempty"`
+	Error     AckError         `json:"error,omitempty"`
 }
 
 type ServerSendMessagePayload struct {
 	ChatEvent `json:",inline"`
-	Message   chatdb.Message `json:"message"`
+	Message   chatrepo.Message `json:"message"`
 }
 
 type MessageStatus string

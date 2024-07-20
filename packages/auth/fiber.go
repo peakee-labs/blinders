@@ -4,7 +4,7 @@ import (
 	"log"
 	"strings"
 
-	"blinders/packages/db/usersdb"
+	usersrepo "blinders/services/users/repo"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -20,7 +20,7 @@ type MiddlewareOptions struct {
 
 func FiberAuthMiddleware(
 	m Manager,
-	userRepo *usersdb.UsersRepo,
+	userRepo *usersrepo.UsersRepo,
 	options ...MiddlewareOptions,
 ) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {

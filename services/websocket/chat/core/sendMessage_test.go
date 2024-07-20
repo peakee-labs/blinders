@@ -3,25 +3,25 @@ package wschat
 import (
 	"testing"
 
-	"blinders/packages/db/chatdb"
-	"blinders/packages/db/usersdb"
-	dbutils "blinders/packages/db/utils"
+	dbutils "blinders/packages/dbutils"
 	"blinders/packages/session"
+	chatrepo "blinders/services/chat/repo"
+	usersrepo "blinders/services/users/repo"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var userRepo *usersdb.UsersRepo
+var userRepo *usersrepo.UsersRepo
 
 func init() {
 	client, _ := dbutils.InitMongoClient("mongodb://localhost:27017")
 	InitChatApp(
 		session.NewManager(redis.NewClient(&redis.Options{Addr: "localhost:6379"})),
-		chatdb.NewChatDB(client.Database("blinders")),
+		client.Database("blinders"),
 	)
-	userRepo = usersdb.NewUsersRepo(client.Database("blinders"))
+	userRepo = usersrepo.NewUsersRepo(client.Database("blinders"))
 }
 
 func TestSendMessageFailedWithWrongPayload(t *testing.T) {
@@ -64,7 +64,7 @@ func TestSendMessageFailedWithConversationNotFound(t *testing.T) {
 }
 
 func TestSendMessageFailedWithUserIsNotMember(t *testing.T) {
-	conversation, _ := app.ChatDB.ConversationsRepo.InsertNewConversation(chatdb.Conversation{})
+	conversation, _ := app.ConvsRepo.InsertNewConversation(chatrepo.Conversation{})
 	_, err := HandleSendMessage(
 		primitive.NewObjectID().Hex(),
 		primitive.NewObjectID().Hex(),
@@ -78,9 +78,9 @@ func TestSendMessageFailedWithUserIsNotMember(t *testing.T) {
 }
 
 func TestSendMessageWithNoError(t *testing.T) {
-	user, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	conversation, _ := app.ChatDB.ConversationsRepo.InsertNewRawConversation(chatdb.Conversation{
-		Members: []chatdb.Member{{UserID: user.ID}},
+	user, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	conversation, _ := app.ConvsRepo.InsertNewRawConversation(chatrepo.Conversation{
+		Members: []chatrepo.Member{{UserID: user.ID}},
 	})
 	_, err := HandleSendMessage(
 		user.ID.Hex(),
@@ -109,11 +109,11 @@ func TestSendMessageFailedWithInvalidMessageToReply(t *testing.T) {
 }
 
 func TestSendMessageWithValidMessageToReply(t *testing.T) {
-	user, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	conversation, _ := app.ChatDB.ConversationsRepo.InsertNewRawConversation(chatdb.Conversation{
-		Members: []chatdb.Member{{UserID: user.ID}},
+	user, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	conversation, _ := app.ConvsRepo.InsertNewRawConversation(chatrepo.Conversation{
+		Members: []chatrepo.Member{{UserID: user.ID}},
 	})
-	message, _ := app.ChatDB.MessagesRepo.InsertNewRawMessage(chatdb.Message{
+	message, _ := app.MessagesRepo.InsertNewRawMessage(chatrepo.Message{
 		ConversationID: conversation.ID,
 	})
 
@@ -131,9 +131,9 @@ func TestSendMessageWithValidMessageToReply(t *testing.T) {
 }
 
 func TestSendMessageSuccess(t *testing.T) {
-	user, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	conversation, _ := app.ChatDB.ConversationsRepo.InsertNewRawConversation(chatdb.Conversation{
-		Members: []chatdb.Member{{UserID: user.ID}},
+	user, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	conversation, _ := app.ConvsRepo.InsertNewRawConversation(chatrepo.Conversation{
+		Members: []chatrepo.Member{{UserID: user.ID}},
 	})
 	_, err := HandleSendMessage(
 		user.ID.Hex(),
@@ -148,12 +148,12 @@ func TestSendMessageSuccess(t *testing.T) {
 }
 
 func TestSendMessageWithDistribution(t *testing.T) {
-	sender, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	recipient1, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	recipient2, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	conversation, _ := app.ChatDB.ConversationsRepo.InsertNewRawConversation(
-		chatdb.Conversation{
-			Members: []chatdb.Member{
+	sender, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	recipient1, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	recipient2, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	conversation, _ := app.ConvsRepo.InsertNewRawConversation(
+		chatrepo.Conversation{
+			Members: []chatrepo.Member{
 				{UserID: sender.ID},
 				{UserID: recipient1.ID},
 				{UserID: recipient2.ID},
@@ -216,12 +216,12 @@ func TestSendMessageWithDistribution(t *testing.T) {
 }
 
 func TestSendMessageWithDistributionWithOfflineRecipient(t *testing.T) {
-	sender, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	recipient1, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	recipient2, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	conversation, _ := app.ChatDB.ConversationsRepo.InsertNewRawConversation(
-		chatdb.Conversation{
-			Members: []chatdb.Member{
+	sender, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	recipient1, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	recipient2, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	conversation, _ := app.ConvsRepo.InsertNewRawConversation(
+		chatrepo.Conversation{
+			Members: []chatrepo.Member{
 				{UserID: sender.ID},
 				{UserID: recipient1.ID},
 				{UserID: recipient2.ID},
@@ -262,12 +262,12 @@ func TestSendMessageWithDistributionWithOfflineRecipient(t *testing.T) {
 }
 
 func TestSendMessageWithDistributionWithMultipleSessionsPerUser(t *testing.T) {
-	sender, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	recipient1, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	recipient2, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	conversation, _ := app.ChatDB.ConversationsRepo.InsertNewRawConversation(
-		chatdb.Conversation{
-			Members: []chatdb.Member{
+	sender, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	recipient1, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	recipient2, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	conversation, _ := app.ConvsRepo.InsertNewRawConversation(
+		chatrepo.Conversation{
+			Members: []chatrepo.Member{
 				{UserID: sender.ID},
 				{UserID: recipient1.ID},
 				{UserID: recipient2.ID},
@@ -311,12 +311,12 @@ func TestSendMessageWithDistributionWithMultipleSessionsPerUser(t *testing.T) {
 }
 
 func TestSendMessageWithDistributionWithStoredMessage(t *testing.T) {
-	sender, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	recipient1, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	recipient2, _ := userRepo.InsertNewRawUser(usersdb.User{})
-	conversation, _ := app.ChatDB.ConversationsRepo.InsertNewRawConversation(
-		chatdb.Conversation{
-			Members: []chatdb.Member{
+	sender, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	recipient1, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	recipient2, _ := userRepo.InsertNewRawUser(usersrepo.User{})
+	conversation, _ := app.ConvsRepo.InsertNewRawConversation(
+		chatrepo.Conversation{
+			Members: []chatrepo.Member{
 				{UserID: sender.ID},
 				{UserID: recipient1.ID},
 				{UserID: recipient2.ID},
@@ -341,8 +341,8 @@ func TestSendMessageWithDistributionWithStoredMessage(t *testing.T) {
 
 	assert.Nil(t, err)
 
-	var message1 chatdb.Message
-	var message2 chatdb.Message
+	var message1 chatrepo.Message
+	var message2 chatrepo.Message
 	for {
 		de := <-dCh
 		if de == nil {
@@ -355,7 +355,7 @@ func TestSendMessageWithDistributionWithStoredMessage(t *testing.T) {
 		}
 
 	}
-	storedMessage, err := app.ChatDB.MessagesRepo.GetMessageByID(message1.ID)
+	storedMessage, err := app.MessagesRepo.GetMessageByID(message1.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, storedMessage, message1)
 	assert.Equal(t, storedMessage, message2)

@@ -1,5 +1,18 @@
 {
   "flake8.args": ["--config=pyproject.toml"],
   "python.analysis.typeCheckingMode": "basic",
-  "python.defaultInterpreterPath": "./.venv/bin/python"
+  "python.defaultInterpreterPath": "./.venv/bin/python",
+  "cSpell.words": [
+    "chatrepo",
+    "collectrepo",
+    "convs",
+    "eclient",
+    "HNSW",
+    "matchingdb",
+    "metadatas",
+    "MGET",
+    "SORTBY",
+    "tlog",
+    "usersrepo"
+  ]
 }

@@ -4,22 +4,17 @@ use (
 	./cli
 	./packages/apigateway
 	./packages/auth
-	./packages/db
-	./packages/explore
+	./packages/dbutils
 	./packages/session
-	./packages/suggest
-	./packages/translate
 	./packages/transport
 	./packages/utils
 	./server
 	./services/auth
-	./services/collecting
-	./services/embedder
-	./services/explore
+	./services/chat
 	./services/practice
-	./services/rest
 	./services/suggest
 	./services/translate
+	./services/users
 	./services/websocket
 	./tests
 )
