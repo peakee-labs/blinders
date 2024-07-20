@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"blinders/packages/service"
-	"blinders/services/practice"
+	"blinders/services/users"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -18,18 +18,18 @@ var fiberLambda *fiberadapter.FiberLambda
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
-	log.Println("Peakee Practice API is running on environment:", env)
+	log.Println("Peakee Users API is running on environment:", env)
 
 	auth, mongoDB := service.LambdaCommonSetup()
-	practiceService := practice.NewService(auth, mongoDB)
+	usersService := users.NewService(auth, mongoDB)
 
 	app := fiber.New()
-	practiceService.InitFiberRoutes(app.Group("/practice"))
+	usersService.InitFiberRoutes(app.Group("/users"))
 
 	fiberLambda = service.NewFiberLambdaAdapter(app)
 }
 
-func HandleRequest(
+func Handler(
 	ctx context.Context,
 	req events.APIGatewayV2HTTPRequest,
 ) (events.APIGatewayV2HTTPResponse, error) {
@@ -37,5 +37,5 @@ func HandleRequest(
 }
 
 func main() {
-	lambda.Start((HandleRequest))
+	lambda.Start(Handler)
 }

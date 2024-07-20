@@ -5,11 +5,12 @@ use (
 	./packages/apigateway
 	./packages/auth
 	./packages/dbutils
+	./packages/lambda
+	./packages/service
 	./packages/session
 	./packages/transport
 	./packages/utils
 	./server
-	./services/auth
 	./services/chat
 	./services/practice
 	./services/suggest

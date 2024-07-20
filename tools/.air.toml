@@ -5,8 +5,8 @@ tmp_dir = "tmp"
 
 [build]
 args_bin = []
-bin = "./tmp/rest"
-cmd = "go build -o ./tmp/rest ./services/rest"
+bin = "./tmp/server"
+cmd = "go build -o ./tmp/server ./server"
 delay = 0
 exclude_dir = [
     "tmp",
@@ -14,7 +14,8 @@ exclude_dir = [
     "bin",
     "node_modules",
     "stacks",
-    "packages/dictionary",
+    "pypackages",
+    "pyservices",
 ]
 exclude_file = []
 exclude_regex = ["_test.go", ".py"]

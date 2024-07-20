@@ -18,7 +18,7 @@ var brrc *bedrockruntime.Client
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
-	log.Printf("Peakee Suggest API running on %s environment\n", env)
+	log.Println("Peakee Suggest API is running on environment:", env)
 
 	brrc = suggest.InitBedrockRuntimeClientSync(context.Background())
 }

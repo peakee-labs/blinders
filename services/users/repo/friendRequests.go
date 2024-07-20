@@ -12,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+const FriendRequestsCollection = "friend-requests"
+
 type FriendRequestsRepo struct {
 	*mongo.Collection
 }

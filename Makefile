@@ -13,8 +13,5 @@ dev-container-down:
 setup-cli:
 	go install ./cli/blinders.go
 
-rest:
-	air -c ./tools/.air.rest.toml
-
-embedder:
-	poetry run embedder_service
+server:
+	air -c ./tools/.air.toml

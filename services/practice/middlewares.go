@@ -29,11 +29,7 @@ func (s Service) ValidateOwnership(idParam string) fiber.Handler {
 				JSON(fiber.Map{"error": "cannot get flashcard collection"})
 		}
 
-		userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
-		if !ok {
-			log.Fatalln("cannot get user auth information")
-		}
-		userID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+		userID := ctx.Locals(auth.UserIDKey).(primitive.ObjectID)
 
 		if collection.UserID != userID {
 			log.Println("user does not have permission to access this collection", err)

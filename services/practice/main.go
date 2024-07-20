@@ -1,6 +1,7 @@
 package practice
 
 import (
+	"blinders/packages/auth"
 	"blinders/services/practice/repo"
 
 	"github.com/gofiber/fiber/v2"
@@ -8,19 +9,21 @@ import (
 )
 
 type Service struct {
+	Auth          *auth.Manager
 	FlashcardRepo *repo.FlashcardsRepo
 	SnapshotRepo  *repo.SnapshotsRepo
 }
 
-func NewService(mongoDB *mongo.Database) *Service {
+func NewService(auth *auth.Manager, db *mongo.Database) *Service {
 	return &Service{
-		FlashcardRepo: repo.NewFlashcardsRepo(mongoDB),
-		SnapshotRepo:  repo.NewSnapshotsRepo(mongoDB),
+		Auth:          auth,
+		FlashcardRepo: repo.NewFlashcardsRepo(db),
+		SnapshotRepo:  repo.NewSnapshotsRepo(db),
 	}
 }
 
 func (s *Service) InitFiberRoutes(r fiber.Router) {
-	flashcards := r.Group("/flashcards")
+	flashcards := r.Group("/flashcards", s.Auth.FiberAuthMiddleware(auth.Config{WithUser: true}))
 	flashcardCollections := flashcards.Group("/collections")
 
 	flashcardCollections.Get("/", s.HandleGetFlashcardCollections)

@@ -24,7 +24,7 @@ var translator translate.Translator
 
 func init() {
 	env := os.Getenv("ENVIRONMENT")
-	log.Printf("Translate api running on %s environment\n", env)
+	log.Println("Peakee Translate API is running on environment:", env)
 
 	translator = translate.YandexTranslator{APIKey: os.Getenv("YANDEX_API_KEY")}
 }

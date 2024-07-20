@@ -13,11 +13,7 @@ import (
 )
 
 func (s Service) HandleGetFlashcardCollections(ctx *fiber.Ctx) error {
-	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
-	if !ok {
-		log.Fatalln("cannot get user auth information")
-	}
-	userID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+	userID := ctx.Locals(auth.UserIDKey).(primitive.ObjectID)
 
 	var err error
 	var collections []*repo.FlashcardCollection
@@ -47,11 +43,7 @@ func (s Service) HandleGetFlashcardCollectionByID(ctx *fiber.Ctx) error {
 }
 
 func (s Service) HandleCreateFlashcardCollection(ctx *fiber.Ctx) error {
-	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
-	if !ok {
-		log.Fatalln("cannot get user auth information")
-	}
-	userID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+	userID := ctx.Locals(auth.UserIDKey).(primitive.ObjectID)
 
 	collection := new(repo.FlashcardCollection)
 	if err := json.Unmarshal(ctx.Body(), collection); err != nil {
@@ -217,11 +209,8 @@ func (s Service) HandleRemoveFlashcardFromCollection(ctx *fiber.Ctx) error {
 }
 
 func (s Service) HandleGetCollectionsPreview(ctx *fiber.Ctx) error {
-	userAuth, ok := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
-	if !ok {
-		log.Fatalln("cannot get user auth information")
-	}
-	userID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+	userID := ctx.Locals(auth.UserIDKey).(primitive.ObjectID)
+
 	metadatas, err := s.FlashcardRepo.GetCollectionsMetadataByUserID(userID)
 	if err != nil {
 		log.Println("cannot get metadatas", err)

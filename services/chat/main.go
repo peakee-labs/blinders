@@ -1,13 +1,13 @@
 package chat
 
 import (
-	"blinders/packages/auth"
-	"blinders/packages/utils"
-	"blinders/services/chat/repo"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+
+	"blinders/packages/auth"
+	"blinders/packages/utils"
+	"blinders/services/chat/repo"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -15,22 +15,28 @@ import (
 )
 
 type Service struct {
+	Auth         *auth.Manager
 	ConvsRepo    *repo.ConversationsRepo
 	MessagesRepo *repo.MessagesRepo
 }
 
 func NewService(
-	mongoDB *mongo.Database,
+	auth *auth.Manager,
+	db *mongo.Database,
 ) *Service {
 	return &Service{
-		ConvsRepo:    repo.NewConversationsRepo(mongoDB),
-		MessagesRepo: repo.NewMessagesRepo(mongoDB),
+		Auth:         auth,
+		ConvsRepo:    repo.NewConversationsRepo(db),
+		MessagesRepo: repo.NewMessagesRepo(db),
 	}
 }
 
 func (s Service) InitFiberRoutes(r fiber.Router) {
 	// TODO: need to check if this user is in the conversation
-	conversations := r.Group("/conversations")
+	conversations := r.Group(
+		"/conversations",
+		s.Auth.FiberAuthMiddleware(auth.Config{WithUser: true}),
+	)
 	conversations.Get("/:id", s.GetConversationByID)
 	conversations.Get("/:id/messages", s.GetMessagesOfConversation)
 	conversations.Get("/", s.GetConversationsOfUser)
@@ -41,17 +47,15 @@ func (s Service) GetConversationByID(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		log.Println("invalid id:", err)
 		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"error": "invalid id",
+			"error": "invalid id: " + err.Error(),
 		})
 	}
 
 	conversation, err := s.ConvsRepo.GetConversationByID(oid)
 	if err != nil {
-		log.Println("can not get conversation:", err)
 		return ctx.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"error": "can not get conversation",
+			"error": "can not get conversation:" + err.Error(),
 		})
 	}
 
@@ -59,12 +63,7 @@ func (s Service) GetConversationByID(ctx *fiber.Ctx) error {
 }
 
 func (s Service) GetConversationsOfUser(ctx *fiber.Ctx) error {
-	userAuth := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
-	if userAuth == nil {
-		return fmt.Errorf("required user auth")
-	}
-
-	userID, _ := primitive.ObjectIDFromHex(userAuth.ID)
+	userID := ctx.Locals(auth.UserIDKey).(primitive.ObjectID)
 
 	queryType := ctx.Query("type", "all")
 	switch queryType {
@@ -122,7 +121,7 @@ type CreateGroupConvDTO struct {
 }
 
 type CreateIndividualConvDTO struct {
-	CreateConversationDTO `json:",inline"`
+	CreateConversationDTO `       json:",inline"`
 	FriendID              string `json:"friendId"`
 }
 
@@ -144,8 +143,7 @@ func (s Service) CreateNewIndividualConversation(ctx *fiber.Ctx) error {
 				})
 			}
 
-			authUser := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
-			userID, _ := primitive.ObjectIDFromHex(authUser.ID)
+			userID := ctx.Locals(auth.UserIDKey).(primitive.ObjectID)
 
 			friendID, err := primitive.ObjectIDFromHex(convDTO.FriendID)
 			if err != nil {

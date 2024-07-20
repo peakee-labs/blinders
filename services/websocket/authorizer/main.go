@@ -20,8 +20,8 @@ type APIGatewayWebsocketProxyRequest struct {
 }
 
 var (
-	authManager auth.Manager
-	userRepo    *usersrepo.UsersRepo
+	authManager *auth.Manager
+	usersRepo   *usersrepo.UsersRepo
 )
 
 func init() {
@@ -29,14 +29,14 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	userRepo = usersrepo.NewUsersRepo(mongoDB)
+	usersRepo = usersrepo.NewUsersRepo(mongoDB)
 
 	adminConfig, err := utils.GetFile("firebase.admin.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	authManager, err = auth.NewFirebaseManager(adminConfig)
+	authManager, err = auth.NewFirebaseManager(adminConfig, usersRepo)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func HandleRequest(
 		return events.APIGatewayCustomAuthorizerResponse{}, err
 	}
 
-	user, err := userRepo.GetUserByFirebaseUID(authUser.AuthID)
+	user, err := usersRepo.GetUserByFirebaseUID(authUser.AuthID)
 	if err != nil {
 		return events.APIGatewayCustomAuthorizerResponse{}, err
 	}

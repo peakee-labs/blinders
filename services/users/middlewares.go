@@ -6,33 +6,33 @@ import (
 	"blinders/packages/auth"
 
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type MiddlewareKey string
 
 const (
+	UserID      MiddlewareKey = "user_id"
 	PublicQuery MiddlewareKey = "public_query"
 )
 
-type ValidateUserOptions struct {
+type ValidateOptions struct {
 	// initializes local ctx with key PublicQuery for checking public in next middlewares.
 	// If it is not enabled, the next middlewares will never receive public flag even if it handles public query.
 	// It make easily to toggle public query for any route
-	allowPublicQuery bool
+	PublicQuery bool
 }
 
-func ValidateUserIDParam(options ...ValidateUserOptions) fiber.Handler {
+func ValidateUserIDParam(options ...ValidateOptions) fiber.Handler {
 	if len(options) == 0 {
-		options = append(options, ValidateUserOptions{
-			allowPublicQuery: false,
-		})
+		options = append(options, ValidateOptions{PublicQuery: false})
 	}
 
-	allowPublicQuery := options[0].allowPublicQuery
+	allowPublicQuery := options[0].PublicQuery
 
 	return func(ctx *fiber.Ctx) error {
-		userID := ctx.Params("id")
-		userAuth := ctx.Locals(auth.UserAuthKey).(*auth.UserAuth)
+		userIDParam := ctx.Params("id")
+		userID := ctx.Locals(auth.UserIDKey).(primitive.ObjectID)
 
 		if allowPublicQuery {
 			public := ctx.Query("public")
@@ -42,7 +42,7 @@ func ValidateUserIDParam(options ...ValidateUserOptions) fiber.Handler {
 		}
 		isPublicQuery := ctx.Locals(PublicQuery).(bool)
 
-		if !isPublicQuery && userAuth.ID != userID {
+		if !isPublicQuery && userID.Hex() != userIDParam {
 			return ctx.Status(http.StatusForbidden).JSON(&fiber.Map{
 				"error": "insufficient permissions",
 			})

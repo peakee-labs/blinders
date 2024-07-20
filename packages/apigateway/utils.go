@@ -26,3 +26,13 @@ func OkJSONResponse(body any) events.APIGatewayV2HTTPResponse {
 		},
 	}
 }
+
+func UnauthorizedResponse(message string) events.APIGatewayV2HTTPResponse {
+	return events.APIGatewayV2HTTPResponse{
+		StatusCode: http.StatusUnauthorized,
+		Body:       message,
+		Headers: map[string]string{
+			"Access-Control-Allow-Origin": "*",
+		},
+	}
+}

@@ -25,7 +25,7 @@ var AuthCommand = cli.Command{
 			return err
 		}
 
-		a, err := auth.NewFirebaseManager(adminJSON)
+		a, err := auth.NewFirebaseManager(adminJSON, nil)
 		if err != nil {
 			return err
 		}

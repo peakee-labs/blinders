@@ -8,6 +8,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+const FeedbackCollection = "feedback"
+
 type FeedbackRepo struct {
 	*mongo.Collection
 }

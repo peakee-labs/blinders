@@ -12,6 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+const UsersCollection = "users"
+
 type UsersRepo struct {
 	*mongo.Collection
 }
@@ -67,12 +69,12 @@ func (r *UsersRepo) GetUserByID(id primitive.ObjectID) (User, error) {
 	return user, err
 }
 
-func (r *UsersRepo) GetUserByFirebaseUID(uid string) (User, error) {
+func (r *UsersRepo) GetUserByFirebaseUID(firebaseUID string) (User, error) {
 	ctx, cal := context.WithTimeout(context.Background(), time.Second)
 	defer cal()
 
 	var user User
-	err := r.FindOne(ctx, bson.M{"firebaseUID": uid}).Decode(&user)
+	err := r.FindOne(ctx, bson.M{"firebaseUID": firebaseUID}).Decode(&user)
 
 	return user, err
 }

@@ -8,6 +8,7 @@
     "convs",
     "eclient",
     "HNSW",
+    "lambdaservice",
     "matchingdb",
     "metadatas",
     "MGET",
