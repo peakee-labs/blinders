@@ -13,4 +13,4 @@ echo "-> Lint by flake8"
 flake8 $(git ls-files "**/*.py")
 
 echo "-> Lint by pyright"
-pyright
+pyright $(git ls-files "**/*.py")

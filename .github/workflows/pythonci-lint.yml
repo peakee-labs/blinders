@@ -19,11 +19,11 @@ jobs:
       - name: Checking python
         run: python --version
 
-      # - name: Install development dependencies
-      #   run: pip install poetry && poetry config virtualenvs.create false && poetry install --no-root
+      - name: Install development dependencies
+        run: pip install poetry && poetry config virtualenvs.create false && poetry install --no-root
 
-      # - name: Install dependencies for submodules
-      #   run: git ls-files --full-name -- "**/pyproject.toml" | xargs -n 1 dirname | xargs -I{} bash -c 'cd "{}" && poetry install'
+      - name: Install dependencies for submodules
+        run: git ls-files --full-name -- "**/pyproject.toml" | xargs -n 1 dirname | xargs -I{} bash -c 'cd "{}" && poetry install'
 
-      # - name: Linting
-      #   run: ./scripts/check_pylint.sh
+      - name: Linting
+        run: ./scripts/check_pylint.sh
