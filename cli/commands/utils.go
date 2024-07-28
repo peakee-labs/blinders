@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os/exec"
 
@@ -14,19 +15,16 @@ func Execute(name string, args ...string) (string, error) {
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		color.Red("Can't get stdout pipe: %v", err)
-		return "", err
+		return "", fmt.Errorf("Can't get stdout pipe: %v", err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		color.Red("Can't get stderr pipe: %v", err)
-		return "", err
+		return "", fmt.Errorf("Can't get stderr pipe: %v", err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		color.Red("Can't start: %v", err)
-		return "", err
+		return "", fmt.Errorf("Can't start: %v", err)
 	}
 
 	stdoutChan := make(chan string)
@@ -48,13 +46,13 @@ func Execute(name string, args ...string) (string, error) {
 				stdoutChan = nil
 			} else {
 				latestText = line
-				color.Green("-> %v", line)
+				color.Green("  -> %v", line)
 			}
 		case line, ok := <-stderrChan:
 			if !ok {
 				stderrChan = nil
 			} else {
-				color.Red("-> %v", line)
+				color.Red("  -> %v", line)
 			}
 		}
 		if stdoutChan == nil && stderrChan == nil {

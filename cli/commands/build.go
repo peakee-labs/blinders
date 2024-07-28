@@ -3,6 +3,9 @@ package commands
 import (
 	"fmt"
 
+	"blinders/packages/utils"
+
+	"github.com/fatih/color"
 	"github.com/urfave/cli/v2"
 )
 
@@ -32,14 +35,40 @@ var BuildCommand = cli.Command{
 
 const ServicesPathPrefix = "services/%s"
 
+type ChangeResult struct {
+	Change string
+	Path   string
+}
+
 func BuildAction(ctx *cli.Context) error {
 	names := ctx.StringSlice("name")
 
 	for _, name := range names {
+		color.Magenta("\n[%v] checking and building", name)
+
 		servicePath := fmt.Sprintf(ServicesPathPrefix, name)
-		_, err := Execute("sh", "scripts/check_go_mod_changes.sh", servicePath)
+
+		result, err := Execute("sh", "scripts/check_go_mod_changes.sh", servicePath)
 		if err != nil {
 			return err
+		}
+
+		changeResult, err := utils.ParseJSON[ChangeResult]([]byte(result))
+		if err != nil {
+			color.Red("Can not parse ChangeResult: %v", err)
+		}
+
+		switch changeResult.Change {
+		case "unchange":
+			if ctx.Bool("force") {
+				color.Magenta("[%v] unchange, force building", name)
+			} else {
+				color.Yellow("[%v] unchange, ignore this build", name)
+			}
+		case "change":
+			color.Magenta("[%v] Change found, building", name)
+		default:
+			return fmt.Errorf("[%v] Unknown change result: %v", name, changeResult.Change)
 		}
 	}
 
