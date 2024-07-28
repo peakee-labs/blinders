@@ -36,9 +36,9 @@ var AuthCommand = cli.Command{
 }
 
 var loadAuthCommand = cli.Command{
-	Name:        "load-user",
-	Description: "load user jwt by using uid",
-	Args:        true,
+	Name:  "jwt",
+	Usage: "load user jwt by using uid",
+	Args:  true,
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name: "uid",
@@ -76,9 +76,9 @@ var loadAuthCommand = cli.Command{
 }
 
 var genWSCatCommand = cli.Command{
-	Name:        "gen-wscat",
-	Description: "load user jwt and generate wscat command for easily connect to websocket api by using uid",
-	Args:        true,
+	Name:  "wscat",
+	Usage: "load user jwt and generate wscat command for easily connect to websocket api by using uid",
+	Args:  true,
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name: "uid",

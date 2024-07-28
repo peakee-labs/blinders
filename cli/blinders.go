@@ -22,7 +22,11 @@ func main() {
 				Usage: "Define environment for the CLI",
 			},
 		},
-		Commands: []*cli.Command{&commands.AuthCommand},
+		Commands: []*cli.Command{
+			&commands.AuthCommand,
+			&commands.BuildCommand,
+			&commands.DeployCommand,
+		},
 		Before: func(ctx *cli.Context) error {
 			env := ctx.String("env")
 			fmt.Println("CLI is running on environment:", env)

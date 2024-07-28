@@ -1,6 +1,7 @@
+#!/bin/sh
 if [ ! -d $1 ];
 then 
-    echo "$1 is invalid dir path"
+    echo "Checking change failed, '$1' is invalid dir path" >&2
     exit 1
 fi
 
@@ -18,14 +19,23 @@ LOCAL_DEPENDENCIES=$(grep -r '"blinders/.*"' $1/*.go $1/**/*.go  | sed -n 's/.*\
 
 while IFS= read -r module_name; 
 do
-    echo "Checking $module_name"
-    grep -r "module $module_name"
+    echo "Checking dependency: $module_name"
+
+    module_string="module $module_name"
+    module_path=$(grep -l "$module_string" **/go.mod **/**/go.mod | head -n 1)
+
+    # ignore un-resolved module
+    if [ -z $module_path ];
+    then 
+        echo "Not found path for mod: $module_name, continue"
+        continue
+    fi
     
-    DEPENDENCY_GIT_STATUS=$(git status --porcelain $module_name)
-    echo $DEPENDENCY_GIT_STATUS
+    DEPENDENCY_GIT_STATUS=$(git status --porcelain $module_path)
+
     if [ -n "$DEPENDENCY_GIT_STATUS" ];
     then
-        echo '{ "change": "dependency", "path": "$module_name" }'
+        echo "{ \"change\": \"dependency\", \"path\": \"$module_path\" }"
         exit 0
     fi
 done <<< "$LOCAL_DEPENDENCIES"
