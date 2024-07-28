@@ -1,0 +1,33 @@
+{
+    "default": {
+        "firebase": true,
+        "env": []
+    },
+    "chat": {
+        "env": ["MONGO"]
+    },
+    "practice": {
+        "env": ["MONGO"]
+    },
+    "suggest": {
+        "env": ["BEDROCK"]
+    },
+    "translate": {
+        "env": ["YANDEX"]
+    },
+    "users": {
+        "env": ["MONGO"]
+    },
+    "websocket/authorizer": {
+        "env": ["REDIS"]
+    },
+    "websocket/chat": {
+        "env": ["REDIS", "MONGO", "API_GATEWAY"]
+    },
+    "websocket/connect": {
+        "env": ["REDIS"]
+    },
+    "websocket/disconnect": {
+        "env": ["REDIS"]
+    }
+}
