@@ -41,7 +41,26 @@ type ChangeResult struct {
 }
 
 func BuildAction(ctx *cli.Context) error {
-	names := ctx.StringSlice("name")
+	var names []string
+
+	if ctx.Bool("all") {
+		color.Yellow("\nUse --all, finding all lambdas, ignoring --name")
+		result, err := Execute("sh", "scripts/lookup_lambdas.sh")
+		if err != nil {
+			return err
+		}
+
+		lambdaMap, err := utils.ParseJSON[map[string]string]([]byte(result))
+		if err != nil {
+			color.Red("Can not parse ChangeResult: %v", err)
+		}
+
+		for key := range *lambdaMap {
+			names = append(names, key)
+		}
+	} else {
+		names = ctx.StringSlice("name")
+	}
 
 	for _, name := range names {
 		color.Magenta("\n[%v] checking and building", name)
